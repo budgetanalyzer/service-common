@@ -2,8 +2,6 @@ package com.bleurubin.service.api;
 
 import java.util.List;
 
-import org.springframework.validation.FieldError;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Standard API error response format")
@@ -83,6 +81,51 @@ public class ApiErrorResponse {
 
     public ApiErrorResponse build() {
       return response;
+    }
+  }
+
+  @Schema(description = "Field-level validation error details")
+  public static class FieldError {
+    @Schema(
+        description = "Field that triggered the error",
+        requiredMode = Schema.RequiredMode.REQUIRED,
+        example = "email")
+    private String field;
+
+    @Schema(
+        description = "Error message",
+        requiredMode = Schema.RequiredMode.REQUIRED,
+        example = "must be a valid email address")
+    private String message;
+
+    @Schema(
+        description = "Value that caused the error",
+        requiredMode = Schema.RequiredMode.REQUIRED,
+        example = "invalid@email")
+    private Object rejectedValue;
+
+    public FieldError() {}
+
+    public FieldError(String field, String message, Object rejectedValue) {
+      this.field = field;
+      this.message = message;
+      this.rejectedValue = rejectedValue;
+    }
+
+    public String getField() {
+      return field;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public Object getRejectedValue() {
+      return rejectedValue;
+    }
+
+    public static FieldError of(String field, String message, Object rejectedValue) {
+      return new FieldError(field, message, rejectedValue);
     }
   }
 }
