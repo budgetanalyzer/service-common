@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import com.bleurubin.service.exception.BusinessException;
+import com.bleurubin.service.exception.InvalidRequestException;
+import com.bleurubin.service.exception.ResourceNotFoundException;
+import com.bleurubin.service.exception.ServiceUnavailableException;
+
 /*
  * This will just be the default handler with lowest precedence.  Any components
  * with @RestControllerAdvice will take higher precedence and can override the
@@ -24,6 +29,31 @@ import org.springframework.web.context.request.WebRequest;
 public class DefaultApiExceptionHandler {
 
   private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  public ApiErrorResponse handle(InvalidRequestException exception, WebRequest request) {
+    return handleApiException("invalid_request", HttpStatus.BAD_REQUEST, request, exception);
+  }
+
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  public ApiErrorResponse handle(ResourceNotFoundException exception, WebRequest request) {
+    return handleApiException("not_found", HttpStatus.NOT_FOUND, request, exception);
+  }
+
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
+  public ApiErrorResponse handle(BusinessException exception, WebRequest request) {
+    return handleApiException(
+        "invalid_request", HttpStatus.UNPROCESSABLE_ENTITY, request, exception);
+  }
+
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.BAD_GATEWAY)
+  public ApiErrorResponse handle(ServiceUnavailableException exception, WebRequest request) {
+    return handleApiException("internal_server_error", HttpStatus.BAD_GATEWAY, request, exception);
+  }
 
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
