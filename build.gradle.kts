@@ -1,0 +1,77 @@
+plugins {
+    java
+    checkstyle
+    id("org.springframework.boot") version "3.5.6"
+    id("io.spring.dependency-management") version "1.1.7"
+    id("com.diffplug.spotless") version "8.0.0"
+    id("maven-publish")
+}
+
+group = "com.bleurubin"
+version = "0.0.1-SNAPSHOT"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(24)
+    }
+    withSourcesJar()
+    withJavadocJar()
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+}
+
+spotless {
+    java {
+        googleJavaFormat("1.17.0")
+        trimTrailingWhitespace()
+        endWithNewline()
+        importOrder()
+        removeUnusedImports()
+    }
+}
+
+checkstyle {
+    toolVersion = "12.0.1"
+}
+
+tasks.named("check") {
+    dependsOn("spotlessCheck")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+
+            groupId = project.group.toString()
+            artifactId = "service-common"
+            version = project.version.toString()
+
+            pom {
+                name.set("Service Common")
+                description.set("Shared core module for microservices")
+
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}
