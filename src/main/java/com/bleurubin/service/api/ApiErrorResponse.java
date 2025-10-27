@@ -1,183 +1,88 @@
 package com.bleurubin.service.api;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.validation.FieldError;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/*
- * RFC-7807 error response.  https://datatracker.ietf.org/doc/html/rfc7807
- * The type field isn't a URI contrary to the specification as that doesn't
- * seem practical.
- */
-@Schema(description = "Standard API error response format (RFC 7807-inspired)")
+@Schema(description = "Standard API error response format")
 public class ApiErrorResponse {
 
   @Schema(
-      description = "Machine-readable error type (slug or code)",
+      description = "Error type indicating the category and structure of the error",
       requiredMode = Schema.RequiredMode.REQUIRED,
-      example = "transaction_not_found")
-  private String type;
+      example = "BUSINESS_ERROR")
+  private ApiErrorType type;
 
   @Schema(
-      description = "Short summary of the problem",
+      description = "Human-readable message describing the error",
       requiredMode = Schema.RequiredMode.REQUIRED,
-      example = "Transaction not found")
-  private String title;
+      example = "CSV format: unknown-bank not supported")
+  private String message;
 
   @Schema(
-      description = "HTTP status code",
-      requiredMode = Schema.RequiredMode.REQUIRED,
-      example = "404")
-  private int status;
-
-  @Schema(
-      description = "Detailed explanation of the problem",
+      description =
+          "Machine-readable error code for specific business errors (required for BUSINESS_ERROR type)",
       requiredMode = Schema.RequiredMode.NOT_REQUIRED,
-      example = "Transaction with Id 123 could not be located.")
-  private String detail;
+      example = "CSV_FORMAT_NOT_SUPPORTED")
+  private String code;
 
   @Schema(
-      description = "Request path or trace Id",
-      requiredMode = Schema.RequiredMode.REQUIRED,
-      example = "/transactions/123")
-  private String instance;
-
-  @Schema(
-      description = "Timestamp of the error in ISO-8601 format",
-      requiredMode = Schema.RequiredMode.REQUIRED,
-      example = "2023-10-15T14:30:00.500Z")
-  private Instant timestamp;
-
-  @Schema(
-      description = "List of field-level validation errors (optional)",
+      description = "List of field-level validation errors (populated for VALIDATION_ERROR type)",
       requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   private List<FieldError> errors;
 
-  public String getType() {
+  // Private constructor for builder
+  private ApiErrorResponse() {}
+
+  // Getters
+  public ApiErrorType getType() {
     return type;
   }
 
-  public String getTitle() {
-    return title;
+  public String getMessage() {
+    return message;
   }
 
-  public int getStatus() {
-    return status;
-  }
-
-  public String getDetail() {
-    return detail;
-  }
-
-  public String getInstance() {
-    return instance;
-  }
-
-  public Instant getTimestamp() {
-    return timestamp;
+  public String getCode() {
+    return code;
   }
 
   public List<FieldError> getErrors() {
     return errors;
   }
 
+  // Builder
   public static Builder builder() {
     return new Builder();
   }
 
   public static class Builder {
-    private final ApiErrorResponse target = new ApiErrorResponse();
+    private final ApiErrorResponse response = new ApiErrorResponse();
 
-    public Builder type(String type) {
-      target.type = type;
+    public Builder type(ApiErrorType type) {
+      response.type = type;
       return this;
     }
 
-    public Builder title(String title) {
-      target.title = title;
+    public Builder message(String message) {
+      response.message = message;
       return this;
     }
 
-    public Builder status(int status) {
-      target.status = status;
-      return this;
-    }
-
-    public Builder detail(String detail) {
-      target.detail = detail;
-      return this;
-    }
-
-    public Builder instance(String instance) {
-      target.instance = instance;
-      return this;
-    }
-
-    public Builder timestamp(Instant timestamp) {
-      target.timestamp = timestamp;
+    public Builder code(String code) {
+      response.code = code;
       return this;
     }
 
     public Builder errors(List<FieldError> errors) {
-      target.errors = errors;
-      return this;
-    }
-
-    public Builder addError(FieldError error) {
-      if (target.errors == null) target.errors = new ArrayList<>();
-      target.errors.add(error);
+      response.errors = errors;
       return this;
     }
 
     public ApiErrorResponse build() {
-      return target;
-    }
-  }
-
-  @Schema(description = "Field-level validation error details")
-  public static class FieldError {
-    @Schema(
-        description = "Field that triggered the error",
-        requiredMode = Schema.RequiredMode.REQUIRED,
-        example = "email")
-    private String field;
-
-    @Schema(
-        description = "Error message",
-        requiredMode = Schema.RequiredMode.REQUIRED,
-        example = "must be a valid email address")
-    private String message;
-
-    @Schema(
-        description = "Value that caused the error",
-        requiredMode = Schema.RequiredMode.REQUIRED,
-        example = "invalid@email")
-    private Object rejectedValue;
-
-    public FieldError() {}
-
-    public FieldError(String field, String message, Object rejectedValue) {
-      this.field = field;
-      this.message = message;
-      this.rejectedValue = rejectedValue;
-    }
-
-    public String getField() {
-      return field;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-
-    public Object getRejectedValue() {
-      return rejectedValue;
-    }
-
-    public static FieldError of(String field, String message, Object rejectedValue) {
-      return new FieldError(field, message, rejectedValue);
+      return response;
     }
   }
 }
