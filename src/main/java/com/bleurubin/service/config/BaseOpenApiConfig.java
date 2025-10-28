@@ -45,7 +45,7 @@ public abstract class BaseOpenApiConfig {
     };
   }
 
-  private void addStandardErrorResponses(PathItem.HttpMethod httpMethod, Operation operation) {
+  protected void addStandardErrorResponses(PathItem.HttpMethod httpMethod, Operation operation) {
     switch (httpMethod) {
       case POST:
         addBadRequestResponse(operation);
@@ -59,7 +59,10 @@ public abstract class BaseOpenApiConfig {
 
       case GET:
       case DELETE:
-        addNotFoundResponse(operation);
+        // We don't return a 404 for a GET without an {id}
+        if (hasPathParameters(operation)) {
+          addNotFoundResponse(operation);
+        }
         break;
 
       default:
@@ -71,35 +74,13 @@ public abstract class BaseOpenApiConfig {
     addServiceUnavailableResponse(operation);
   }
 
-  private void addBadRequestResponse(Operation operation) {
-    operation
-        .getResponses()
-        .addApiResponse("400", buildExampleApiErrorResponse(HttpStatus.BAD_REQUEST));
-  }
-
-  private void addNotFoundResponse(Operation operation) {
-    operation
-        .getResponses()
-        .addApiResponse("404", buildExampleApiErrorResponse(HttpStatus.NOT_FOUND));
-  }
-
-  private void addInternalServerErrorResponse(Operation operation) {
-    operation
-        .getResponses()
-        .addApiResponse("500", buildExampleApiErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR));
-  }
-
-  private void addServiceUnavailableResponse(Operation operation) {
-    operation
-        .getResponses()
-        .addApiResponse("503", buildExampleApiErrorResponse(HttpStatus.SERVICE_UNAVAILABLE));
-  }
-
-  private ApiResponse buildExampleApiErrorResponse(HttpStatus httpStatus) {
+  protected ApiResponse buildExampleApiErrorResponse(
+      HttpStatus httpStatus, String message, String code) {
     var exampleResponse =
         ApiErrorResponse.builder()
             .type(getTypeFromHttpStatus(httpStatus))
-            .message(httpStatus.getReasonPhrase())
+            .message(message)
+            .code(code)
             .build();
 
     return new ApiResponse()
@@ -113,10 +94,44 @@ public abstract class BaseOpenApiConfig {
                         .example(exampleResponse)));
   }
 
+  protected boolean hasPathParameters(Operation operation) {
+    return operation.getParameters() != null
+        && operation.getParameters().stream().anyMatch(param -> "path".equals(param.getIn()));
+  }
+
+  protected void addBadRequestResponse(Operation operation) {
+    operation
+        .getResponses()
+        .addApiResponse("400", buildExampleApiErrorResponse(HttpStatus.BAD_REQUEST));
+  }
+
+  protected void addNotFoundResponse(Operation operation) {
+    operation
+        .getResponses()
+        .addApiResponse("404", buildExampleApiErrorResponse(HttpStatus.NOT_FOUND));
+  }
+
+  protected void addInternalServerErrorResponse(Operation operation) {
+    operation
+        .getResponses()
+        .addApiResponse("500", buildExampleApiErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR));
+  }
+
+  protected void addServiceUnavailableResponse(Operation operation) {
+    operation
+        .getResponses()
+        .addApiResponse("503", buildExampleApiErrorResponse(HttpStatus.SERVICE_UNAVAILABLE));
+  }
+
+  private ApiResponse buildExampleApiErrorResponse(HttpStatus httpStatus) {
+    return buildExampleApiErrorResponse(httpStatus, httpStatus.getReasonPhrase(), null);
+  }
+
   private ApiErrorType getTypeFromHttpStatus(HttpStatus httpStatus) {
     return switch (httpStatus) {
       case HttpStatus.BAD_REQUEST -> ApiErrorType.INVALID_REQUEST;
       case HttpStatus.NOT_FOUND -> ApiErrorType.NOT_FOUND;
+      case HttpStatus.UNPROCESSABLE_ENTITY -> ApiErrorType.APPLICATION_ERROR;
       case HttpStatus.SERVICE_UNAVAILABLE -> ApiErrorType.SERVICE_UNAVAILABLE;
       default -> ApiErrorType.INTERNAL_ERROR;
     };
