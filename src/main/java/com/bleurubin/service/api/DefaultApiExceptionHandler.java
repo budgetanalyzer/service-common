@@ -28,7 +28,7 @@ import com.bleurubin.service.exception.ServiceUnavailableException;
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class DefaultApiExceptionHandler {
 
-  private final Logger log = LoggerFactory.getLogger(this.getClass());
+  private static final Logger log = LoggerFactory.getLogger(DefaultApiExceptionHandler.class);
 
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
