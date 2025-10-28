@@ -49,7 +49,7 @@ public class DefaultApiExceptionHandler {
   }
 
   @ExceptionHandler
-  @ResponseStatus(value = HttpStatus.BAD_GATEWAY)
+  @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
   public ApiErrorResponse handle(ServiceUnavailableException exception, WebRequest request) {
     return handleApiException(ApiErrorType.SERVICE_UNAVAILABLE, exception);
   }

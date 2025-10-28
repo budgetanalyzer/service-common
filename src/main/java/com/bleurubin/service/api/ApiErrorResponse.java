@@ -16,7 +16,7 @@ public class ApiErrorResponse {
   @Schema(
       description = "Human-readable message describing the error",
       requiredMode = Schema.RequiredMode.REQUIRED,
-      example = "CSV format: unknown-bank not supported")
+      example = "CSV format: fake-bank not supported")
   private String message;
 
   @Schema(
@@ -27,7 +27,7 @@ public class ApiErrorResponse {
 
   @Schema(
       description = "List of field-level validation errors (populated for VALIDATION_ERROR type)")
-  private List<FieldError> errors;
+  private List<FieldError> fieldErrors;
 
   // Private constructor for builder
   private ApiErrorResponse() {}
@@ -45,8 +45,8 @@ public class ApiErrorResponse {
     return code;
   }
 
-  public List<FieldError> getErrors() {
-    return errors;
+  public List<FieldError> getFieldErrors() {
+    return fieldErrors;
   }
 
   // Builder
@@ -72,58 +72,13 @@ public class ApiErrorResponse {
       return this;
     }
 
-    public Builder errors(List<FieldError> errors) {
-      response.errors = errors;
+    public Builder fieldErrors(List<FieldError> fieldErrors) {
+      response.fieldErrors = fieldErrors;
       return this;
     }
 
     public ApiErrorResponse build() {
       return response;
-    }
-  }
-
-  @Schema(description = "Field-level validation error details")
-  public static class FieldError {
-    @Schema(
-        description = "Field that triggered the error",
-        requiredMode = Schema.RequiredMode.REQUIRED,
-        example = "email")
-    private String field;
-
-    @Schema(
-        description = "Error message",
-        requiredMode = Schema.RequiredMode.REQUIRED,
-        example = "must be a valid email address")
-    private String message;
-
-    @Schema(
-        description = "Value that caused the error",
-        requiredMode = Schema.RequiredMode.REQUIRED,
-        example = "invalid@email")
-    private Object rejectedValue;
-
-    public FieldError() {}
-
-    public FieldError(String field, String message, Object rejectedValue) {
-      this.field = field;
-      this.message = message;
-      this.rejectedValue = rejectedValue;
-    }
-
-    public String getField() {
-      return field;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-
-    public Object getRejectedValue() {
-      return rejectedValue;
-    }
-
-    public static FieldError of(String field, String message, Object rejectedValue) {
-      return new FieldError(field, message, rejectedValue);
     }
   }
 }
