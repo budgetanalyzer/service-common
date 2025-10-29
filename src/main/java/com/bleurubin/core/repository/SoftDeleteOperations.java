@@ -8,12 +8,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import com.bleurubin.core.domain.SoftDeletable;
+import com.bleurubin.core.domain.SoftDeletableEntity;
 
-public interface SoftDeleteOperations<T extends SoftDeletable> extends JpaSpecificationExecutor<T> {
+public interface SoftDeleteOperations<T extends SoftDeletableEntity>
+    extends JpaSpecificationExecutor<T> {
 
   default Specification<T> notDeleted() {
-    return (root, query, cb) -> cb.isFalse(root.get("softDelete").get("deleted"));
+    return (root, query, cb) -> cb.isFalse(root.get("deleted"));
   }
 
   default List<T> findAllActive() {
