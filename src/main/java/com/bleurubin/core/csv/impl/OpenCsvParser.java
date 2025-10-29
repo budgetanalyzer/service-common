@@ -1,6 +1,7 @@
 package com.bleurubin.core.csv.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,15 +27,21 @@ public class OpenCsvParser implements CsvParser {
 
   @Override
   public CsvData parseCsvFile(MultipartFile file, String format) throws IOException {
-    try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
+    return parseCsvInputStream(file.getInputStream(), file.getOriginalFilename(), format);
+  }
+
+  @Override
+  public CsvData parseCsvInputStream(InputStream inputStream, String fileName, String format)
+      throws IOException {
+    try (CSVReader csvReader = new CSVReader(new InputStreamReader(inputStream))) {
       var allRows = csvReader.readAll();
 
       if (allRows.isEmpty()) {
-        log.info("Ignoring empty csv file: {}", file.getOriginalFilename());
-        return new CsvData(file.getOriginalFilename(), format, null);
+        log.info("Ignoring empty csv file: {}", fileName);
+        return new CsvData(fileName, format, null);
       }
 
-      return buildCsvData(file.getOriginalFilename(), format, allRows);
+      return buildCsvData(fileName, format, allRows);
     }
   }
 
