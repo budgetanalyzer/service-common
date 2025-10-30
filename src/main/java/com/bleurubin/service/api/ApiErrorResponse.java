@@ -22,7 +22,7 @@ public class ApiErrorResponse {
   @Schema(
       description =
           "Machine-readable error code for specific application errors (required for APPLICATION_ERROR type)",
-      example = "CSV_FORMAT_NOT_SUPPORTED")
+      example = "CSV_PARSING_ERROR")
   private String code;
 
   @Schema(
