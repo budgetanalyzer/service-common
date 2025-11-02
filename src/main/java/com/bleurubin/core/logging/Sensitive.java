@@ -9,6 +9,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Sensitive {
+
   /** Character to use for masking (default: *) */
   char maskChar() default '*';
 

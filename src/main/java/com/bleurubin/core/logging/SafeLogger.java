@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /** Utility for safely logging objects with sensitive data masked */
 public class SafeLogger {
+
   private static final Logger log = LoggerFactory.getLogger(SafeLogger.class);
 
   private static final ObjectMapper SAFE_MAPPER = createSafeMapper();
