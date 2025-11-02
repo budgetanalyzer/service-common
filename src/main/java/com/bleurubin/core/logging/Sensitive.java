@@ -12,9 +12,6 @@ public @interface Sensitive {
   /** Character to use for masking (default: *) */
   char maskChar() default '*';
 
-  /**
-   * Number of characters to show (default: 4 - shows last 4 chars) Set to 0 to completely mask the
-   * value
-   */
+  /** Number of characters to show (default: 0). Set to 0 to completely mask the value. */
   int showLast() default 0;
 }
