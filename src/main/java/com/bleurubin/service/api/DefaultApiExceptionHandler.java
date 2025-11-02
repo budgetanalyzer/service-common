@@ -14,6 +14,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import com.bleurubin.service.exception.BusinessException;
+import com.bleurubin.service.exception.ClientException;
 import com.bleurubin.service.exception.InvalidRequestException;
 import com.bleurubin.service.exception.ResourceNotFoundException;
 import com.bleurubin.service.exception.ServiceUnavailableException;
@@ -46,6 +47,12 @@ public class DefaultApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
   public ApiErrorResponse handle(BusinessException exception, WebRequest request) {
     return handleApiException(ApiErrorType.APPLICATION_ERROR, exception.getCode(), exception);
+  }
+
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
+  public ApiErrorResponse handle(ClientException exception, WebRequest request) {
+    return handleApiException(ApiErrorType.SERVICE_UNAVAILABLE, exception);
   }
 
   @ExceptionHandler
