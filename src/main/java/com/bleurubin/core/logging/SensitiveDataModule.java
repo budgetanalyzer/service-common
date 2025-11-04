@@ -81,8 +81,8 @@ public class SensitiveDataModule extends SimpleModule {
         return value;
       }
 
-      if (showLast == 0) {
-        // Completely mask
+      if (showLast <= 0) {
+        // Completely mask (including negative values)
         return String.valueOf(maskChar).repeat(8);
       }
 

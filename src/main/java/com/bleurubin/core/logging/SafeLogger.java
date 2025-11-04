@@ -44,7 +44,7 @@ public class SafeLogger {
    * Masks a sensitive string value.
    *
    * @param value The value to mask
-   * @param showLast Number of characters to show at the end (0 = completely mask)
+   * @param showLast Number of characters to show at the end (0 or negative = completely mask)
    * @return Masked value
    */
   public static String mask(String value, int showLast) {
@@ -52,7 +52,7 @@ public class SafeLogger {
       return value;
     }
 
-    if (showLast == 0) {
+    if (showLast <= 0) {
       return "********";
     }
 
