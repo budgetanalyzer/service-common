@@ -11,19 +11,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * <p>Usage in application.yml:
  *
  * <pre>
- * service:
- *   http-logging:
- *     enabled: true
- *     log-level: DEBUG
- *     include-request-body: true
- *     include-response-body: true
- *     max-body-size: 10000
- *     exclude-patterns:
- *       - /actuator/**
- *       - /swagger-ui/**
+ * bleurubin:
+ *   service:
+ *     http-logging:
+ *       enabled: true
+ *       log-level: DEBUG
+ *       include-request-body: true
+ *       include-response-body: true
+ *       max-body-size: 10000
+ *       exclude-patterns:
+ *         - /actuator/**
+ *         - /swagger-ui/**
  * </pre>
  */
-@ConfigurationProperties(prefix = "service.http-logging")
+@ConfigurationProperties(prefix = "bleurubin.service.http-logging")
 public class HttpLoggingProperties {
 
   /** Enable/disable HTTP logging filter */

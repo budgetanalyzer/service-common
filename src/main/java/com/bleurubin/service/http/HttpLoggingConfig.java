@@ -22,9 +22,10 @@ import org.springframework.context.annotation.Bean;
  * <p>Enable HTTP logging in application.yml:
  *
  * <pre>
- * service:
- *   http-logging:
- *     enabled: true
+ * bleurubin:
+ *   service:
+ *     http-logging:
+ *       enabled: true
  * </pre>
  */
 @AutoConfiguration
@@ -51,14 +52,17 @@ public class HttpLoggingConfig {
   /**
    * Registers the HTTP logging filter.
    *
-   * <p>This filter is conditionally enabled based on the {@code service.http-logging.enabled}
-   * property.
+   * <p>This filter is conditionally enabled based on the {@code
+   * bleurubin.service.http-logging.enabled} property.
    *
    * @param properties HTTP logging configuration properties
    * @return HttpLoggingFilter bean
    */
   @Bean
-  @ConditionalOnProperty(prefix = "service.http-logging", name = "enabled", havingValue = "true")
+  @ConditionalOnProperty(
+      prefix = "bleurubin.service.http-logging",
+      name = "enabled",
+      havingValue = "true")
   public HttpLoggingFilter httpLoggingFilter(HttpLoggingProperties properties) {
     log.info(
         "Registering HttpLoggingFilter with log level: {}, max body size: {} bytes",

@@ -416,30 +416,33 @@ Filters are automatically discovered via Spring Boot component scanning. No manu
 
 **Configuration Example (application.yml):**
 ```yaml
-service:
-  http-logging:
-    enabled: true                    # Enable HTTP logging (default: false)
-    log-level: DEBUG                 # Log level: TRACE, DEBUG, INFO, WARN, ERROR
-    include-request-body: true       # Log request body
-    include-response-body: true      # Log response body
-    include-request-headers: true    # Log request headers
-    include-response-headers: true   # Log response headers
-    include-query-params: true       # Log query parameters
-    include-client-ip: true          # Log client IP address
-    max-body-size: 10000             # Max body size in bytes (10KB default)
-    log-errors-only: false           # Log only 4xx/5xx responses
-    exclude-patterns:                # Skip logging for these paths
-      - /actuator/**
-      - /swagger-ui/**
-      - /v3/api-docs/**
-    include-patterns:                # Explicitly include (overrides exclude)
-      - /api/**
-    sensitive-headers:               # Headers to mask (case-insensitive)
-      - Authorization
-      - Cookie
-      - Set-Cookie
-      - X-API-Key
-      - X-Auth-Token
+bleurubin:
+  service:
+    http-logging:
+      enabled: true                    # Enable HTTP logging (default: false)
+      log-level: DEBUG                 # Log level: TRACE, DEBUG, INFO, WARN, ERROR
+      include-request-body: true       # Log request body
+      include-response-body: true      # Log response body
+      include-request-headers: true    # Log request headers
+      include-response-headers: true   # Log response headers
+      include-query-params: true       # Log query parameters
+      include-client-ip: true          # Log client IP address
+      max-body-size: 10000             # Max body size in bytes (10KB default)
+      log-errors-only: false           # Log only 4xx/5xx responses
+      exclude-patterns:                # Skip logging for these paths
+        - /actuator/**
+        - /swagger-ui/**
+        - /v3/api-docs/**
+      include-patterns:                # Explicitly include (overrides exclude)
+        - /api/**
+      sensitive-headers:               # Headers to mask (case-insensitive, defaults shown)
+        - Authorization
+        - Cookie
+        - Set-Cookie
+        - X-API-Key
+        - X-Auth-Token
+        - Proxy-Authorization
+        - WWW-Authenticate
 ```
 
 **Logged Information:**
