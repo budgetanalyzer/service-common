@@ -259,6 +259,46 @@ transactionRepository.findByIdActive(id)
 **Imports:**
   **No wildcard imports, always expand explicit imports**
 
+**Javadoc Comments:**
+  **CRITICAL**: All Javadoc comments must follow these formatting rules to pass Checkstyle:
+
+  - **First sentence MUST end with a period (`.`)** - This is enforced by the `SummaryJavadoc` Checkstyle rule
+  - The first sentence should be a concise summary (appears in method/class listings)
+  - Use proper punctuation throughout
+
+  **Examples:**
+
+  ```java
+  // ✅ CORRECT - First sentence ends with period
+  /** Converts object to JSON string with sensitive fields masked. */
+  public static String toJson(Object object) { }
+
+  /** Header name for correlation ID. */
+  public static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+
+  /**
+   * Masks a sensitive string value.
+   *
+   * @param value The value to mask
+   * @param showLast Number of characters to show at the end
+   * @return Masked value
+   */
+  public static String mask(String value, int showLast) { }
+
+  // ❌ INCORRECT - Missing period at end of first sentence
+  /** Converts object to JSON string with sensitive fields masked */
+  public static String toJson(Object object) { }
+
+  /** Header name for correlation ID */
+  public static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+  ```
+
+  **Key Points:**
+  - Single-line Javadoc: `/** Summary sentence here. */`
+  - Multi-line Javadoc: First line after `/**` must end with period
+  - Field documentation: Even short descriptions need periods
+  - Always end the summary sentence with a period, even if it's obvious
+
 **Build Commands:**
 
 **IMPORTANT**: Always use these two commands in sequence. Never use other gradle commands like `check`, `bootJar`, `checkstyleMain`, etc.
