@@ -80,7 +80,7 @@ public class OpenCsvParser implements CsvParser {
 
       if (allRows.isEmpty()) {
         log.info("Ignoring empty csv file: {}", fileName);
-        return new CsvData(fileName, format, null);
+        return new CsvData(fileName, format, null, null);
       }
 
       return buildCsvData(fileName, format, allRows);
@@ -105,12 +105,13 @@ public class OpenCsvParser implements CsvParser {
 
     for (int i = 0; i < rows.size(); i++) {
       var dataMap = buildDataMap(headers, rows.get(i));
-      var csvRow = new CsvRow(i + 1, dataMap);
+      var lineNumber = i + 2; // the first row is the second line of the file by definition.
+      var csvRow = new CsvRow(lineNumber, dataMap);
 
       csvRows.add(csvRow);
     }
 
-    return new CsvData(fileName, format, csvRows);
+    return new CsvData(fileName, format, headers, csvRows);
   }
 
   /**

@@ -45,16 +45,6 @@ import org.springframework.web.multipart.MultipartFile;
 public interface CsvParser {
 
   /**
-   * Parses a CSV file uploaded via multipart form.
-   *
-   * @param file the uploaded CSV file
-   * @param format a label describing the CSV format or data type (e.g., "transaction", "user")
-   * @return parsed CSV data containing headers and rows
-   * @throws IOException if an I/O error occurs reading the file
-   */
-  CsvData parseCsvFile(MultipartFile file, String format) throws IOException;
-
-  /**
    * Parses a CSV file from an input stream.
    *
    * <p>This method is useful for parsing CSV data from sources other than file uploads, such as
@@ -68,4 +58,16 @@ public interface CsvParser {
    */
   CsvData parseCsvInputStream(InputStream inputStream, String fileName, String format)
       throws IOException;
+
+  /**
+   * Parses a CSV file uploaded via multipart form.
+   *
+   * @param file the uploaded CSV file
+   * @param format a label describing the CSV format or data type (e.g., "transaction", "user")
+   * @return parsed CSV data containing headers and rows
+   * @throws IOException if an I/O error occurs reading the file
+   */
+  default CsvData parseCsvFile(MultipartFile file, String format) throws IOException {
+    return parseCsvInputStream(file.getInputStream(), file.getOriginalFilename(), format);
+  }
 }
