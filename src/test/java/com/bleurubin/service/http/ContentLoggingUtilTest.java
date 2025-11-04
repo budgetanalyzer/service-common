@@ -91,7 +91,7 @@ class ContentLoggingUtilTest {
   }
 
   @Test
-  void shouldExtractClientIpFromXForwardedForHeader() {
+  void shouldExtractClientIpFromXforwardedForHeader() {
     // Arrange
     when(request.getMethod()).thenReturn("GET");
     when(request.getRequestURI()).thenReturn("/api/test");

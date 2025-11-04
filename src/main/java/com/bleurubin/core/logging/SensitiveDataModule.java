@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 
-/** Jackson module that masks fields annotated with @Sensitive */
+/** Jackson module that masks fields annotated with @Sensitive. */
 public class SensitiveDataModule extends SimpleModule {
 
   public SensitiveDataModule() {

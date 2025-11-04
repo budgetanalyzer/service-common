@@ -74,7 +74,7 @@ class CorrelationIdFilterTest {
   }
 
   @Test
-  void shouldStoreCorrelationIdInMDC() throws Exception {
+  void shouldStoreCorrelationIdInMdc() throws Exception {
     // Arrange
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
 
@@ -94,7 +94,7 @@ class CorrelationIdFilterTest {
   }
 
   @Test
-  void shouldClearMDCAfterFilterExecution() throws Exception {
+  void shouldClearMdcAfterFilterExecution() throws Exception {
     // Arrange
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
 
@@ -106,7 +106,7 @@ class CorrelationIdFilterTest {
   }
 
   @Test
-  void shouldClearMDCEvenWhenExceptionIsThrown() throws Exception {
+  void shouldClearMdcEvenWhenExceptionIsThrown() throws Exception {
     // Arrange
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
     doThrow(new RuntimeException("Simulated error")).when(filterChain).doFilter(request, response);

@@ -114,6 +114,10 @@ public abstract class BaseOpenApiConfig {
                         .example(exampleResponse)));
   }
 
+  private ApiResponse buildExampleApiErrorResponse(HttpStatus httpStatus) {
+    return buildExampleApiErrorResponse(httpStatus, httpStatus.getReasonPhrase(), null);
+  }
+
   protected boolean hasPathParameters(Operation operation) {
     return operation.getParameters() != null
         && operation.getParameters().stream().anyMatch(param -> "path".equals(param.getIn()));
@@ -141,10 +145,6 @@ public abstract class BaseOpenApiConfig {
     operation
         .getResponses()
         .addApiResponse("503", buildExampleApiErrorResponse(HttpStatus.SERVICE_UNAVAILABLE));
-  }
-
-  private ApiResponse buildExampleApiErrorResponse(HttpStatus httpStatus) {
-    return buildExampleApiErrorResponse(httpStatus, httpStatus.getReasonPhrase(), null);
   }
 
   private ApiErrorType getTypeFromHttpStatus(HttpStatus httpStatus) {
