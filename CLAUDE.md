@@ -67,6 +67,13 @@ Spring Boot service-specific components:
 - **service/config/** - Configuration classes
   - `BaseOpenApiConfig` - Base OpenAPI/Swagger configuration
 
+- **service/http/** - HTTP request/response logging infrastructure
+  - `CorrelationIdFilter` - Generates/extracts correlation IDs for distributed tracing
+  - `HttpLoggingFilter` - Logs HTTP requests and responses with sensitive data masking
+  - `HttpLoggingProperties` - Configuration properties for HTTP logging
+  - `HttpLoggingConfig` - Auto-configuration for HTTP logging filters
+  - `ContentLoggingUtil` - Utility for extracting and formatting HTTP content
+
 **Package Dependency Rules:**
 ```
 service → core (service layer can use core utilities)
@@ -370,6 +377,132 @@ public class UserService {
         logger.info("Updating user: {}", user); // password field redacted
 
         userRepository.save(user);
+    }
+}
+```
+
+### HTTP Request/Response Logging
+
+**Production-ready HTTP logging infrastructure** for debugging, audit, and distributed tracing.
+
+**Key Features:**
+- **Correlation ID tracking** - Unique ID for each request, propagated across services
+- **Request/response logging** - Method, URI, headers, query params, body
+- **Sensitive data masking** - Automatic redaction of Authorization, Cookie, API keys
+- **Configurable filtering** - Include/exclude patterns, body size limits, error-only logging
+- **Performance optimized** - Content caching, conditional logging, minimal overhead
+- **MDC integration** - Correlation ID available in all log entries
+
+**Components:**
+1. **CorrelationIdFilter** - Always enabled, generates/extracts correlation ID
+2. **HttpLoggingFilter** - Conditionally enabled, logs request/response with sanitization
+3. **HttpLoggingProperties** - Type-safe configuration via application.yml
+4. **ContentLoggingUtil** - Content extraction and formatting utilities
+
+**Auto-Configuration:**
+Filters are automatically discovered via Spring Boot component scanning. No manual registration required.
+
+**Configuration Example (application.yml):**
+```yaml
+service:
+  http-logging:
+    enabled: true                    # Enable HTTP logging (default: false)
+    log-level: DEBUG                 # Log level: TRACE, DEBUG, INFO, WARN, ERROR
+    include-request-body: true       # Log request body
+    include-response-body: true      # Log response body
+    include-request-headers: true    # Log request headers
+    include-response-headers: true   # Log response headers
+    include-query-params: true       # Log query parameters
+    include-client-ip: true          # Log client IP address
+    max-body-size: 10000             # Max body size in bytes (10KB default)
+    log-errors-only: false           # Log only 4xx/5xx responses
+    exclude-patterns:                # Skip logging for these paths
+      - /actuator/**
+      - /swagger-ui/**
+      - /v3/api-docs/**
+    include-patterns:                # Explicitly include (overrides exclude)
+      - /api/**
+    sensitive-headers:               # Headers to mask (case-insensitive)
+      - Authorization
+      - Cookie
+      - Set-Cookie
+      - X-API-Key
+      - X-Auth-Token
+```
+
+**Logged Information:**
+
+*Request Logging:*
+- HTTP method and URI
+- Query parameters (if enabled)
+- Request headers (sensitive headers masked)
+- Request body (size-limited, JSON sanitized via SafeLogger)
+- Client IP (checks X-Forwarded-For and proxy headers)
+- Correlation ID (from MDC)
+
+*Response Logging:*
+- HTTP status code
+- Response headers (sensitive headers masked)
+- Response body (size-limited, JSON sanitized)
+- Processing duration in milliseconds
+- Correlation ID (from MDC)
+
+**Log Level Strategy:**
+- Requests: Logged at configured level (default: DEBUG)
+- 2xx/3xx responses: Logged at configured level
+- 4xx responses: Logged at WARN level
+- 5xx responses: Logged at ERROR level
+
+**Correlation ID Format:**
+- Format: `req_<16-hex-chars>` (e.g., `req_a1b2c3d4e5f6g7h8`)
+- Extracted from `X-Correlation-ID` request header if present
+- Auto-generated if not provided
+- Added to `X-Correlation-ID` response header
+- Available in MDC as `correlationId` key
+
+**Integration with SafeLogger:**
+- Request/response bodies are sanitized using SafeLogger's JSON serialization
+- Fields annotated with `@Sensitive` are automatically masked
+- Custom masking patterns supported
+
+**Performance Considerations:**
+- Uses Spring's `ContentCachingRequestWrapper` and `ContentCachingResponseWrapper`
+- Body size limits prevent logging huge payloads
+- Path-based filtering skips unnecessary logging
+- Minimal overhead when disabled or excluded
+
+**Usage Example - Logback Configuration (logback.xml):**
+```xml
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{ISO8601} [%thread] %-5level %logger{36} [correlationId=%X{correlationId}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.bleurubin.service.http" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
+```
+
+**Distributed Tracing:**
+The correlation ID can be propagated to downstream services:
+```java
+@Service
+public class CurrencyClient {
+    public ExchangeRate fetchRate(String currencyPair) {
+        String correlationId = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
+
+        // Add to outgoing request
+        return webClient.get()
+            .uri("/exchange-rates/{pair}", currencyPair)
+            .header(CorrelationIdFilter.CORRELATION_ID_HEADER, correlationId)
+            .retrieve()
+            .bodyToMono(ExchangeRate.class)
+            .block();
     }
 }
 ```

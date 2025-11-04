@@ -34,6 +34,10 @@ dependencies {
 
     implementation("com.opencsv:opencsv:3.7")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
 }
 
 spotless {
