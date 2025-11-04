@@ -77,18 +77,38 @@ public class ApiErrorResponse {
   // Private constructor for builder
   private ApiErrorResponse() {}
 
+  /**
+   * Gets the error type.
+   *
+   * @return the error type
+   */
   public ApiErrorType getType() {
     return type;
   }
 
+  /**
+   * Gets the human-readable error message.
+   *
+   * @return the error message
+   */
   public String getMessage() {
     return message;
   }
 
+  /**
+   * Gets the machine-readable error code.
+   *
+   * @return the error code, or null if not applicable
+   */
   public String getCode() {
     return code;
   }
 
+  /**
+   * Gets the list of field-level validation errors.
+   *
+   * @return the field errors, or null if not a validation error
+   */
   public List<FieldError> getFieldErrors() {
     return fieldErrors;
   }

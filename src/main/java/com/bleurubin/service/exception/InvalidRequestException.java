@@ -1,7 +1,7 @@
 package com.bleurubin.service.exception;
 
 /**
- * Exception indicating that the client request is malformed or invalid.
+ * Exception indicating that the request is malformed or invalid.
  *
  * <p>This exception represents HTTP 400 Bad Request errors and should be thrown when the request
  * syntax is incorrect, required parameters are missing, or the request structure is invalid. Use

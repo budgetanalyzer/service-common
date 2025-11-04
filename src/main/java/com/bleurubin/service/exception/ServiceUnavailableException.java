@@ -5,7 +5,7 @@ package com.bleurubin.service.exception;
  *
  * <p>This exception represents HTTP 503 Service Unavailable errors and should be thrown when a
  * downstream service, external API, or database is temporarily unreachable or not responding. This
- * signals to clients that the request may succeed if retried later.
+ * signals to callers that the request may succeed if retried later.
  *
  * <p>Examples include:
  *

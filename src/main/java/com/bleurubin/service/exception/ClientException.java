@@ -3,10 +3,8 @@ package com.bleurubin.service.exception;
 /**
  * Exception indicating a client error in the request.
  *
- * <p>This exception represents client-side errors (HTTP 400 Bad Request) where the request is
- * malformed, missing required parameters, or contains invalid data. This is the base class for more
- * specific client error exceptions like {@link InvalidRequestException} and {@link
- * ResourceNotFoundException}.
+ * <p>This exception represents client errors when making requests to external services or APIs.
+ * Typically wraps an exception from an HTTP client library.
  */
 public class ClientException extends ServiceException {
 

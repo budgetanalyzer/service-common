@@ -48,6 +48,11 @@ public class BusinessException extends ServiceException {
     this.code = code;
   }
 
+  /**
+   * Gets the machine-readable error code for this business exception.
+   *
+   * @return the error code
+   */
   public String getCode() {
     return code;
   }

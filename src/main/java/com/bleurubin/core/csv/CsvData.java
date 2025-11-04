@@ -30,7 +30,7 @@ import java.util.Objects;
  * </pre>
  *
  * @param fileName the name of the CSV file
- * @param format a label describing the CSV format or data type (e.g., "transaction")
+ * @param format a label describing the CSV format/data type (e.g., "capital-one")
  * @param rows the list of parsed data rows (empty list if file is empty)
  */
 public record CsvData(String fileName, String format, List<CsvRow> rows) {

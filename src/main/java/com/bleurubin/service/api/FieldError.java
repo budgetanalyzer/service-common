@@ -74,14 +74,29 @@ public class FieldError {
     this.rejectedValue = rejectedValue;
   }
 
+  /**
+   * Gets the field name that failed validation.
+   *
+   * @return the field name
+   */
   public String getField() {
     return field;
   }
 
+  /**
+   * Gets the validation error message.
+   *
+   * @return the error message
+   */
   public String getMessage() {
     return message;
   }
 
+  /**
+   * Gets the value that was rejected during validation.
+   *
+   * @return the rejected value
+   */
   public Object getRejectedValue() {
     return rejectedValue;
   }

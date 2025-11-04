@@ -66,10 +66,20 @@ public abstract class AuditableEntity {
     updatedAt = Instant.now();
   }
 
+  /**
+   * Gets the timestamp when this entity was created.
+   *
+   * @return the creation timestamp
+   */
   public Instant getCreatedAt() {
     return createdAt;
   }
 
+  /**
+   * Gets the timestamp when this entity was last updated.
+   *
+   * @return the last update timestamp
+   */
   public Instant getUpdatedAt() {
     return updatedAt;
   }

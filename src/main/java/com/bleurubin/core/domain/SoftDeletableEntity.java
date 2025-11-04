@@ -63,10 +63,20 @@ public abstract class SoftDeletableEntity extends AuditableEntity {
   @Column(name = "deleted_at")
   private Instant deletedAt;
 
+  /**
+   * Checks whether this entity has been soft-deleted.
+   *
+   * @return true if this entity is deleted, false otherwise
+   */
   public boolean isDeleted() {
     return deleted;
   }
 
+  /**
+   * Gets the timestamp when this entity was soft-deleted.
+   *
+   * @return the deletion timestamp, or null if not deleted
+   */
   public Instant getDeletedAt() {
     return deletedAt;
   }

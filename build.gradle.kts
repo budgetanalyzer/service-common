@@ -67,7 +67,16 @@ tasks.withType<Test> {
 
 tasks.withType<Javadoc> {
     options {
-        (this as StandardJavadocDocletOptions).addStringOption("Xdoclint:none", "-quiet")
+        (this as StandardJavadocDocletOptions).apply {
+            addStringOption("Xdoclint:none", "-quiet")
+            // External API links for generating clickable Javadoc references
+            // Update these URLs when upgrading Spring Boot or Jakarta EE versions
+            links(
+                "https://docs.oracle.com/en/java/javase/24/docs/api/",
+                "https://docs.spring.io/spring-framework/docs/6.2.2/javadoc-api/",
+                "https://jakarta.ee/specifications/platform/10/apidocs/"
+            )
+        }
     }
 }
 
