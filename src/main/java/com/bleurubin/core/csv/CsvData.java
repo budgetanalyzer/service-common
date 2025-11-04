@@ -11,6 +11,7 @@ import java.util.Objects;
  * <ul>
  *   <li>{@code fileName} - The original filename (for logging and error messages)
  *   <li>{@code format} - A label describing the CSV format/data type
+ *   <li>{@code headers} - The parsed header values
  *   <li>{@code rows} - The parsed data rows with header-based column access
  * </ul>
  *
@@ -31,9 +32,10 @@ import java.util.Objects;
  *
  * @param fileName the name of the CSV file
  * @param format a label describing the CSV format/data type (e.g., "capital-one")
+ * @param headers the list of parsed headers (empty list if file is empty)
  * @param rows the list of parsed data rows (empty list if file is empty)
  */
-public record CsvData(String fileName, String format, List<CsvRow> rows) {
+public record CsvData(String fileName, String format, List<String> headers, List<CsvRow> rows) {
   /**
    * Canonical constructor with validation.
    *
@@ -44,6 +46,8 @@ public record CsvData(String fileName, String format, List<CsvRow> rows) {
   public CsvData {
     Objects.requireNonNull(fileName, "fileName cannot be null");
     Objects.requireNonNull(format, "format cannot be null");
+
+    headers = Objects.requireNonNullElse(headers, List.of());
     rows = Objects.requireNonNullElse(rows, List.of());
   }
 }

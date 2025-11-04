@@ -8,8 +8,7 @@ import java.util.Map;
  * <p>Each row contains:
  *
  * <ul>
- *   <li>{@code lineNumber} - The row number in the original CSV file (starting from 1, excluding
- *       header row)
+ *   <li>{@code lineNumber} - The line number in the original CSV file
  *   <li>{@code values} - A map of column headers to cell values for this row
  * </ul>
  *
@@ -21,13 +20,13 @@ import java.util.Map;
  * <pre>
  * CsvRow row = csvData.rows().get(0);
  *
- * int lineNum = row.lineNumber();  // 1 (first data row)
+ * int lineNum = row.lineNumber();  // 2 (first data row)
  * String date = row.values().get("Transaction Date");
  * String amount = row.values().get("Amount");
  * String description = row.values().get("Description");
  * </pre>
  *
- * @param lineNumber the row number in the original CSV file (1-based, excludes header)
+ * @param lineNumber the row number in the original CSV file
  * @param values a map of column headers to cell values for this row
  */
 public record CsvRow(int lineNumber, Map<String, String> values) {}
