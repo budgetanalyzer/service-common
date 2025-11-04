@@ -249,13 +249,15 @@ transactionRepository.findByIdActive(id)
 - Enforces naming conventions
 
 **Variable Declarations:**
-**Use `var` whenever possible** for local variables to reduce verbosity and improve readability.
-  - Prefer `var` whenever possible
-  - Use explicit types only when the only other option is to cast a return type, e.g. 
-  ```java
-  Map<String, Object> details = Map.of("method", "POST", "uri", "/api/users", "status", 201);
-    var body = "{\"name\":\"John Doe\"}";
-  ```
+   **Use `var` whenever possible** for local variables to reduce verbosity and improve readability.
+      - Prefer `var` whenever possible
+      - Use explicit types only when the only other option is to cast a return type, e.g. 
+      ```java
+         Map<String, Object> details = Map.of("method", "POST", "uri", "/api/users", "status", 201);
+         var body = "{\"name\":\"John Doe\"}";
+      ```
+**Imports:**
+  **No wildcard imports, always expand explicit imports**
 
 **Build Commands:**
 
