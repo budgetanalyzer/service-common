@@ -34,6 +34,12 @@ dependencies {
 
     implementation("com.opencsv:opencsv:3.7")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // the default jupiter packaged in the 3.5.6 starter is 5.10.0; overriding to 5.12.2
+    // revisit when we upgrade spring boot version
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
 }
 
 spotless {
