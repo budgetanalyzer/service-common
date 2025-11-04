@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Bean;
  * </pre>
  */
 @AutoConfiguration
-@ConditionalOnWebApplication
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableConfigurationProperties(HttpLoggingProperties.class)
 public class HttpLoggingConfig {
 

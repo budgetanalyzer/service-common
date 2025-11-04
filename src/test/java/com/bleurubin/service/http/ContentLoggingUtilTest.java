@@ -51,7 +51,7 @@ class ContentLoggingUtilTest {
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
 
     // Act
-    Map<String, Object> details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
 
     // Assert
     assertEquals("GET", details.get("method"));
@@ -75,7 +75,7 @@ class ContentLoggingUtilTest {
     when(request.getHeader("X-API-Key")).thenReturn("my-secret-key");
 
     // Act
-    Map<String, Object> details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
 
     // Assert
     @SuppressWarnings("unchecked")

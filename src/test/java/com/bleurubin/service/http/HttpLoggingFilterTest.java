@@ -44,6 +44,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
+    request.setServletPath("/api/users");
 
     var response = new MockHttpServletResponse();
 
@@ -60,6 +61,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("POST");
     request.setRequestURI("/api/users");
+    request.setServletPath("/api/users");
     request.setContent("{\"name\":\"John\"}".getBytes());
 
     var response = new MockHttpServletResponse();
@@ -80,6 +82,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/actuator/health");
+    request.setServletPath("/actuator/health");
 
     var response = new MockHttpServletResponse();
 
@@ -99,10 +102,12 @@ class HttpLoggingFilterTest {
     var includedRequest = new MockHttpServletRequest();
     includedRequest.setMethod("GET");
     includedRequest.setRequestURI("/api/users");
+    includedRequest.setServletPath("/api/users");
 
     var excludedRequest = new MockHttpServletRequest();
     excludedRequest.setMethod("GET");
     excludedRequest.setRequestURI("/public/health");
+    excludedRequest.setServletPath("/public/health");
 
     var response = new MockHttpServletResponse();
 
@@ -127,6 +132,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
+    request.setServletPath("/api/users");
 
     var response = new MockHttpServletResponse();
     response.setStatus(200); // Success status
@@ -145,6 +151,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("POST");
     request.setRequestURI("/api/users");
+    request.setServletPath("/api/users");
     request.setContent("{\"name\":\"John\"}".getBytes());
 
     var response = new MockHttpServletResponse();
@@ -170,6 +177,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
+    request.setServletPath("/api/users");
 
     var response = new MockHttpServletResponse();
 
@@ -186,6 +194,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
+    request.setServletPath("/api/users");
 
     var response = new MockHttpServletResponse();
 
@@ -202,6 +211,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/users");
+    request.setServletPath("/api/users");
 
     var response = new MockHttpServletResponse();
 
@@ -231,6 +241,7 @@ class HttpLoggingFilterTest {
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
     request.setRequestURI("/api/internal/debug");
+    request.setServletPath("/api/internal/debug");
 
     var response = new MockHttpServletResponse();
 

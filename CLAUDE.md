@@ -80,6 +80,9 @@ service → core (service layer can use core utilities)
 core → (no dependencies on service layer - domain-agnostic)
 ```
 
+**IMPORTANT**: This section should be kept in sync code changes. When we add new 
+packages and files, update this documentation accordingly.
+
 ## Architectural Principles
 
 ### 1. Production-Quality Code
@@ -244,6 +247,15 @@ transactionRepository.findByIdActive(id)
 - Custom rules in `config/checkstyle/checkstyle.xml`
 - Enforces Hibernate import ban
 - Enforces naming conventions
+
+**Variable Declarations:**
+**Use `var` whenever possible** for local variables to reduce verbosity and improve readability.
+  - Prefer `var` whenever possible
+  - Use explicit types only when the only other option is to cast a return type, e.g. 
+  ```java
+  Map<String, Object> details = Map.of("method", "POST", "uri", "/api/users", "status", 201);
+    var body = "{\"name\":\"John Doe\"}";
+  ```
 
 **Build Commands:**
 
@@ -775,6 +787,7 @@ When working on this project:
 2. **Distinguish between informational statements and action requests** - If the user says "I did X", they're informing you, not asking you to do it
 3. **Questions deserve answers, not implementations** - Respond to questions with information, not code changes
 4. **Wait for explicit implementation requests** - Only implement when the user says "implement", "do it", "make this change", or similar action-oriented language
+5. **Limit file access to the current directory and below** - Don't read or write files outside of the current service-common directory
 
 ### Code Quality
 
@@ -805,14 +818,6 @@ When working on this project:
 - Add Javadoc for public APIs
 - Document complex utilities with examples
 - Maintain changelog for version releases
-
-## Related Documentation
-
-- [Budget Analyzer Orchestration](../budget-analyzer/CLAUDE.md)
-- [Budget Analyzer API Documentation](../budget-analyzer-api/CLAUDE.md)
-- [Currency Service Documentation](../currency-service/CLAUDE.md)
-- [Persistence Layer Architecture](../budget-analyzer/docs/persistence-layer-architecture.md)
-- [Service Layer Architecture](../budget-analyzer/docs/service-layer-architecture.md)
 
 ## Future Enhancements
 

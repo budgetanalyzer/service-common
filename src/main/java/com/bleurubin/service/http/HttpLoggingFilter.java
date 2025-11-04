@@ -200,7 +200,9 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    * @return True if logging should be skipped
    */
   private boolean shouldSkipLogging(HttpServletRequest request) {
-    var path = request.getRequestURI();
+    // Use servlet path to exclude context path from pattern matching
+    // This allows patterns like "/actuator/**" to work regardless of context path
+    var path = request.getServletPath();
 
     // Check explicit include patterns first
     if (!properties.getIncludePatterns().isEmpty()) {

@@ -3,6 +3,8 @@ package com.bleurubin.service.api;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,8 @@ import com.bleurubin.service.exception.ServiceUnavailableException;
  * default handling.  The goal is to present common HTTP status and error messages
  * across all services to make it easier for clients to parse.
  */
+@AutoConfiguration
+@ConditionalOnWebApplication
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class DefaultApiExceptionHandler {
