@@ -25,16 +25,16 @@ public interface SoftDeleteOperations<T extends SoftDeletableEntity>
     return findAll(notDeleted(), pageable);
   }
 
-  default Optional<T> findByIdActive(Long id) {
-    return findOne(notDeleted().and((root, query, cb) -> cb.equal(root.get("id"), id)));
-  }
-
   default List<T> findAllActive(Specification<T> spec) {
     return findAll(notDeleted().and(spec));
   }
 
   default Page<T> findAllActive(Specification<T> spec, Pageable pageable) {
     return findAll(notDeleted().and(spec), pageable);
+  }
+
+  default Optional<T> findByIdActive(Long id) {
+    return findOne(notDeleted().and((root, query, cb) -> cb.equal(root.get("id"), id)));
   }
 
   default Optional<T> findOneActive(Specification<T> spec) {

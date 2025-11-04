@@ -27,37 +27,37 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "bleurubin.service.http-logging")
 public class HttpLoggingProperties {
 
-  /** Enable/disable HTTP logging filter */
+  /** Enable/disable HTTP logging filter. */
   private boolean enabled = false;
 
-  /** Log level for HTTP logging (DEBUG, INFO, WARN, ERROR) */
+  /** Log level for HTTP logging (DEBUG, INFO, WARN, ERROR). */
   private String logLevel = "DEBUG";
 
-  /** Include request body in logs */
+  /** Include request body in logs. */
   private boolean includeRequestBody = true;
 
-  /** Include response body in logs */
+  /** Include response body in logs. */
   private boolean includeResponseBody = true;
 
-  /** Include request headers in logs */
+  /** Include request headers in logs. */
   private boolean includeRequestHeaders = true;
 
-  /** Include response headers in logs */
+  /** Include response headers in logs. */
   private boolean includeResponseHeaders = true;
 
-  /** Include query parameters in logs */
+  /** Include query parameters in logs. */
   private boolean includeQueryParams = true;
 
-  /** Include client IP address in logs */
+  /** Include client IP address in logs. */
   private boolean includeClientIp = true;
 
   /** Maximum request/response body size to log (bytes). Bodies larger than this are truncated. */
   private int maxBodySize = 10000; // 10KB default
 
-  /** URL patterns to exclude from logging (Ant-style patterns) */
+  /** URL patterns to exclude from logging (Ant-style patterns). */
   private List<String> excludePatterns = new ArrayList<>();
 
-  /** URL patterns to explicitly include (overrides excludePatterns) */
+  /** URL patterns to explicitly include (overrides excludePatterns). */
   private List<String> includePatterns = new ArrayList<>();
 
   /**
@@ -74,7 +74,7 @@ public class HttpLoggingProperties {
           "Proxy-Authorization",
           "WWW-Authenticate");
 
-  /** Log only requests that result in errors (4xx, 5xx status codes) */
+  /** Log only requests that result in errors (4xx, 5xx status codes). */
   private boolean logErrorsOnly = false;
 
   // Getters and Setters

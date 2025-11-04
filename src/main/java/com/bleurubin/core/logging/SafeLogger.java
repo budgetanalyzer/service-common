@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-/** Utility for safely logging objects with sensitive data masked */
+/** Utility for safely logging objects with sensitive data masked. */
 public class SafeLogger {
 
   private static final Logger log = LoggerFactory.getLogger(SafeLogger.class);
@@ -25,7 +25,7 @@ public class SafeLogger {
     return mapper;
   }
 
-  /** Converts object to JSON string with sensitive fields masked */
+  /** Converts object to JSON string with sensitive fields masked. */
   public static String toJson(Object object) {
     try {
       return SAFE_MAPPER.writeValueAsString(object);
@@ -36,7 +36,7 @@ public class SafeLogger {
   }
 
   /**
-   * Masks a sensitive string value
+   * Masks a sensitive string value.
    *
    * @param value The value to mask
    * @param showLast Number of characters to show at the end (0 = completely mask)
@@ -60,7 +60,7 @@ public class SafeLogger {
     return masked + visible;
   }
 
-  /** Completely masks a sensitive value */
+  /** Completely masks a sensitive value. */
   public static String mask(String value) {
     return mask(value, 0);
   }

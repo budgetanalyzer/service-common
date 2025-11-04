@@ -25,13 +25,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(Ordered.HIGHEST_PRECEDENCE + 100)
 public class CorrelationIdFilter extends OncePerRequestFilter {
 
-  /** Header name for correlation ID */
+  /** Header name for correlation ID. */
   public static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
 
-  /** MDC key for correlation ID */
+  /** MDC key for correlation ID. */
   public static final String CORRELATION_ID_MDC_KEY = "correlationId";
 
-  /** Prefix for generated correlation IDs */
+  /** Prefix for generated correlation IDs. */
   private static final String CORRELATION_ID_PREFIX = "req_";
 
   @Override
