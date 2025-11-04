@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -28,15 +29,36 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
   /** Header name for correlation ID. */
   public static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
 
-  /** MDC key for correlation ID. */
+  /** Key for storing correlation ID in MDC (Mapped Diagnostic Context). */
   public static final String CORRELATION_ID_MDC_KEY = "correlationId";
 
-  /** Prefix for generated correlation IDs. */
+  /** Prefix for generated correlation IDs (format: req_<16-hex-chars>). */
   private static final String CORRELATION_ID_PREFIX = "req_";
 
+  /**
+   * Processes the request by extracting or generating a correlation ID and storing it in MDC.
+   *
+   * <p>This method performs the following operations:
+   *
+   * <ul>
+   *   <li>Extracts correlation ID from request header or generates a new one
+   *   <li>Stores the correlation ID in MDC for use in log statements
+   *   <li>Adds the correlation ID to the response header
+   *   <li>Processes the request through the filter chain
+   *   <li>Cleans up MDC after request processing
+   * </ul>
+   *
+   * @param request the HTTP request
+   * @param response the HTTP response
+   * @param filterChain the filter chain to continue processing
+   * @throws ServletException if a servlet error occurs
+   * @throws IOException if an I/O error occurs
+   */
   @Override
   protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      @NonNull HttpServletRequest request,
+      @NonNull HttpServletResponse response,
+      @NonNull FilterChain filterChain)
       throws ServletException, IOException {
     var correlationId = extractOrGenerateCorrelationId(request);
 

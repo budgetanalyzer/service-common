@@ -21,11 +21,35 @@ import com.bleurubin.service.exception.InvalidRequestException;
 import com.bleurubin.service.exception.ResourceNotFoundException;
 import com.bleurubin.service.exception.ServiceUnavailableException;
 
-/*
- * This will just be the default handler with lowest precedence.  Any components
- * with @RestControllerAdvice will take higher precedence and can override the
- * default handling.  The goal is to present common HTTP status and error messages
- * across all services to make it easier for clients to parse.
+/**
+ * Global exception handler that converts exceptions to standardized {@link ApiErrorResponse}
+ * objects.
+ *
+ * <p>This handler operates with {@link Ordered#LOWEST_PRECEDENCE}, meaning any service-specific
+ * {@code @RestControllerAdvice} beans will take precedence and can override the default handling.
+ * This design allows microservices to customize error handling while maintaining consistent default
+ * behavior.
+ *
+ * <p>Exception to HTTP status mapping:
+ *
+ * <ul>
+ *   <li>{@link InvalidRequestException} → 400 Bad Request
+ *   <li>{@link ResourceNotFoundException} → 404 Not Found
+ *   <li>{@link BusinessException} → 422 Unprocessable Entity (includes error code)
+ *   <li>{@link ClientException} → 503 Service Unavailable
+ *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
+ *   <li>{@link MethodArgumentTypeMismatchException} → 400 Bad Request
+ *   <li>{@link MissingServletRequestPartException} → 400 Bad Request
+ *   <li>Generic {@link Exception} → 500 Internal Server Error
+ * </ul>
+ *
+ * <p>All exceptions are logged with WARN level, including root cause information when available.
+ *
+ * <p>This handler is auto-configured and will be automatically discovered by Spring Boot component
+ * scanning when the service-common library is included as a dependency.
+ *
+ * @see ApiErrorResponse
+ * @see ApiErrorType
  */
 @AutoConfiguration
 @ConditionalOnWebApplication
@@ -35,36 +59,83 @@ public class DefaultApiExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultApiExceptionHandler.class);
 
+  /**
+   * Handles {@link InvalidRequestException} and returns HTTP 400 Bad Request.
+   *
+   * @param exception the exception thrown when request data is malformed or invalid
+   * @param request the web request context
+   * @return standardized error response with INVALID_REQUEST type
+   */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(InvalidRequestException exception, WebRequest request) {
     return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
   }
 
+  /**
+   * Handles {@link ResourceNotFoundException} and returns HTTP 404 Not Found.
+   *
+   * @param exception the exception thrown when a requested resource does not exist
+   * @param request the web request context
+   * @return standardized error response with NOT_FOUND type
+   */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   public ApiErrorResponse handle(ResourceNotFoundException exception, WebRequest request) {
     return handleApiException(ApiErrorType.NOT_FOUND, exception);
   }
 
+  /**
+   * Handles {@link BusinessException} and returns HTTP 422 Unprocessable Entity.
+   *
+   * <p>This handler includes the application-specific error code in the response.
+   *
+   * @param exception the exception thrown when a business rule is violated
+   * @param request the web request context
+   * @return standardized error response with APPLICATION_ERROR type and error code
+   */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
   public ApiErrorResponse handle(BusinessException exception, WebRequest request) {
     return handleApiException(ApiErrorType.APPLICATION_ERROR, exception.getCode(), exception);
   }
 
+  /**
+   * Handles {@link ClientException} and returns HTTP 503 Service Unavailable.
+   *
+   * @param exception the exception thrown when a downstream client service fails
+   * @param request the web request context
+   * @return standardized error response with SERVICE_UNAVAILABLE type
+   */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
   public ApiErrorResponse handle(ClientException exception, WebRequest request) {
     return handleApiException(ApiErrorType.SERVICE_UNAVAILABLE, exception);
   }
 
+  /**
+   * Handles {@link ServiceUnavailableException} and returns HTTP 503 Service Unavailable.
+   *
+   * @param exception the exception thrown when a service dependency is unavailable
+   * @param request the web request context
+   * @return standardized error response with SERVICE_UNAVAILABLE type
+   */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
   public ApiErrorResponse handle(ServiceUnavailableException exception, WebRequest request) {
     return handleApiException(ApiErrorType.SERVICE_UNAVAILABLE, exception);
   }
 
+  /**
+   * Handles {@link MethodArgumentTypeMismatchException} and returns HTTP 400 Bad Request.
+   *
+   * <p>This exception occurs when a request parameter cannot be converted to the expected type
+   * (e.g., passing "abc" for an integer parameter).
+   *
+   * @param exception the exception thrown when method argument type conversion fails
+   * @param request the web request context
+   * @return standardized error response with INVALID_REQUEST type
+   */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(
@@ -72,12 +143,33 @@ public class DefaultApiExceptionHandler {
     return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
   }
 
+  /**
+   * Handles {@link MissingServletRequestPartException} and returns HTTP 400 Bad Request.
+   *
+   * <p>This exception occurs when a required multipart file or parameter is missing from the
+   * request.
+   *
+   * @param exception the exception thrown when a required multipart request part is missing
+   * @param request the web request context
+   * @return standardized error response with INVALID_REQUEST type
+   */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(MissingServletRequestPartException exception, WebRequest request) {
     return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
   }
 
+  /**
+   * Handles all unhandled {@link Exception} types and returns HTTP 500 Internal Server Error.
+   *
+   * <p>This is the catch-all handler for any exceptions not explicitly handled by other methods. It
+   * ensures all exceptions result in a standardized error response rather than exposing internal
+   * stack traces to clients.
+   *
+   * @param exception the unhandled exception
+   * @param request the web request context
+   * @return standardized error response with INTERNAL_ERROR type
+   */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
   public ApiErrorResponse handle(Exception exception, WebRequest request) {

@@ -10,9 +10,17 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Sensitive {
 
-  /** Character to use for masking (default: *). */
+  /**
+   * Character to use for masking (default: *).
+   *
+   * @return the mask character
+   */
   char maskChar() default '*';
 
-  /** Number of characters to show (default: 0). Set to non-zero to facilitate debugging. */
+  /**
+   * Number of characters to show (default: 0). Set to non-zero to facilitate debugging.
+   *
+   * @return the number of characters to show at the end
+   */
   int showLast() default 0;
 }

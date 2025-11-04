@@ -25,7 +25,12 @@ public class SafeLogger {
     return mapper;
   }
 
-  /** Converts object to JSON string with sensitive fields masked. */
+  /**
+   * Converts object to JSON string with sensitive fields masked.
+   *
+   * @param object the object to serialize to JSON
+   * @return JSON string representation with sensitive fields masked
+   */
   public static String toJson(Object object) {
     try {
       return SAFE_MAPPER.writeValueAsString(object);
@@ -60,7 +65,12 @@ public class SafeLogger {
     return masked + visible;
   }
 
-  /** Completely masks a sensitive value. */
+  /**
+   * Completely masks a sensitive value.
+   *
+   * @param value the value to mask
+   * @return completely masked value
+   */
   public static String mask(String value) {
     return mask(value, 0);
   }

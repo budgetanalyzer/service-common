@@ -13,6 +13,12 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 /** Jackson module that masks fields annotated with @Sensitive. */
 public class SensitiveDataModule extends SimpleModule {
 
+  /**
+   * Constructs a SensitiveDataModule with custom serializer for sensitive fields.
+   *
+   * <p>This module registers a {@link SensitiveDataSerializerModifier} that masks fields annotated
+   * with {@link Sensitive} during JSON serialization.
+   */
   public SensitiveDataModule() {
     super("SensitiveDataModule");
     setSerializerModifier(new SensitiveDataSerializerModifier());

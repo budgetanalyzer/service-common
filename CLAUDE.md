@@ -804,7 +804,7 @@ public class BudgetAnalyzerApplication {
 ```
 
 **Checkstyle errors:**
-Review `config/checkstyle/checkstyle.xml` rules and fix violations.
+Review `config/checkstyle/checkstyle.xml` rules and fix violations including warnings if possible.
 
 **Test failures:**
 ```bash
@@ -842,6 +842,42 @@ When working on this project:
 - **Always run these commands before committing:**
   1. `./gradlew spotlessApply` - Format code
   2. `./gradlew clean build` - Build and test everything
+
+### Checkstyle Warning Handling
+
+**CRITICAL**: When verifying the build with `./gradlew clean build`, always pay attention to Checkstyle warnings.
+
+**Required Actions:**
+1. **Always read build output carefully** - Look for Checkstyle warnings even if the build succeeds
+2. **Attempt to fix all Checkstyle warnings** - Treat warnings as errors that need immediate resolution
+3. **Common Checkstyle issues to watch for:**
+   - Javadoc missing periods at end of first sentence
+   - Missing Javadoc comments on public methods/classes
+   - Import statement violations (wildcard imports, Hibernate imports)
+   - Line length violations
+   - Naming convention violations
+   - Indentation issues
+4. **If unable to fix warnings:**
+   - Document the specific warning message
+   - Explain why it cannot be fixed
+   - Notify the user immediately with the warning details
+   - Provide the file path and line number where the warning occurs
+5. **Never ignore warnings** - Even if the build passes, Checkstyle warnings indicate code quality issues that must be addressed
+
+**Example Response Pattern:**
+```
+Build completed successfully, but found Checkstyle warnings:
+- File: src/main/java/com/bleurubin/service/Example.java:42
+- Issue: Javadoc comment missing period at end of first sentence
+- Action: Fixed by adding period to Javadoc summary
+
+OR
+
+Build completed with Checkstyle warnings that I cannot resolve:
+- File: src/main/java/com/bleurubin/service/Example.java:42
+- Warning: [specific warning message]
+- Reason: [explanation of why it cannot be fixed]
+```
 
 ### Library Design Principles
 
