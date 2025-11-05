@@ -1,0 +1,15 @@
+{
+  "name": "service-common",
+  "dockerComposeFile": "../../budget-analyzer/claude-code-sandbox/docker-compose.yml",
+  "service": "claude-dev",
+  "workspaceFolder": "/workspace/service-common",
+  "shutdownAction": "none",
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code"
+      ]
+    }
+  }
+}
