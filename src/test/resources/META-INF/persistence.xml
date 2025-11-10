@@ -8,10 +8,10 @@
     <persistence-unit name="test-pu" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
-        <class>com.bleurubin.core.domain.AuditableEntityTest$TestAuditableEntity</class>
-        <class>com.bleurubin.core.domain.SoftDeletableEntityTest$TestSoftDeletableEntity</class>
-        <class>com.bleurubin.core.domain.SoftDeleteListenerTest$TestSoftDeletableEntity</class>
-        <class>com.bleurubin.core.repository.SoftDeleteOperationsTest$TestEntity</class>
+        <class>org.budgetanalyzer.core.domain.AuditableEntityTest$TestAuditableEntity</class>
+        <class>org.budgetanalyzer.core.domain.SoftDeletableEntityTest$TestSoftDeletableEntity</class>
+        <class>org.budgetanalyzer.core.domain.SoftDeleteListenerTest$TestSoftDeletableEntity</class>
+        <class>org.budgetanalyzer.core.repository.SoftDeleteOperationsTest$TestEntity</class>
 
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver"/>

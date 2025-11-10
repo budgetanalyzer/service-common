@@ -7,7 +7,7 @@ plugins {
     id("maven-publish")
 }
 
-group = "com.bleurubin"
+group = "org.budgetanalyzer"
 version = "0.0.1-SNAPSHOT"
 
 java {
@@ -48,7 +48,7 @@ spotless {
         googleJavaFormat("1.17.0")
         trimTrailingWhitespace()
         endWithNewline()
-        importOrder("java", "javax", "jakarta", "org", "com", "", "com.bleurubin")
+        importOrder("java", "javax", "jakarta", "org", "com", "", "org.budgetanalyzer")
         removeUnusedImports()
     }
 }
