@@ -57,16 +57,16 @@ class HttpLoggingPropertiesTest {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.log-level=INFO",
-            "bleurubin.service.http-logging.include-request-body=false",
-            "bleurubin.service.http-logging.include-response-body=false",
-            "bleurubin.service.http-logging.include-request-headers=false",
-            "bleurubin.service.http-logging.include-response-headers=false",
-            "bleurubin.service.http-logging.include-query-params=false",
-            "bleurubin.service.http-logging.include-client-ip=false",
-            "bleurubin.service.http-logging.max-body-size=5000",
-            "bleurubin.service.http-logging.log-errors-only=true")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.log-level=INFO",
+            "budgetanalyzer.service.http-logging.include-request-body=false",
+            "budgetanalyzer.service.http-logging.include-response-body=false",
+            "budgetanalyzer.service.http-logging.include-request-headers=false",
+            "budgetanalyzer.service.http-logging.include-response-headers=false",
+            "budgetanalyzer.service.http-logging.include-query-params=false",
+            "budgetanalyzer.service.http-logging.include-client-ip=false",
+            "budgetanalyzer.service.http-logging.max-body-size=5000",
+            "budgetanalyzer.service.http-logging.log-errors-only=true")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
@@ -92,13 +92,13 @@ class HttpLoggingPropertiesTest {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.exclude-patterns[0]=/actuator/**",
-            "bleurubin.service.http-logging.exclude-patterns[1]=/swagger-ui/**",
-            "bleurubin.service.http-logging.exclude-patterns[2]=/v3/api-docs/**",
-            "bleurubin.service.http-logging.include-patterns[0]=/api/**",
-            "bleurubin.service.http-logging.include-patterns[1]=/admin/**",
-            "bleurubin.service.http-logging.sensitive-headers[0]=Authorization",
-            "bleurubin.service.http-logging.sensitive-headers[1]=X-Custom-Token")
+            "budgetanalyzer.service.http-logging.exclude-patterns[0]=/actuator/**",
+            "budgetanalyzer.service.http-logging.exclude-patterns[1]=/swagger-ui/**",
+            "budgetanalyzer.service.http-logging.exclude-patterns[2]=/v3/api-docs/**",
+            "budgetanalyzer.service.http-logging.include-patterns[0]=/api/**",
+            "budgetanalyzer.service.http-logging.include-patterns[1]=/admin/**",
+            "budgetanalyzer.service.http-logging.sensitive-headers[0]=Authorization",
+            "budgetanalyzer.service.http-logging.sensitive-headers[1]=X-Custom-Token")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
@@ -140,10 +140,10 @@ class HttpLoggingPropertiesTest {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.exclude-patterns=",
-            "bleurubin.service.http-logging.include-patterns=",
-            "bleurubin.service.http-logging.sensitive-headers=")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.exclude-patterns=",
+            "budgetanalyzer.service.http-logging.include-patterns=",
+            "budgetanalyzer.service.http-logging.sensitive-headers=")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
@@ -213,8 +213,8 @@ class HttpLoggingPropertiesTest {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.max-body-size=-1")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.max-body-size=-1")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
@@ -232,8 +232,8 @@ class HttpLoggingPropertiesTest {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.max-body-size=0")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.max-body-size=0")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
@@ -249,8 +249,8 @@ class HttpLoggingPropertiesTest {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.max-body-size=1000000")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.max-body-size=1000000")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
@@ -268,8 +268,8 @@ class HttpLoggingPropertiesTest {
     for (String level : logLevels) {
       contextRunner
           .withPropertyValues(
-              "bleurubin.service.http-logging.enabled=true",
-              "bleurubin.service.http-logging.log-level=" + level)
+              "budgetanalyzer.service.http-logging.enabled=true",
+              "budgetanalyzer.service.http-logging.log-level=" + level)
           .run(
               context -> {
                 var properties = context.getBean(HttpLoggingProperties.class);
@@ -285,8 +285,8 @@ class HttpLoggingPropertiesTest {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.log-level=INVALID")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.log-level=INVALID")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
@@ -303,7 +303,7 @@ class HttpLoggingPropertiesTest {
   void shouldPreserveDefaultSensitiveHeadersWhenNotConfigured() {
     // Arrange & Act
     contextRunner
-        .withPropertyValues("bleurubin.service.http-logging.enabled=true")
+        .withPropertyValues("budgetanalyzer.service.http-logging.enabled=true")
         .run(
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);

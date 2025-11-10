@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * <p>Usage in application.yml:
  *
  * <pre>
- * bleurubin:
+ * budgetanalyzer:
  *   service:
  *     http-logging:
  *       enabled: true
@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *         - /swagger-ui/**
  * </pre>
  */
-@ConfigurationProperties(prefix = "bleurubin.service.http-logging")
+@ConfigurationProperties(prefix = "budgetanalyzer.service.http-logging")
 public class HttpLoggingProperties {
 
   /** Enable/disable HTTP logging filter. */

@@ -51,7 +51,7 @@ class HttpLoggingConfigTest {
   void shouldRegisterHttpLoggingFilterWhenEnabled() {
     // Arrange & Act
     webContextRunner
-        .withPropertyValues("bleurubin.service.http-logging.enabled=true")
+        .withPropertyValues("budgetanalyzer.service.http-logging.enabled=true")
         .run(
             context -> {
               // Assert
@@ -68,7 +68,7 @@ class HttpLoggingConfigTest {
   void shouldNotRegisterHttpLoggingFilterWhenDisabled() {
     // Arrange & Act
     webContextRunner
-        .withPropertyValues("bleurubin.service.http-logging.enabled=false")
+        .withPropertyValues("budgetanalyzer.service.http-logging.enabled=false")
         .run(
             context -> {
               // Assert
@@ -94,7 +94,7 @@ class HttpLoggingConfigTest {
   void shouldRegisterBothFiltersWhenHttpLoggingEnabled() {
     // Arrange & Act
     webContextRunner
-        .withPropertyValues("bleurubin.service.http-logging.enabled=true")
+        .withPropertyValues("budgetanalyzer.service.http-logging.enabled=true")
         .run(
             context -> {
               // Assert
@@ -116,7 +116,7 @@ class HttpLoggingConfigTest {
   void shouldRegisterOnlyCorrelationIdFilterWhenHttpLoggingDisabled() {
     // Arrange & Act
     webContextRunner
-        .withPropertyValues("bleurubin.service.http-logging.enabled=false")
+        .withPropertyValues("budgetanalyzer.service.http-logging.enabled=false")
         .run(
             context -> {
               // Assert
@@ -155,10 +155,10 @@ class HttpLoggingConfigTest {
     // Arrange & Act
     webContextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.log-level=INFO",
-            "bleurubin.service.http-logging.max-body-size=5000",
-            "bleurubin.service.http-logging.include-request-body=false")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.log-level=INFO",
+            "budgetanalyzer.service.http-logging.max-body-size=5000",
+            "budgetanalyzer.service.http-logging.include-request-body=false")
         .run(
             context -> {
               // Assert
@@ -184,10 +184,10 @@ class HttpLoggingConfigTest {
     // Arrange & Act
     webContextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.exclude-patterns[0]=/actuator/**",
-            "bleurubin.service.http-logging.exclude-patterns[1]=/swagger-ui/**",
-            "bleurubin.service.http-logging.include-patterns[0]=/api/**")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.exclude-patterns[0]=/actuator/**",
+            "budgetanalyzer.service.http-logging.exclude-patterns[1]=/swagger-ui/**",
+            "budgetanalyzer.service.http-logging.include-patterns[0]=/api/**")
         .run(
             context -> {
               // Assert
@@ -213,9 +213,9 @@ class HttpLoggingConfigTest {
     // Arrange & Act
     webContextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.sensitive-headers[0]=X-Custom-Token",
-            "bleurubin.service.http-logging.sensitive-headers[1]=X-API-Secret")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.sensitive-headers[0]=X-Custom-Token",
+            "budgetanalyzer.service.http-logging.sensitive-headers[1]=X-API-Secret")
         .run(
             context -> {
               // Assert
@@ -236,8 +236,8 @@ class HttpLoggingConfigTest {
     // Arrange & Act
     webContextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.log-errors-only=true")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.log-errors-only=true")
         .run(
             context -> {
               // Assert
@@ -250,7 +250,7 @@ class HttpLoggingConfigTest {
   void shouldNotRegisterFiltersInNonWebApplication() {
     // Arrange & Act - Non-web application with http-logging enabled
     nonWebContextRunner
-        .withPropertyValues("bleurubin.service.http-logging.enabled=true")
+        .withPropertyValues("budgetanalyzer.service.http-logging.enabled=true")
         .run(
             context -> {
               // Assert - No filters should be registered in non-web application
@@ -275,14 +275,14 @@ class HttpLoggingConfigTest {
     // Arrange & Act - Enable all optional features
     webContextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.include-request-body=true",
-            "bleurubin.service.http-logging.include-response-body=true",
-            "bleurubin.service.http-logging.include-request-headers=true",
-            "bleurubin.service.http-logging.include-response-headers=true",
-            "bleurubin.service.http-logging.include-query-params=true",
-            "bleurubin.service.http-logging.include-client-ip=true",
-            "bleurubin.service.http-logging.log-errors-only=false")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.include-request-body=true",
+            "budgetanalyzer.service.http-logging.include-response-body=true",
+            "budgetanalyzer.service.http-logging.include-request-headers=true",
+            "budgetanalyzer.service.http-logging.include-response-headers=true",
+            "budgetanalyzer.service.http-logging.include-query-params=true",
+            "budgetanalyzer.service.http-logging.include-client-ip=true",
+            "budgetanalyzer.service.http-logging.log-errors-only=false")
         .run(
             context -> {
               // Assert
@@ -303,14 +303,14 @@ class HttpLoggingConfigTest {
     // Arrange & Act - Disable all optional features but enable the filter
     webContextRunner
         .withPropertyValues(
-            "bleurubin.service.http-logging.enabled=true",
-            "bleurubin.service.http-logging.include-request-body=false",
-            "bleurubin.service.http-logging.include-response-body=false",
-            "bleurubin.service.http-logging.include-request-headers=false",
-            "bleurubin.service.http-logging.include-response-headers=false",
-            "bleurubin.service.http-logging.include-query-params=false",
-            "bleurubin.service.http-logging.include-client-ip=false",
-            "bleurubin.service.http-logging.log-errors-only=true")
+            "budgetanalyzer.service.http-logging.enabled=true",
+            "budgetanalyzer.service.http-logging.include-request-body=false",
+            "budgetanalyzer.service.http-logging.include-response-body=false",
+            "budgetanalyzer.service.http-logging.include-request-headers=false",
+            "budgetanalyzer.service.http-logging.include-response-headers=false",
+            "budgetanalyzer.service.http-logging.include-query-params=false",
+            "budgetanalyzer.service.http-logging.include-client-ip=false",
+            "budgetanalyzer.service.http-logging.log-errors-only=true")
         .run(
             context -> {
               // Assert - Filter should still be created even with minimal logging

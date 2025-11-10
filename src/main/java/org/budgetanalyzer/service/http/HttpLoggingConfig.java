@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Bean;
  * <p>Enable HTTP logging in application.yml:
  *
  * <pre>
- * bleurubin:
+ * budgetanalyzer:
  *   service:
  *     http-logging:
  *       enabled: true
@@ -53,14 +53,14 @@ public class HttpLoggingConfig {
    * Registers the HTTP logging filter.
    *
    * <p>This filter is conditionally enabled based on the {@code
-   * bleurubin.service.http-logging.enabled} property.
+   * budgetanalyzer.service.http-logging.enabled} property.
    *
    * @param properties HTTP logging configuration properties
    * @return HttpLoggingFilter bean
    */
   @Bean
   @ConditionalOnProperty(
-      prefix = "bleurubin.service.http-logging",
+      prefix = "budgetanalyzer.service.http-logging",
       name = "enabled",
       havingValue = "true")
   public HttpLoggingFilter httpLoggingFilter(HttpLoggingProperties properties) {

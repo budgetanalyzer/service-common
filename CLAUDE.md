@@ -25,7 +25,7 @@ This library is published to Maven Local and consumed as a dependency by:
 
 The library follows a clear modular structure organized into two main hierarchies:
 
-#### Core Package (`com.bleurubin.core`)
+#### Core Package (`org.budgetanalyzer.core`)
 
 Domain-agnostic utilities and infrastructure components:
 
@@ -46,7 +46,7 @@ Domain-agnostic utilities and infrastructure components:
 - **core/logging/** - Logging utilities
   - `SafeLogger` - Logger that sanitizes sensitive data
 
-#### Service Package (`com.bleurubin.service`)
+#### Service Package (`org.budgetanalyzer.service`)
 
 Spring Boot service-specific components:
 
@@ -237,7 +237,7 @@ transactionRepository.findByIdActive(id)
 
 **Spotless Configuration:**
 - Google Java Format (1.17.0)
-- Automatic import ordering: java → javax → jakarta → org → com → com.bleurubin
+- Automatic import ordering: java → javax → jakarta → org → com → org.budgetanalyzer
 - Trailing whitespace removal
 - File ends with newline
 - Unused import removal
@@ -458,7 +458,7 @@ Filters are automatically discovered via Spring Boot component scanning. No manu
 
 **Configuration Example (application.yml):**
 ```yaml
-bleurubin:
+budgetanalyzer:
   service:
     http-logging:
       enabled: true                    # Enable HTTP logging (default: false)
@@ -537,7 +537,7 @@ bleurubin:
         </encoder>
     </appender>
 
-    <logger name="com.bleurubin.service.http" level="DEBUG"/>
+    <logger name="org.budgetanalyzer.service.http" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
@@ -614,7 +614,7 @@ public class OpenApiConfig extends BaseOpenApiConfig {
 
 **Maven Coordinates:**
 ```groovy
-groupId: com.bleurubin
+groupId: org.budgetanalyzer
 artifactId: service-common
 version: 0.0.1-SNAPSHOT
 ```
@@ -624,15 +624,15 @@ version: 0.0.1-SNAPSHOT
 **Add Dependency (build.gradle.kts):**
 ```kotlin
 dependencies {
-    implementation("com.bleurubin:service-common:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-common:0.0.1-SNAPSHOT")
 }
 ```
 
 **Enable Component Scanning:**
 ```java
 @SpringBootApplication(scanBasePackages = {
-    "com.bleurubin.budgetanalyzer",  // Your service package
-    "com.bleurubin.service"           // Service-common package
+    "org.budgetanalyzer.budgetanalyzer",  // Your service package
+    "org.budgetanalyzer.service"           // Service-common package
 })
 public class BudgetAnalyzerApplication {
     public static void main(String[] args) {
@@ -885,11 +885,11 @@ Review `config/checkstyle/checkstyle.xml` rules and fix violations including war
 
 **Maven Local not found by consuming service:**
 - Ensure `publishToMavenLocal` completed successfully
-- Check `~/.m2/repository/com/bleurubin/service-common/` exists
+- Check `~/.m2/repository/org/budgetanalyzer/service-common/` exists
 - Verify version matches in consuming service's `build.gradle.kts`
 
 **Component scanning not finding beans:**
-- Ensure `scanBasePackages` includes `com.bleurubin.service`
+- Ensure `scanBasePackages` includes `org.budgetanalyzer.service`
 - Check Spring Boot version compatibility (requires 3.x)
 
 ## Notes for Claude Code
@@ -937,14 +937,14 @@ When working on this project:
 **Example Response Pattern:**
 ```
 Build completed successfully, but found Checkstyle warnings:
-- File: src/main/java/com/bleurubin/service/Example.java:42
+- File: src/main/java/org/budgetanalyzer/service/Example.java:42
 - Issue: Javadoc comment missing period at end of first sentence
 - Action: Fixed by adding period to Javadoc summary
 
 OR
 
 Build completed with Checkstyle warnings that I cannot resolve:
-- File: src/main/java/com/bleurubin/service/Example.java:42
+- File: src/main/java/org/budgetanalyzer/service/Example.java:42
 - Warning: [specific warning message]
 - Reason: [explanation of why it cannot be fixed]
 ```
