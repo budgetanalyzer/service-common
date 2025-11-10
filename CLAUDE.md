@@ -5,7 +5,7 @@
 The Service Common library is a shared Java library containing common code used across all microservices in the Budget Analyzer ecosystem. It provides standardized implementations for exception handling, API error responses, domain entities, CSV parsing utilities, and logging.
 
 This library is published to Maven Local and consumed as a dependency by:
-- **budget-analyzer-api** - Transaction and budget management service
+- **transaction-service** - Transaction and budget management service
 - **currency-service** - Currency and exchange rate service
 - Future microservices in the ecosystem
 
