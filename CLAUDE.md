@@ -228,5 +228,5 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 - [docs/testing-patterns.md](docs/testing-patterns.md) - Testing strategies, TestContainers, coverage
 
 **See also**:
-- [orchestration/CLAUDE.md](../../orchestration/CLAUDE.md) - System-wide architecture
+- [@orchestration/CLAUDE.md](https://github.com/budget-analyzer/orchestration/blob/main/CLAUDE.md) - System-wide architecture
 - Individual service CLAUDE.md files - Service-specific concerns
