@@ -124,8 +124,28 @@ class TransactionControllerTest {
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.type").value("NOT_FOUND"));
     }
+
+    @Test
+    void shouldReturn201WithLocationHeaderWhenCreated() throws Exception {
+        var transaction = new Transaction();
+        transaction.setId(42L);
+        transaction.setAmount(new BigDecimal("100.00"));
+
+        when(transactionService.create(any())).thenReturn(transaction);
+
+        mockMvc.perform(post("/api/v1/transactions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"amount\": 100.00}"))
+            .andExpect(status().isCreated())
+            .andExpect(header().exists("Location"))
+            .andExpect(header().string("Location", containsString("/api/v1/transactions/42")))
+            .andExpect(jsonPath("$.id").value(42))
+            .andExpect(jsonPath("$.amount").value(100.00));
+    }
 }
 ```
+
+**Note**: For testing 201 Created responses, always verify both the Location header and the response body. See [spring-boot-conventions.md](spring-boot-conventions.md#201-created-with-location-header) for the controller implementation pattern.
 
 ## TestContainers
 
@@ -353,6 +373,69 @@ void shouldSoftDeleteTransaction() {
 
 ## Testing Exception Handling
 
+### API Error Response Contract
+
+**CRITICAL**: When testing API error responses, only assert on the **stable contract** fields. Message fields are subject to change and should NOT be used in assertions.
+
+**Stable contract fields** (safe to assert on):
+- HTTP status code
+- Error type (`$.type`)
+- Error code (`$.code`)
+- Field errors (`$.fieldErrors[].field`, `$.fieldErrors[].code`)
+
+**Unstable fields** (DO NOT assert on):
+- Message text (`$.message`, `$.fieldErrors[].message`)
+- Any descriptive text fields
+
+These contracts are specified in the OpenAPI specification and form the programmatic API that clients depend on.
+
+### Examples
+
+```java
+// ✅ GOOD - Assert on stable contract fields
+@Test
+void shouldReturn422WhenCurrencyCodeAlreadyExists() throws Exception {
+    mockMvc.perform(post("/v1/admin/currencies")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(requestJson))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.type").value(containsString("APPLICATION_ERROR")))
+        .andExpect(jsonPath("$.code").value(containsString("DUPLICATE_CURRENCY_CODE")));
+    // ✅ No assertion on $.message - it's subject to change
+}
+
+@Test
+void shouldReturn404ForNonExistentId() throws Exception {
+    mockMvc.perform(get("/v1/admin/currencies/{id}", 999L))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.type").value(containsString("NOT_FOUND")));
+    // ✅ No assertion on $.message - it's subject to change
+}
+
+@Test
+void shouldReturnValidationErrorForInvalidRequest() throws Exception {
+    mockMvc.perform(post("/api/v1/transactions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"amount\": -100}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.type").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.fieldErrors[0].field").value("amount"));
+    // ✅ No assertion on $.fieldErrors[0].message - it's subject to change
+}
+
+// ❌ BAD - Asserting on message text
+@Test
+void badExample() throws Exception {
+    mockMvc.perform(get("/v1/admin/currencies/{id}", 999L))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.type").value("NOT_FOUND"))
+        .andExpect(jsonPath("$.message").value("Currency series not found with ID: 999"));
+    // ❌ Message text is implementation detail, not contract
+}
+```
+
+### Service Layer Exception Testing
+
 ```java
 @Test
 void shouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
@@ -360,18 +443,19 @@ void shouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
 
     assertThrows(ResourceNotFoundException.class,
         () -> service.getById(999L));
-}
-
-@Test
-void shouldReturnErrorResponseForInvalidRequest() throws Exception {
-    mockMvc.perform(post("/api/v1/transactions")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"amount\": -100}"))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.type").value("VALIDATION_ERROR"))
-        .andExpect(jsonPath("$.fieldErrors[0].field").value("amount"));
+    // ✅ Exception type is part of the contract
+    // ✅ No assertion on exception message - it's subject to change
 }
 ```
+
+### Why This Matters
+
+1. **Maintainability**: Message text often changes for clarity, i18n, or UX improvements
+2. **Flexibility**: Teams can refine error messages without breaking tests
+3. **Contract focus**: Tests verify the programmatic contract, not human-readable text
+4. **OpenAPI alignment**: Error types and codes are documented in OpenAPI specs; messages are not
+
+See [AdminCurrencySeriesControllerTest.java](../../currency-service/src/test/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesControllerTest.java) for real-world examples of this pattern.
 
 ## Performance Testing
 

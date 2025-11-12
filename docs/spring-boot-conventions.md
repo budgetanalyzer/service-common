@@ -240,6 +240,47 @@ public class TransactionController {
 
 **Rationale**: Simple, explicit, compatible with API gateway routing
 
+## HTTP Response Patterns
+
+### 201 Created with Location Header
+
+**Pattern**: POST endpoints that create resources MUST return `201 Created` with a `Location` header pointing to the newly created resource.
+
+**HTTP Standard**: RFC 7231 - The Location header provides the URI of the created resource. This is expected behavior in RESTful APIs and followed by all major APIs (Google, GitHub, Stripe, PayPal).
+
+**Implementation**:
+```java
+@PostMapping
+@ResponseStatus(HttpStatus.CREATED)
+public ResponseEntity<ResourceResponse> create(@Valid @RequestBody CreateRequest request) {
+    var created = service.create(request.toEntity());
+
+    var location = ServletUriComponentsBuilder.fromCurrentRequest()
+        .path("/{id}")
+        .buildAndExpand(created.getId())
+        .toUri();
+
+    return ResponseEntity.created(location).body(ResourceResponse.from(created));
+}
+```
+
+**Key points**:
+- Use `ResponseEntity.created(location)` to set both status and header
+- Build Location URI with `ServletUriComponentsBuilder.fromCurrentRequest()`
+- Always include response body (the created resource representation)
+- Location must be an absolute URI (ServletUriComponentsBuilder handles this)
+
+**Discovery**:
+```bash
+# Find all POST endpoints in a service
+grep -r "@PostMapping" src/main/java/*/controller/
+
+# Find examples using ResponseEntity.created
+grep -rA 10 "ResponseEntity.created" src/main/java/
+```
+
+**Example**: See `AdminCurrencySeriesController.create()` in currency-service for a complete implementation.
+
 ## Testing Patterns
 
 See [testing-patterns.md](testing-patterns.md) for detailed testing guidelines.
