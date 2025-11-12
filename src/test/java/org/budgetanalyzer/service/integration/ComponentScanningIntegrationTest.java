@@ -24,7 +24,7 @@ import org.budgetanalyzer.service.http.HttpLoggingProperties;
 @SpringBootTest(classes = TestApplication.class)
 @ImportAutoConfiguration({HttpLoggingConfig.class, DefaultApiExceptionHandler.class})
 @DisplayName("Component Scanning Integration Tests")
-class ComponentScanningIT {
+class ComponentScanningIntegrationTest {
 
   @Autowired private ApplicationContext context;
 

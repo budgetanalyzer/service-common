@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(classes = TestApplication.class)
 @AutoConfigureMockMvc
 @DisplayName("HTTP Logging Integration Tests")
-class HttpLoggingIntegrationIT {
+class HttpLoggingIntegrationIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 

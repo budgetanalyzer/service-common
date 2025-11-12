@@ -25,7 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(classes = TestApplication.class)
 @AutoConfigureMockMvc
 @DisplayName("Exception Handling Integration Tests")
-class ExceptionHandlingIntegrationIT {
+class ExceptionHandlingIntegrationIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 

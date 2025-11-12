@@ -26,7 +26,7 @@ import org.budgetanalyzer.service.integration.TestApplication;
 @SpringBootTest(classes = TestApplication.class)
 @Transactional
 @DisplayName("JPA Entities Integration Tests")
-class JpaEntitiesIntegrationIT {
+class JpaEntitiesIntegrationTest {
 
   @Autowired private TestAuditableRepository auditableRepository;
 

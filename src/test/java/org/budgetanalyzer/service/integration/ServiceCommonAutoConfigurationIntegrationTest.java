@@ -24,7 +24,7 @@ import org.budgetanalyzer.service.http.HttpLoggingProperties;
  */
 @SpringBootTest(classes = TestApplication.class)
 @DisplayName("Service Common Auto-Configuration Integration Tests")
-class ServiceCommonAutoConfigurationIT {
+class ServiceCommonAutoConfigurationIntegrationTest {
 
   @Autowired private ApplicationContext context;
 
@@ -92,7 +92,7 @@ class ServiceCommonAutoConfigurationIT {
   @SpringBootTest(classes = TestApplication.class)
   @TestPropertySource(properties = {"budgetanalyzer.service.http-logging.enabled=false"})
   @DisplayName("HTTP Logging Disabled Tests")
-  static class HttpLoggingDisabledIT {
+  static class HttpLoggingDisabledIntegrationTest {
 
     @Autowired private ApplicationContext context;
 
