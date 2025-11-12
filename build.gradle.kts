@@ -1,9 +1,9 @@
 plugins {
     java
     checkstyle
-    id("org.springframework.boot") version "3.5.7" apply false
-    id("io.spring.dependency-management") version "1.1.7"
-    id("com.diffplug.spotless") version "8.0.0"
+    alias(libs.plugins.spring.boot) apply false
+    alias(libs.plugins.spring.dependency.management)
+    alias(libs.plugins.spotless)
     id("maven-publish")
 }
 
@@ -24,25 +24,25 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:3.5.7")
+        mavenBom("org.springframework.boot:spring-boot-dependencies:${libs.versions.springBoot.get()}")
     }
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation(libs.spring.boot.starter.web)
+    implementation(libs.spring.boot.starter.data.jpa)
 
-    implementation("com.opencsv:opencsv:3.7")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+    implementation(libs.opencsv)
+    implementation(libs.springdoc.openapi)
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
-    testRuntimeOnly("com.h2database:h2")
+    testImplementation(libs.spring.boot.starter.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.h2)
 }
 
 spotless {
     java {
-        googleJavaFormat("1.17.0")
+        googleJavaFormat(libs.versions.googleJavaFormat.get())
         trimTrailingWhitespace()
         endWithNewline()
         importOrder("java", "javax", "jakarta", "org", "com", "", "org.budgetanalyzer")
@@ -51,7 +51,7 @@ spotless {
 }
 
 checkstyle {
-    toolVersion = "12.0.1"
+    toolVersion = libs.versions.checkstyle.get()
 }
 
 tasks.named("check") {
