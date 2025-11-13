@@ -9,6 +9,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
@@ -139,6 +140,18 @@ class DefaultApiExceptionHandlerTest {
   @DisplayName("Should handle MissingServletRequestPartException with INVALID_REQUEST type")
   void shouldHandleMissingServletRequestPartException() {
     var exception = new MissingServletRequestPartException("file");
+
+    var response = handler.handle(exception, webRequest);
+
+    assertNotNull(response);
+    assertEquals(ApiErrorType.INVALID_REQUEST, response.getType());
+    assertNotNull(response.getMessage());
+  }
+
+  @Test
+  @DisplayName("Should handle MissingServletRequestParameterException with INVALID_REQUEST type")
+  void shouldHandleMissingServletRequestParameterException() {
+    var exception = new MissingServletRequestParameterException("userId", "Long");
 
     var response = handler.handle(exception, webRequest);
 

@@ -9,6 +9,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -203,6 +204,24 @@ public class DefaultApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(MissingServletRequestPartException exception, WebRequest request) {
+    return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
+  }
+
+  /**
+   * Handles {@link MissingServletRequestParameterException} and returns HTTP 400 Bad Request.
+   *
+   * <p>This exception occurs when a required request parameter (e.g., a query parameter or form
+   * parameter) is missing from the HTTP request. This is commonly triggered by
+   * {@code @RequestParam} annotations without {@code required=false}.
+   *
+   * @param exception the exception thrown when a required request parameter is missing
+   * @param request the web request context
+   * @return standardized error response with INVALID_REQUEST type
+   */
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  public ApiErrorResponse handle(
+      MissingServletRequestParameterException exception, WebRequest request) {
     return handleApiException(ApiErrorType.INVALID_REQUEST, exception);
   }
 
