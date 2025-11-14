@@ -87,6 +87,68 @@ Map<String, Object> details = Map.of("method", "POST", "uri", "/api/users", "sta
 TransactionService service = createTransactionService();  // Factory method
 ```
 
+## Variable Naming Conventions
+
+**Rule**: Variable names should use the full class name in camelCase to improve code readability and IDE autocomplete discoverability.
+
+### Class-Level Fields (STRICTLY ENFORCED)
+
+Class-level fields (instance variables and static fields) **MUST** use the full class name.
+
+```java
+// ✅ CORRECT - Full class name used
+private CurrencySeriesRepository currencySeriesRepository;
+private TransactionService transactionService;
+private ObjectMapper objectMapper;
+private static final Logger logger = LoggerFactory.getLogger(MyClass.class);
+
+// ❌ WRONG - Shortened/generic names
+private CurrencySeriesRepository repository;  // Too generic
+private TransactionService service;           // Too generic
+private ObjectMapper mapper;                  // Too short
+```
+
+### Method-Level Variables (RECOMMENDED)
+
+Local variables within methods **SHOULD** follow the same convention, but this is recommended rather than strictly enforced.
+
+```java
+// ✅ PREFERRED - Full class name
+public void processTransaction() {
+    var transactionService = new TransactionService();
+    var currencyConverter = new CurrencyConverter();
+    transactionService.save(transaction);
+}
+
+// ⚠️ ACCEPTABLE - Shorter names when context is clear
+public void process() {
+    var service = getService();  // Acceptable in small methods
+    var converter = new CurrencyConverter();
+}
+```
+
+### Common Exceptions
+
+The following abbreviations are acceptable when they are standard Java conventions:
+
+```java
+// ✅ Standard abbreviations are acceptable
+private static final Logger log = LoggerFactory.getLogger(MyClass.class);
+var sb = new StringBuilder();
+var ex = new RuntimeException();  // In catch blocks
+
+// ✅ Collections - plural form is acceptable
+List<Currency> currencies;        // Not currencyList
+Set<Transaction> transactions;    // Not transactionSet
+```
+
+### Rationale
+
+- **Discoverability**: Full names make IDE autocomplete more effective
+- **Clarity**: Reduces ambiguity about what a variable represents
+- **Consistency**: Establishes a predictable naming pattern across the codebase
+- **Refactoring**: Makes it easier to search and refactor code
+
 ## Import Rules
 
 **Rule**: No wildcard imports - always use explicit imports

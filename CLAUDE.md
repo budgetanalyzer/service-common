@@ -157,6 +157,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 - **Spotless**: Google Java Format
 - **Checkstyle**: Custom rules (including Hibernate import ban)
 - **Variable declarations**: Use `var` whenever possible
+- **Variable naming**: Class-level fields MUST use full class name (e.g., `currencySeriesRepository` not `repository`)
 - **Imports**: No wildcard imports, always explicit
 - **Javadoc**: First sentence MUST end with period (`.`)
 
