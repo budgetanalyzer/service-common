@@ -293,10 +293,8 @@ See [testing-patterns.md](testing-patterns.md) for detailed testing guidelines.
 
 ## Documentation Standards
 
-See [documentation-standards.md](documentation-standards.md) for complete guidelines.
-
 **Quick reference**:
 - All public APIs need Javadoc
 - First sentence of Javadoc must end with period
 - REST endpoints documented with OpenAPI/Swagger
-- Domain models documented in separate domain-model.md
+- Domain models documented in architecture documentation

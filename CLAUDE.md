@@ -18,35 +18,50 @@ Changes here affect all services that depend on this library.
 
 **THE canonical source of truth** for Spring Boot patterns across all Budget Analyzer microservices.
 
-See [docs/spring-boot-conventions.md](docs/spring-boot-conventions.md) for:
-- Architecture layers (Controller → Service → Repository)
-- Naming conventions (`*Controller`, `*Service`, `*ServiceImpl`)
-- Package structure patterns
-- Base entity classes (`AuditableEntity`, `SoftDeletableEntity`)
-- Pure JPA requirement (no Hibernate-specific code)
+**Pattern**: Clean layered architecture (Controller → Service → Repository) with standardized naming, pure JPA persistence, and base entity classes for common functionality.
+
+**When to consult details**:
+- Setting up new service → Read [Architecture Layers](docs/spring-boot-conventions.md#architecture-layers) and [Package Structure](docs/spring-boot-conventions.md#package-structure)
+- Creating entities → See [Base Entity Classes](docs/spring-boot-conventions.md#base-entity-classes) (AuditableEntity, SoftDeletableEntity)
+- Writing controllers → Review [HTTP Response Patterns](docs/spring-boot-conventions.md#http-response-patterns) (201 Created with Location header)
+- Dependency injection → Check [Dependency Injection](docs/spring-boot-conventions.md#dependency-injection) section
+
+**Quick reference**:
+- Controllers: `*Controller` + `@RestController` + thin (HTTP concerns only)
+- Services: `*Service` interface + `*ServiceImpl` implementation + `@Transactional` at this layer
+- Repositories: `*Repository` extends `JpaRepository<Entity, ID>`
+- Pure JPA only: **Forbidden** `org.hibernate.*` → **Use** `jakarta.persistence.*`
+- Base entities: Extend `AuditableEntity` (timestamps) or `SoftDeletableEntity` (soft delete)
+
+**For comprehensive patterns, read [docs/spring-boot-conventions.md](docs/spring-boot-conventions.md) when working on architecture tasks.**
 
 **Discovery**:
 ```bash
 # View package structure
-tree src/main/java/org/budgetanalyzer -L 2
-# Or without tree: find src/main/java -type d | grep -E "org/budgetanalyzer" | head -20
+find src/main/java -type d | grep -E "org/budgetanalyzer" | head -20
 
 # Find all base entities
 grep -r "@MappedSuperclass" src/
-
-# Check Spring Boot version
-grep "springBootVersion" build.gradle.kts
 ```
 
 ## Exception Handling
 
-**Pattern**: Centralized exception handling with standardized API error responses
+**Pattern**: Centralized `@RestControllerAdvice` handler that converts all exceptions to standardized `ApiErrorResponse` format with HTTP status codes, error types, and field-level validation messages.
 
-See [docs/error-handling.md](docs/error-handling.md) for:
-- Exception hierarchy (`ServiceException`, `ClientException`, etc.)
-- `ApiErrorResponse` standard format
-- `DefaultApiExceptionHandler` (@RestControllerAdvice)
-- Usage examples and best practices
+**When to consult details**:
+- Throwing exceptions in code → See [Exception Hierarchy](docs/error-handling.md#exception-hierarchy) for which exception to use
+- Creating custom exceptions → Read [Custom Exception Examples](docs/error-handling.md#custom-exceptions)
+- Handling validation errors → Review [Validation Error Handling](docs/error-handling.md#validation-errors)
+- Understanding error responses → Check [ApiErrorResponse Format](docs/error-handling.md#apierrorresponse-format)
+
+**Quick reference**:
+- `ResourceNotFoundException` → 404 (entity not found)
+- `InvalidRequestException` → 400 (bad input data)
+- `BusinessException` → 422 (business rule violation)
+- `ServiceException` → 500 (internal service error)
+- All exceptions auto-converted to `ApiErrorResponse` by `DefaultApiExceptionHandler`
+
+**For complete error handling patterns, read [docs/error-handling.md](docs/error-handling.md) when implementing error flows.**
 
 **Discovery**:
 ```bash
@@ -59,12 +74,22 @@ cat src/main/java/org/budgetanalyzer/service/api/DefaultApiExceptionHandler.java
 
 ## Testing Patterns
 
-See [docs/testing-patterns.md](docs/testing-patterns.md) for:
-- Testing philosophy (test correct behavior, not defects)
-- Unit tests vs Integration tests
-- TestContainers for PostgreSQL/Redis/RabbitMQ
-- Mocking strategies
-- Coverage goals (80% minimum)
+**Pattern**: Comprehensive test coverage using unit tests for logic, integration tests with TestContainers for persistence, and test correct behavior (never test around bugs).
+
+**When to consult details**:
+- Writing unit tests → See [Unit Testing Patterns](docs/testing-patterns.md#unit-tests) (mocking, naming, structure)
+- Writing integration tests → Read [Integration Testing](docs/testing-patterns.md#integration-tests) (TestContainers, @SpringBootTest)
+- Setting up TestContainers → Check [TestContainers Setup](docs/testing-patterns.md#testcontainers) (PostgreSQL, Redis, RabbitMQ)
+- Understanding test philosophy → Review [Testing Philosophy](docs/testing-patterns.md#philosophy) (test correct behavior)
+
+**Quick reference**:
+- Unit tests: `*Test.java` (no Spring context, fast, isolated)
+- Integration tests: `*IntegrationTest.java` (with `@SpringBootTest` + TestContainers)
+- Minimum coverage: 80% line coverage via JaCoCo
+- Test correct behavior: Fix bugs, don't write tests around defective implementations
+- TestContainers: Auto-starts PostgreSQL/Redis/RabbitMQ in Docker for integration tests
+
+**For comprehensive testing strategies, read [docs/testing-patterns.md](docs/testing-patterns.md) when writing tests.**
 
 **Discovery**:
 ```bash
@@ -142,6 +167,8 @@ dependencies {
 ### 1. Production-Quality Code
 All code must be production-ready. No shortcuts, prototypes, or workarounds.
 
+**When to read more**: [docs/common-patterns.md](docs/common-patterns.md) - SOLID principles, design patterns, Spring Boot patterns, database patterns, security/performance best practices.
+
 ### 2. Pure JPA Only
 **CRITICAL**: Use pure JPA (Jakarta Persistence API) exclusively. NO Hibernate-specific features.
 - Forbidden: `org.hibernate.*`
@@ -161,12 +188,36 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 - **Imports**: No wildcard imports, always explicit
 - **Javadoc**: First sentence MUST end with period (`.`)
 
+**When to read more**: [docs/code-quality-standards.md](docs/code-quality-standards.md) - Complete Spotless/Checkstyle configuration, detailed formatting rules, IDE setup, troubleshooting.
+
 **Build commands**:
 ```bash
 # Always run these two commands in sequence
 ./gradlew spotlessApply
 ./gradlew clean build
 ```
+
+## Advanced Patterns
+
+**When to use advanced patterns**: External integrations, messaging, caching, distributed systems, scheduled tasks.
+
+**Pattern**: Provider abstraction (external APIs), Transactional Outbox (guaranteed messaging), Redis caching (performance), ShedLock (distributed locking), Flyway (database migrations).
+
+**When to consult details**:
+- Integrating external APIs → Read [Provider Abstraction Pattern](docs/advanced-patterns.md#provider-abstraction-pattern)
+- Event-driven messaging → See [Transactional Outbox](docs/advanced-patterns.md#event-driven-messaging-with-transactional-outbox)
+- Implementing caching → Review [Redis Distributed Caching](docs/advanced-patterns.md#redis-distributed-caching)
+- Scheduled tasks in multi-pod deployment → Check [ShedLock](docs/advanced-patterns.md#distributed-locking-with-shedlock)
+- Database schema changes → Read [Flyway Migrations](docs/advanced-patterns.md#database-migrations-with-flyway)
+
+**Quick reference**:
+- Provider Pattern: Service → Interface → Implementation → External Client (decouples from external dependencies)
+- Transactional Outbox: Events persisted in DB with business data, 100% guaranteed delivery to RabbitMQ
+- Redis Caching: `@Cacheable` on queries, `@CacheEvict` on updates (50-200x faster responses)
+- ShedLock: `@SchedulerLock` on `@Scheduled` methods (runs once across all pods)
+- Flyway: `V{version}__{description}.sql` migrations (never modify committed migrations)
+
+**For advanced implementation details, read [docs/advanced-patterns.md](docs/advanced-patterns.md) when implementing these features.**
 
 ## Best Practices
 
@@ -223,11 +274,16 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 
 ## Documentation References
 
-**Detailed patterns documented in docs/**:
-- [docs/spring-boot-conventions.md](docs/spring-boot-conventions.md) - Architecture, layers, naming, base entities
-- [docs/error-handling.md](docs/error-handling.md) - Exception hierarchy, error responses
-- [docs/testing-patterns.md](docs/testing-patterns.md) - Testing strategies, TestContainers, coverage
+**Core patterns** (load when working on related tasks):
+- [docs/spring-boot-conventions.md](docs/spring-boot-conventions.md) - Architecture, layers, naming, base entities, HTTP patterns
+- [docs/error-handling.md](docs/error-handling.md) - Exception hierarchy, ApiErrorResponse format, error handling
+- [docs/testing-patterns.md](docs/testing-patterns.md) - Unit/integration testing, TestContainers, coverage goals
 
-**See also**:
-- [@orchestration/CLAUDE.md](https://github.com/budget-analyzer/orchestration/blob/main/CLAUDE.md) - System-wide architecture
+**Advanced patterns** (load when implementing specific features):
+- [docs/common-patterns.md](docs/common-patterns.md) - SOLID principles, design patterns, database/security/performance best practices
+- [docs/advanced-patterns.md](docs/advanced-patterns.md) - Provider abstraction, messaging, caching, distributed locking, migrations
+- [docs/code-quality-standards.md](docs/code-quality-standards.md) - Spotless/Checkstyle details, formatting rules, IDE configuration
+
+**System architecture** (load when understanding cross-service concerns):
+- System-wide architecture: budget-analyzer/orchestration CLAUDE.md (external repo - clone when needed)
 - Individual service CLAUDE.md files - Service-specific concerns
