@@ -298,3 +298,11 @@ See [testing-patterns.md](testing-patterns.md) for detailed testing guidelines.
 - First sentence of Javadoc must end with period
 - REST endpoints documented with OpenAPI/Swagger
 - Domain models documented in architecture documentation
+
+---
+
+## External Links (GitHub Web Viewing)
+
+*The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use this link to access the referenced controller:*
+
+- [AdminCurrencySeriesController.java](https://github.com/budget-analyzer/currency-service/blob/main/src/main/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesController.java)

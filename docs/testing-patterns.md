@@ -641,3 +641,11 @@ void tearDown() {
 - [Spring Boot Testing Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing)
 - [TestContainers Documentation](https://testcontainers.com/)
 - [Mockito Documentation](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html)
+
+---
+
+## External Links (GitHub Web Viewing)
+
+*The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use this link to access the referenced test file:*
+
+- [AdminCurrencySeriesControllerTest.java](https://github.com/budget-analyzer/currency-service/blob/main/src/test/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesControllerTest.java)
