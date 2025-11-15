@@ -448,23 +448,108 @@ void shouldHandleVeryLargeNumbers() { }
 void shouldHandleSpecialCharacters() { }
 ```
 
-### 7. Don't Test Framework Code
+### 7. Don't Test Framework Code - Test Business Logic
+
+**CRITICAL PRINCIPLE**: Never write tests that verify framework behavior. If Spring, JPA, Modulith, ShedLock, RabbitMQ, or any other framework/library doesn't work correctly, that's THEIR bug, not ours. Testing frameworks pollutes the codebase with low-value tests that provide no real confidence in OUR code.
+
+**What NOT to test**:
+- Framework mechanisms (Spring dependency injection, JPA persistence, transaction management)
+- Third-party library behavior (Modulith event publishing, ShedLock distributed locking)
+- Infrastructure components doing what they're supposed to do (RabbitMQ message delivery, Redis caching)
+- Configuration working as documented (application properties being loaded)
+
+**What TO test**:
+- Business logic and domain rules
+- Data validation and transformations
+- Error handling and edge cases specific to your domain
+- Integration points where YOUR code interacts with frameworks (e.g., "does this service method trigger the correct event with the correct data?")
 
 ```java
 // ❌ BAD - Testing JPA's save method
 @Test
 void shouldSaveToDatabase() {
     repository.save(transaction);
-    // This just tests that JPA works
+    var found = repository.findById(transaction.getId());
+    assertTrue(found.isPresent());
+    // This just tests that JPA works - provides no value
 }
 
-// ✅ GOOD - Test business logic
+// ❌ BAD - Testing that Modulith publishes events
+@Test
+void shouldPublishEventWhenTransactionCreated() {
+    service.createTransaction(transaction);
+    // Verify that ApplicationEventPublisher was called
+    // This just tests that Modulith/Spring events work - not our concern
+}
+
+// ❌ BAD - Testing that ShedLock prevents concurrent execution
+@Test
+void shouldPreventConcurrentScheduledTaskExecution() {
+    // Spawning multiple threads and verifying ShedLock prevents concurrent runs
+    // This tests ShedLock's functionality - if it's broken, that's their bug
+}
+
+// ❌ BAD - Testing that @Transactional works
+@Test
+void shouldRollbackOnException() {
+    assertThrows(Exception.class, () -> service.failingMethod());
+    assertEquals(0, repository.count());
+    // This tests Spring's transaction management - not our business logic
+}
+
+// ❌ BAD - Testing that @Cacheable works
+@Test
+void shouldCacheResults() {
+    service.getData(1L); // First call
+    service.getData(1L); // Second call
+    verify(repository, times(1)).findById(1L); // Verify cache hit
+    // This tests Spring Cache abstraction - not our logic
+}
+
+// ✅ GOOD - Test business logic and validation
 @Test
 void shouldValidateAmountBeforeSaving() {
+    var negativeAmount = new Transaction();
+    negativeAmount.setAmount(new BigDecimal("-100.00"));
+
     assertThrows(BusinessException.class,
-        () -> service.create(transactionWithNegativeAmount));
+        () -> service.create(negativeAmount));
+    // Tests OUR validation rule - this is our domain logic
+}
+
+// ✅ GOOD - Test data transformation and business rules
+@Test
+void shouldCalculateTotalWithCorrectExchangeRates() {
+    var transactions = List.of(
+        createTransaction("100.00", "USD"),
+        createTransaction("50.00", "EUR")
+    );
+
+    var total = service.calculateTotalInUSD(transactions);
+
+    assertEquals(new BigDecimal("145.00"), total);
+    // Tests OUR business logic for currency conversion
+}
+
+// ✅ GOOD - Test integration behavior (not framework mechanism)
+@Test
+void shouldIncludeCorrectDataInPublishedEvent() {
+    var transaction = service.createTransaction(createRequest());
+
+    // Capture the event that was published
+    var event = eventCaptor.getValue();
+    assertEquals(transaction.getId(), event.getTransactionId());
+    assertEquals(transaction.getAmount(), event.getAmount());
+    // Tests that OUR code publishes the right data, not that Modulith works
 }
 ```
+
+**Key Questions to Ask**:
+1. "Am I testing MY code or the framework's code?"
+2. "If this test fails, is it because of a bug in my business logic, or because a third-party library is broken?"
+3. "Would this test catch a real bug in my domain logic, or just verify that Spring/JPA/Modulith does what it's supposed to?"
+
+**Remember**: Framework tests are expensive to maintain and provide false confidence. Focus test effort on business logic where bugs actually occur.
 
 ## Testing Soft-Delete Entities
 
