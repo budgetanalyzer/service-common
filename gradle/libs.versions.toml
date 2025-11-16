@@ -1,4 +1,5 @@
 [versions]
+java = "24"
 springBoot = "3.5.7"
 dependencyManagement = "1.1.7"
 spotless = "8.0.0"
