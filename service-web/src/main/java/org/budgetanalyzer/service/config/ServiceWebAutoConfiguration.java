@@ -16,7 +16,7 @@ import org.springframework.context.annotation.ComponentScan;
  *       org.budgetanalyzer.service.api.DefaultApiExceptionHandler})
  *   <li>HTTP request/response logging filters ({@link
  *       org.budgetanalyzer.service.http.HttpLoggingConfig})
- *   <li>OpenAPI configuration ({@link org.budgetanalyzer.service.config.OpenApiConfig})
+ *   <li>OpenAPI configuration ({@link org.budgetanalyzer.service.config.BaseOpenApiConfig})
  * </ul>
  *
  * <p>This auto-configuration is automatically discovered by Spring Boot via
