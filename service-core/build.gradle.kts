@@ -18,10 +18,14 @@ dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.jackson.datatype.jsr310)
     implementation(libs.slf4j.api)
-    implementation(libs.spring.boot.starter.data.jpa)
+
+    // NOT TRANSITIVE (compileOnly) - services using JPA entities must declare explicitly
+    compileOnly(libs.spring.boot.starter.data.jpa)
+
     implementation(libs.opencsv)
 
     // Test dependencies
+    testImplementation(libs.spring.boot.starter.data.jpa)
     testImplementation(libs.spring.boot.starter.test)
     testRuntimeOnly(libs.junit.platform.launcher)
     testRuntimeOnly(libs.h2)

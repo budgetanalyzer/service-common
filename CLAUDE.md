@@ -61,27 +61,40 @@ Changes here affect all services that depend on these libraries.
 **Most microservices → Use service-web** (includes service-core transitively)
 **Need only base entities/CSV/logging → Use service-core** (minimal dependencies)
 
-## Breaking Changes (Version 0.0.2-SNAPSHOT)
+## Breaking Changes (Version 0.0.1-SNAPSHOT)
 
-### Dependency Management Change
+### JPA Dependency Management
 
-**BREAKING**: As of version 0.0.2-SNAPSHOT, consuming services must explicitly declare their web stack dependency.
+**BREAKING**: service-core now declares `spring-boot-starter-data-jpa` as `compileOnly` instead of `implementation`. Services using JPA entities (`AuditableEntity`, `SoftDeletableEntity`) or repository utilities (`SoftDeleteOperations`) must explicitly declare the JPA dependency.
 
-**Before (0.0.1-SNAPSHOT):**
+**Required for services using JPA entities:**
 ```kotlin
 dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")  // NOW REQUIRED
     implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
-    // spring-boot-starter-web was transitive
 }
 ```
 
-**After (0.0.2-SNAPSHOT and later):**
+**Why?** This prevents non-database services (like reactive gateways) from inheriting unnecessary JPA and database dependencies through service-web → service-core transitive dependency chain.
+
+**Who needs to add this:**
+- Services using `AuditableEntity` or `SoftDeletableEntity` base classes
+- Services using `SoftDeleteOperations` repository utilities
+- Any service with JPA repositories and database persistence
+
+**Who does NOT need this:**
+- Pure web services without databases (e.g., session-gateway)
+- Services only using service-core's CSV parsing or logging utilities
+
+### Web Stack Dependency Management
+
+**BREAKING**: As of version 0.0.1-SNAPSHOT, consuming services must explicitly declare their web stack dependency.
 
 **Servlet services:**
 ```kotlin
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")  // NOW REQUIRED
-    implementation("org.budgetanalyzer:service-web:0.0.2-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
 }
 ```
 
@@ -89,7 +102,7 @@ dependencies {
 ```kotlin
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")  // NOW REQUIRED
-    implementation("org.budgetanalyzer:service-web:0.0.2-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
 }
 ```
 
