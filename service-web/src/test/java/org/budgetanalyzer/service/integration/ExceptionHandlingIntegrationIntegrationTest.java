@@ -16,14 +16,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.budgetanalyzer.service.security.test.TestSecurityConfig;
+
 /**
  * Integration test verifying exception handling works end-to-end.
  *
  * <p>Tests the full flow: HTTP request → Controller → Exception → @RestControllerAdvice →
  * ApiErrorResponse
  */
-@SpringBootTest(classes = TestApplication.class)
-@AutoConfigureMockMvc
+@SpringBootTest(
+    classes = {TestApplication.class, TestSecurityConfig.class},
+    properties = {
+      "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
+      "AUTH0_AUDIENCE=https://test-api.example.com"
+    })
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("Exception Handling Integration Tests")
 class ExceptionHandlingIntegrationIntegrationTest {
 

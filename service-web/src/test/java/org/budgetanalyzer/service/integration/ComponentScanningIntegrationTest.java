@@ -14,6 +14,7 @@ import org.budgetanalyzer.service.http.CorrelationIdFilter;
 import org.budgetanalyzer.service.http.HttpLoggingConfig;
 import org.budgetanalyzer.service.http.HttpLoggingFilter;
 import org.budgetanalyzer.service.http.HttpLoggingProperties;
+import org.budgetanalyzer.service.security.test.TestSecurityConfig;
 
 /**
  * Integration test verifying component scanning works correctly.
@@ -21,8 +22,17 @@ import org.budgetanalyzer.service.http.HttpLoggingProperties;
  * <p>Simulates a consuming service scenario where service-common beans are discovered via
  * auto-configuration and component scanning with scanBasePackages = {"org.budgetanalyzer.service"}.
  */
-@SpringBootTest(classes = TestApplication.class)
-@ImportAutoConfiguration({HttpLoggingConfig.class, DefaultApiExceptionHandler.class})
+@SpringBootTest(
+    classes = TestApplication.class,
+    properties = {
+      "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
+      "AUTH0_AUDIENCE=https://test-api.example.com"
+    })
+@ImportAutoConfiguration({
+  HttpLoggingConfig.class,
+  DefaultApiExceptionHandler.class,
+  TestSecurityConfig.class
+})
 @DisplayName("Component Scanning Integration Tests")
 class ComponentScanningIntegrationTest {
 
