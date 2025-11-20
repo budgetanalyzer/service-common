@@ -11,7 +11,7 @@ import jakarta.persistence.PreRemove;
  *
  * <p>When {@code repository.delete(entity)} is called on a soft-deletable entity, this listener
  * triggers and throws {@link UnsupportedOperationException}. Instead, use {@link
- * SoftDeletableEntity#markDeleted()} to properly soft-delete entities.
+ * SoftDeletableEntity#markDeleted(String)} to properly soft-delete entities.
  *
  * <p>This listener is automatically applied to all entities extending {@link SoftDeletableEntity}
  * via the {@code @EntityListeners} annotation.
@@ -30,6 +30,6 @@ public class SoftDeleteListener {
   @PreRemove
   public void preRemove(SoftDeletableEntity entity) {
     throw new UnsupportedOperationException(
-        "Hard delete not allowed for " + entity.getClass() + ". Use markDeleted() instead.");
+        "Hard delete not allowed for " + entity.getClass() + ". Use markDeleted(deletedBy) instead.");
   }
 }

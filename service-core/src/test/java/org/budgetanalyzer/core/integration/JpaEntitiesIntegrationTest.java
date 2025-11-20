@@ -116,7 +116,7 @@ class JpaEntitiesIntegrationTest {
     var entity = new TestSoftDeletableEntity("Test Entity");
     var saved = softDeletableRepository.save(entity);
 
-    saved.markDeleted();
+    saved.markDeleted("test-user");
     var deleted = softDeletableRepository.save(saved);
 
     assertThat(deleted.isDeleted()).isTrue();
@@ -134,7 +134,7 @@ class JpaEntitiesIntegrationTest {
     softDeletableRepository.save(entity3);
 
     // Mark entity2 as deleted
-    saved2.markDeleted();
+    saved2.markDeleted("test-user");
     softDeletableRepository.save(saved2);
 
     var nonDeletedEntities = softDeletableRepository.findByDeletedFalse();
@@ -157,8 +157,8 @@ class JpaEntitiesIntegrationTest {
     var saved3 = softDeletableRepository.save(entity3);
 
     // Mark entity1 and entity3 as deleted
-    saved1.markDeleted();
-    saved3.markDeleted();
+    saved1.markDeleted("test-user");
+    saved3.markDeleted("test-user");
     softDeletableRepository.save(saved1);
     softDeletableRepository.save(saved3);
 
@@ -176,7 +176,7 @@ class JpaEntitiesIntegrationTest {
     var entity = new TestSoftDeletableEntity("Test Entity");
     var saved = softDeletableRepository.save(entity);
 
-    saved.markDeleted();
+    saved.markDeleted("test-user");
     softDeletableRepository.save(saved);
 
     // findAll() still finds deleted entities (no @Where clause in test entity)

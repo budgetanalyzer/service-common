@@ -68,8 +68,8 @@ class SoftDeleteListenerTest {
         exception.getMessage().contains("Hard delete not allowed"),
         "Exception message should mention hard delete not allowed");
     assertTrue(
-        exception.getMessage().contains("markDeleted()"),
-        "Exception message should suggest using markDeleted()");
+        exception.getMessage().contains("markDeleted(deletedBy)"),
+        "Exception message should suggest using markDeleted(deletedBy)");
   }
 
   @Test
@@ -113,7 +113,7 @@ class SoftDeleteListenerTest {
 
     // Act - Soft delete via markDeleted() should work fine
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
@@ -137,7 +137,7 @@ class SoftDeleteListenerTest {
 
     // Soft delete first
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 

@@ -25,7 +25,7 @@ import org.budgetanalyzer.core.repository.SoftDeleteOperations;
  * updatedAt} timestamps automatically.
  *
  * <p>The {@link SoftDeleteListener} prevents hard deletes by throwing an exception if {@code
- * repository.delete(entity)} is called. Instead, use {@link #markDeleted()} to soft-delete
+ * repository.delete(entity)} is called. Instead, use {@link #markDeleted(String)} to soft-delete
  * entities.
  *
  * <p>Example usage:
@@ -40,7 +40,7 @@ import org.budgetanalyzer.core.repository.SoftDeleteOperations;
  * }
  *
  * // In service layer
- * transaction.markDeleted();
+ * transaction.markDeleted(currentUserId);
  * repository.save(transaction);
  *
  * // In repository - use SoftDeleteOperations interface
@@ -65,6 +65,10 @@ public abstract class SoftDeletableEntity extends AuditableEntity {
   @Column(name = "deleted_at")
   private Instant deletedAt;
 
+  /** User ID of who performed the soft-delete, or null if not deleted. */
+  @Column(name = "deleted_by", length = 50)
+  private String deletedBy;
+
   /**
    * Checks whether this entity has been soft-deleted.
    *
@@ -84,27 +88,41 @@ public abstract class SoftDeletableEntity extends AuditableEntity {
   }
 
   /**
+   * Gets the user ID of who performed the soft-delete.
+   *
+   * @return the user ID who deleted this entity, or null if not deleted
+   */
+  public String getDeletedBy() {
+    return deletedBy;
+  }
+
+  /**
    * Marks this entity as soft-deleted.
    *
-   * <p>Sets the {@code deleted} flag to true and records the current timestamp in {@code
-   * deletedAt}. The entity remains in the database but will be excluded from queries using {@link
-   * SoftDeleteOperations} methods.
+   * <p>Sets the {@code deleted} flag to true, records the current timestamp in {@code deletedAt},
+   * and stores the user ID who performed the deletion. The entity remains in the database but will
+   * be excluded from queries using {@link SoftDeleteOperations} methods.
    *
    * <p>After calling this method, persist the changes by saving the entity via the repository.
+   *
+   * @param deletedBy the user ID of who is performing the deletion
    */
-  public void markDeleted() {
+  public void markDeleted(String deletedBy) {
     this.deleted = true;
     this.deletedAt = Instant.now();
+    this.deletedBy = deletedBy;
   }
 
   /**
    * Restores a previously soft-deleted entity.
    *
-   * <p>Clears the {@code deleted} flag and {@code deletedAt} timestamp, making the entity active
-   * again. After calling this method, persist the changes by saving the entity via the repository.
+   * <p>Clears the {@code deleted} flag, {@code deletedAt} timestamp, and {@code deletedBy} user ID,
+   * making the entity active again. After calling this method, persist the changes by saving the
+   * entity via the repository.
    */
   public void restore() {
     this.deleted = false;
     this.deletedAt = null;
+    this.deletedBy = null;
   }
 }

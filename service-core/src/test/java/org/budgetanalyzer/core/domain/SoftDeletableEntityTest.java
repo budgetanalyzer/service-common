@@ -93,7 +93,7 @@ class SoftDeletableEntityTest {
 
     // Act
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
@@ -120,7 +120,7 @@ class SoftDeletableEntityTest {
 
     // Act - Call markDeleted() first time
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
@@ -130,7 +130,7 @@ class SoftDeletableEntityTest {
     TimeUnit.MILLISECONDS.sleep(10);
 
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
@@ -157,7 +157,7 @@ class SoftDeletableEntityTest {
 
     // Mark as deleted
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
@@ -210,7 +210,7 @@ class SoftDeletableEntityTest {
 
     // Act - First cycle: delete -> restore
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
@@ -228,7 +228,7 @@ class SoftDeletableEntityTest {
 
     // Act - Second cycle: delete -> restore
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
@@ -258,7 +258,7 @@ class SoftDeletableEntityTest {
     entityManager.getTransaction().commit();
 
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
@@ -284,7 +284,7 @@ class SoftDeletableEntityTest {
     entityManager.getTransaction().commit();
 
     entityManager.getTransaction().begin();
-    entity.markDeleted();
+    entity.markDeleted("test-user");
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
