@@ -567,6 +567,12 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 
 ## Notes for Claude Code
 
+**CRITICAL - Prerequisites First**: Before implementing any plan or feature:
+1. Check for prerequisites in documentation (e.g., "Prerequisites: service-common Enhancement")
+2. If prerequisites are NOT satisfied, STOP immediately and inform the user
+3. Do NOT attempt to hack around missing prerequisites - this leads to broken implementations that must be deleted
+4. Complete prerequisites first, then return to the original task
+
 ### Critical Rules
 **All code must be production-quality** - No shortcuts, prototypes, or workarounds
 **Use pure JPA only** - No Hibernate-specific imports (`org.hibernate.*`)
