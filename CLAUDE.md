@@ -224,10 +224,11 @@ find service-web/src/test/java -name "*Test.java"
 **Quick reference by module**:
 
 **service-core**:
-- Base Entities: `AuditableEntity` (timestamps), `SoftDeletableEntity` (soft delete)
+- Base Entities: `AuditableEntity` (timestamps + user tracking), `SoftDeletableEntity` (soft delete)
 - CSV Parsing: `CsvParser`, `CsvData`, `OpenCsvParser`
 - Safe Logging: `SafeLogger`, `@Sensitive` annotation, `SensitiveDataModule`
 - Repository: `SoftDeleteOperations`
+- User Tracking: `SecurityContextAuditorAware` (auto-populates createdBy/updatedBy from Security context)
 
 **service-web**:
 - Exceptions: `ResourceNotFoundException`, `BusinessException`, `InvalidRequestException`, `ServiceException`
@@ -324,8 +325,13 @@ grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
 **ServiceCoreAutoConfiguration** - Activated when service-core is on classpath:
 - **JPA Entity Scanning** (`@EntityScan`) - Automatically scans `org.budgetanalyzer.core.domain` for base entities (AuditableEntity, SoftDeletableEntity)
   - Conditional: Only when `DataSource` exists
-- **JPA Auditing** (`@EnableJpaAuditing`) - Enables automatic timestamps on entities extending AuditableEntity
+- **JPA Auditing** (`@EnableJpaAuditing`) - Enables automatic timestamps and user tracking on entities extending AuditableEntity
   - Conditional: Only when `DataSource` exists
+  - Provides `createdAt`, `updatedAt` (timestamps) and `createdBy`, `updatedBy` (user tracking)
+- **SecurityContextAuditorAware Bean** - Provides current user ID for JPA auditing
+  - Extracts user ID from `Authentication.getName()` in Spring Security context
+  - Typically contains Auth0 user ID (e.g., `auth0|507f1f77bcf86cd799439011`)
+  - Returns empty for anonymous users or system operations (fields remain null)
 - **OpenCsvParser Bean** - CSV parser component automatically available for injection
 
 #### What Requires Manual Use

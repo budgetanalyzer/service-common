@@ -30,6 +30,8 @@ public class SoftDeleteListener {
   @PreRemove
   public void preRemove(SoftDeletableEntity entity) {
     throw new UnsupportedOperationException(
-        "Hard delete not allowed for " + entity.getClass() + ". Use markDeleted(deletedBy) instead.");
+        "Hard delete not allowed for "
+            + entity.getClass()
+            + ". Use markDeleted(deletedBy) instead.");
   }
 }

@@ -592,10 +592,17 @@ public RoleResponse getRole(String id) { }
 **From the service-core module** (in `org.budgetanalyzer.core.domain`):
 
 ### AuditableEntity
-Provides automatic timestamp tracking:
+Provides automatic audit tracking:
 - `createdAt` - Timestamp when entity was created (immutable)
 - `updatedAt` - Timestamp when entity was last modified (auto-updated)
-- Managed by JPA lifecycle callbacks
+- `createdBy` - User ID who created the entity (immutable, from Spring Security context)
+- `updatedBy` - User ID who last modified the entity (from Spring Security context)
+
+**How it works**:
+- Timestamps are managed by JPA lifecycle callbacks (`@PrePersist`, `@PreUpdate`)
+- User tracking is managed by Spring Data JPA auditing (`@CreatedBy`, `@LastModifiedBy`)
+- `SecurityContextAuditorAware` bean extracts user ID from `Authentication.getName()`
+- User fields are null when no authentication context exists (system operations, migrations)
 
 **Location**: `service-core/src/main/java/org/budgetanalyzer/core/domain/AuditableEntity.java`
 
@@ -608,7 +615,16 @@ public class Transaction extends AuditableEntity {
     private Long id;
     // ... other fields
 }
+
+// Accessing audit fields
+Transaction tx = repository.findById(id).orElseThrow();
+Instant created = tx.getCreatedAt();       // When created
+Instant updated = tx.getUpdatedAt();       // When last modified
+String creator = tx.getCreatedBy();        // Who created it (e.g., "auth0|123...")
+String modifier = tx.getUpdatedBy();       // Who last modified it
 ```
+
+**Note**: User tracking requires Spring Security on the classpath. Services not using security will have null `createdBy`/`updatedBy` values.
 
 ### SoftDeletableEntity
 Extends `AuditableEntity` with soft-delete support:

@@ -1,1 +1,2 @@
 org.budgetanalyzer.core.config.ServiceCoreAutoConfiguration
+org.budgetanalyzer.core.config.ServiceCoreJpaAutoConfiguration

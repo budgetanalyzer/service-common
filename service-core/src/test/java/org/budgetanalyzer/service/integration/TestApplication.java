@@ -2,7 +2,12 @@ package org.budgetanalyzer.service.integration;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.domain.AuditorAware;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+import org.budgetanalyzer.core.config.SecurityContextAuditorAware;
 
 /**
  * Minimal Spring Boot application for integration testing.
@@ -29,6 +34,16 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
       "org.budgetanalyzer.core.integration.fixture",
       "org.budgetanalyzer.service.integration.fixture"
     })
+@EnableJpaAuditing(auditorAwareRef = "auditorAware")
 public class TestApplication {
-  // No main method needed - used only for @SpringBootTest
+
+  /**
+   * Provides the auditor for JPA auditing in tests.
+   *
+   * @return an AuditorAware that extracts user from security context
+   */
+  @Bean
+  public AuditorAware<String> auditorAware() {
+    return new SecurityContextAuditorAware();
+  }
 }

@@ -23,6 +23,7 @@ spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-
 spring-boot-starter-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-security-core = { module = "org.springframework.security:spring-security-core" }
 spring-security-test = { module = "org.springframework.security:spring-security-test" }
 
 # Jackson (versions managed by Spring Boot BOM)

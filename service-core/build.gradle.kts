@@ -21,12 +21,15 @@ dependencies {
 
     // NOT TRANSITIVE (compileOnly) - services using JPA entities must declare explicitly
     compileOnly(libs.spring.boot.starter.data.jpa)
+    compileOnly(libs.spring.security.core)
 
     implementation(libs.opencsv)
 
     // Test dependencies
     testImplementation(libs.spring.boot.starter.data.jpa)
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.security.core)
+    testImplementation(libs.spring.security.test)
     testRuntimeOnly(libs.junit.platform.launcher)
     testRuntimeOnly(libs.h2)
 }

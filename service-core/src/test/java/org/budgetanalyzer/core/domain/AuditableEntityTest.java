@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
@@ -255,6 +256,55 @@ class AuditableEntityTest {
     // Assert - createdAt should not change (PrePersist not called on update)
     assertEquals(
         originalCreatedAt, entity.getCreatedAt(), "PrePersist should not be triggered on update");
+  }
+
+  @Test
+  void shouldHaveCreatedByFieldAccessible() {
+    // Arrange
+    var entity = new TestAuditableEntity();
+    entity.setName("Test Entity");
+
+    // Act
+    entityManager.getTransaction().begin();
+    entityManager.persist(entity);
+    entityManager.getTransaction().commit();
+
+    // Assert - createdBy is null without AuditorAware configuration
+    assertNull(entity.getCreatedBy(), "createdBy should be null without AuditorAware");
+  }
+
+  @Test
+  void shouldHaveUpdatedByFieldAccessible() {
+    // Arrange
+    var entity = new TestAuditableEntity();
+    entity.setName("Test Entity");
+
+    // Act
+    entityManager.getTransaction().begin();
+    entityManager.persist(entity);
+    entityManager.getTransaction().commit();
+
+    // Assert - updatedBy is null without AuditorAware configuration
+    assertNull(entity.getUpdatedBy(), "updatedBy should be null without AuditorAware");
+  }
+
+  @Test
+  void shouldPersistAndRetrieveUserTrackingFields() {
+    // Arrange
+    var entity = new TestAuditableEntity();
+    entity.setName("Test Entity");
+
+    entityManager.getTransaction().begin();
+    entityManager.persist(entity);
+    entityManager.getTransaction().commit();
+
+    // Act - Clear and reload from database
+    entityManager.clear();
+    var reloadedEntity = entityManager.find(TestAuditableEntity.class, entity.getId());
+
+    // Assert - Fields should be accessible after reload (null without AuditorAware)
+    assertNull(reloadedEntity.getCreatedBy(), "createdBy should persist as null");
+    assertNull(reloadedEntity.getUpdatedBy(), "updatedBy should persist as null");
   }
 
   // Concrete test entity for testing AuditableEntity
