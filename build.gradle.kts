@@ -73,6 +73,7 @@ subprojects {
     // Shared checkstyle configuration
     configure<CheckstyleExtension> {
         toolVersion = "12.0.1"
+        config = resources.text.fromUri("https://raw.githubusercontent.com/budgetanalyzer/checkstyle-config/main/checkstyle.xml")
     }
 
     tasks.named("check") {
