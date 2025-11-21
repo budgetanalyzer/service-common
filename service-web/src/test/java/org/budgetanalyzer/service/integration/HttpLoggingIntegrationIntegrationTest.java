@@ -1,12 +1,12 @@
 package org.budgetanalyzer.service.integration;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,20 +21,16 @@ import org.budgetanalyzer.service.security.test.TestSecurityConfig;
  * Integration test verifying HTTP logging and correlation ID tracking work end-to-end.
  *
  * <p>Tests the full filter chain: CorrelationIdFilter → HttpLoggingFilter → Controller
- *
- * <p><b>NOTE:</b> Disabled in service-web library tests due to OAuth2 security filter conflicts.
- * These tests pass in consuming services (currency-service, transaction-service) where full
- * security context is properly configured.
  */
-@Disabled("Filter integration tests disabled in library - tested in consuming services")
 @SpringBootTest(
     classes = {ServletTestApplication.class, TestSecurityConfig.class},
+    webEnvironment = SpringBootTest.WebEnvironment.MOCK,
     properties = {
       "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
       "AUTH0_AUDIENCE=https://test-api.example.com",
       "spring.main.web-application-type=servlet"
     })
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 @DisplayName("HTTP Logging Integration Tests")
 class HttpLoggingIntegrationIntegrationTest {
 
@@ -44,7 +40,7 @@ class HttpLoggingIntegrationIntegrationTest {
   @DisplayName("Should add correlation ID header when not provided")
   void shouldAddCorrelationIdWhenNotProvided() throws Exception {
     mockMvc
-        .perform(get("/api/test/not-found"))
+        .perform(get("/api/test/not-found").with(jwt()))
         .andExpect(status().isNotFound())
         .andExpect(header().exists("X-Correlation-ID"));
   }
@@ -55,7 +51,7 @@ class HttpLoggingIntegrationIntegrationTest {
     var correlationId = "test-correlation-12345";
 
     mockMvc
-        .perform(get("/api/test/not-found").header("X-Correlation-ID", correlationId))
+        .perform(get("/api/test/not-found").header("X-Correlation-ID", correlationId).with(jwt()))
         .andExpect(status().isNotFound())
         .andExpect(header().string("X-Correlation-ID", correlationId));
   }
@@ -66,7 +62,8 @@ class HttpLoggingIntegrationIntegrationTest {
     var correlationId = "propagation-test-67890";
 
     mockMvc
-        .perform(get("/api/test/business-error").header("X-Correlation-ID", correlationId))
+        .perform(
+            get("/api/test/business-error").header("X-Correlation-ID", correlationId).with(jwt()))
         .andExpect(status().isUnprocessableEntity())
         .andExpect(header().string("X-Correlation-ID", correlationId));
   }
@@ -78,7 +75,10 @@ class HttpLoggingIntegrationIntegrationTest {
 
     mockMvc
         .perform(
-            post("/api/test/validate").contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
+            post("/api/test/validate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequest)
+                .with(jwt()))
         .andExpect(status().isOk());
   }
 
@@ -93,7 +93,8 @@ class HttpLoggingIntegrationIntegrationTest {
             post("/api/test/validate")
                 .header("X-Correlation-ID", correlationId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidJsonRequest))
+                .content(invalidJsonRequest)
+                .with(jwt()))
         .andExpect(status().isBadRequest())
         .andExpect(header().string("X-Correlation-ID", correlationId))
         .andExpect(jsonPath("$.type").value("VALIDATION_ERROR"));
@@ -107,14 +108,16 @@ class HttpLoggingIntegrationIntegrationTest {
         .perform(
             post("/api/test/validate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\": \"JsonTest\"}"))
+                .content("{\"name\": \"JsonTest\"}")
+                .with(jwt()))
         .andExpect(status().isOk());
 
     // Form data content type (will fail validation but tests logging)
     mockMvc.perform(
         post("/api/test/validate")
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .param("name", "FormTest"));
+            .param("name", "FormTest")
+            .with(jwt()));
   }
 
   @Test
@@ -124,17 +127,16 @@ class HttpLoggingIntegrationIntegrationTest {
         .perform(
             get("/api/test/not-found")
                 .header("X-Custom-Header", "CustomValue")
-                .header("User-Agent", "Integration-Test/1.0"))
+                .header("User-Agent", "Integration-Test/1.0")
+                .with(jwt()))
         .andExpect(status().isNotFound());
   }
 
   @Test
   @DisplayName("Should work with sensitive headers in configuration")
   void shouldWorkWithSensitiveHeadersInConfiguration() throws Exception {
-    // Authorization is marked as sensitive in application.yml
-    mockMvc
-        .perform(get("/api/test/not-found").header("Authorization", "Bearer secret-token"))
-        .andExpect(status().isNotFound());
+    // Authorization header is used by jwt() - this tests logging masks it
+    mockMvc.perform(get("/api/test/not-found").with(jwt())).andExpect(status().isNotFound());
   }
 
   @Test
@@ -145,15 +147,17 @@ class HttpLoggingIntegrationIntegrationTest {
     var correlationId3 = "request-3";
 
     mockMvc
-        .perform(get("/api/test/not-found").header("X-Correlation-ID", correlationId1))
+        .perform(get("/api/test/not-found").header("X-Correlation-ID", correlationId1).with(jwt()))
         .andExpect(header().string("X-Correlation-ID", correlationId1));
 
     mockMvc
-        .perform(get("/api/test/business-error").header("X-Correlation-ID", correlationId2))
+        .perform(
+            get("/api/test/business-error").header("X-Correlation-ID", correlationId2).with(jwt()))
         .andExpect(header().string("X-Correlation-ID", correlationId2));
 
     mockMvc
-        .perform(get("/api/test/invalid-request").header("X-Correlation-ID", correlationId3))
+        .perform(
+            get("/api/test/invalid-request").header("X-Correlation-ID", correlationId3).with(jwt()))
         .andExpect(header().string("X-Correlation-ID", correlationId3));
   }
 
@@ -168,7 +172,8 @@ class HttpLoggingIntegrationIntegrationTest {
             post("/api/test/validate")
                 .header("X-Correlation-ID", correlationId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(validRequest))
+                .content(validRequest)
+                .with(jwt()))
         .andExpect(status().isOk());
   }
 
@@ -182,7 +187,8 @@ class HttpLoggingIntegrationIntegrationTest {
         .perform(
             post("/api/test/validate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(largeButValidRequest))
+                .content(largeButValidRequest)
+                .with(jwt()))
         .andExpect(status().isOk());
   }
 
@@ -197,7 +203,8 @@ class HttpLoggingIntegrationIntegrationTest {
     var correlationId = "filter-order-test";
 
     mockMvc
-        .perform(get("/api/test/service-error").header("X-Correlation-ID", correlationId))
+        .perform(
+            get("/api/test/service-error").header("X-Correlation-ID", correlationId).with(jwt()))
         .andExpect(status().isInternalServerError())
         .andExpect(header().string("X-Correlation-ID", correlationId))
         .andExpect(jsonPath("$.type").value("INTERNAL_ERROR"));

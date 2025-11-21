@@ -11,6 +11,47 @@
 3. **Explain the situation** to the team
 4. **Fix the implementation** or update requirements - never write tests around bugs
 
+### NEVER Disable Tests
+
+**CRITICAL**: The `@Disabled` annotation must NEVER be used to skip broken or failing tests.
+
+**If a test is broken and cannot be fixed**:
+1. **STOP immediately** - Do not proceed with other work
+2. **Notify the user** - Explain what's broken and why it can't be fixed
+3. **Wait for guidance** - The user must decide how to proceed
+
+**Why `@Disabled` is forbidden**:
+- Disabled tests are invisible failures that accumulate technical debt
+- They mask real problems that need to be addressed
+- They create a false sense of test coverage
+- They are rarely revisited and become permanent gaps in testing
+
+```java
+// ❌ NEVER DO THIS
+@Disabled("Broken - needs to be fixed later")
+@Test
+void shouldProcessTransaction() {
+    // This test will be forgotten and never fixed
+}
+
+// ❌ NEVER DO THIS
+@Disabled("Waiting for feature X")
+@Test
+void shouldHandleNewFeature() {
+    // Use proper feature flags or don't write the test yet
+}
+```
+
+**Acceptable (rare) uses of `@Disabled`**:
+- Temporarily during active development within a single PR (must be removed before merge)
+- Platform-specific tests with `@DisabledOnOs` or `@EnabledOnOs` (not broken, just not applicable)
+
+**What to do instead**:
+- **Broken test?** → Fix it or delete it
+- **Can't fix it?** → STOP and notify the user
+- **Test for unimplemented feature?** → Don't write the test until the feature exists
+- **Flaky test?** → Fix the flakiness, don't disable it
+
 ## Test Types
 
 ### Unit Tests
