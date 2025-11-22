@@ -301,4 +301,47 @@ class CachedBodyServerHttpResponseDecoratorTest {
     // Act & Assert - Headers should be accessible through decorator
     assertEquals("custom-value", decorator.getHeaders().getFirst("X-Custom-Header"));
   }
+
+  @Test
+  void shouldReturnCorrectCachedBodySize() {
+    // Arrange
+    var originalResponse = new MockServerHttpResponse();
+    var decorator = new CachedBodyServerHttpResponseDecorator(originalResponse, 1000);
+    var responseBody = "Hello World";
+    var bodyBuffer = bufferFactory.wrap(responseBody.getBytes(StandardCharsets.UTF_8));
+
+    // Act
+    decorator.writeWith(Flux.just(bodyBuffer)).block();
+
+    // Assert
+    assertEquals(responseBody.length(), decorator.getCachedBodySize());
+  }
+
+  @Test
+  void shouldReturnZeroSizeForEmptyBody() {
+    // Arrange
+    var originalResponse = new MockServerHttpResponse();
+    var decorator = new CachedBodyServerHttpResponseDecorator(originalResponse, 1000);
+
+    // Act - Don't write anything
+
+    // Assert
+    assertEquals(0, decorator.getCachedBodySize());
+  }
+
+  @Test
+  void shouldReturnTruncatedSizeForLargeBody() {
+    // Arrange
+    var originalResponse = new MockServerHttpResponse();
+    var maxSize = 50;
+    var decorator = new CachedBodyServerHttpResponseDecorator(originalResponse, maxSize);
+    var responseBody = "x".repeat(100); // 100 bytes
+    var bodyBuffer = bufferFactory.wrap(responseBody.getBytes(StandardCharsets.UTF_8));
+
+    // Act
+    decorator.writeWith(Flux.just(bodyBuffer)).block();
+
+    // Assert - Size should be capped at maxSize
+    assertEquals(maxSize, decorator.getCachedBodySize());
+  }
 }

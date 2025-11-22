@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,6 +19,10 @@ import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
 /** Utility class for formatting and sanitizing HTTP request/response content for logging. */
 public class ContentLoggingUtil {
+
+  /** Content-Encoding values that indicate compressed content. */
+  private static final Set<String> COMPRESSED_ENCODINGS =
+      Set.of("gzip", "deflate", "br", "compress");
 
   /**
    * Extracts request details for logging.
@@ -89,6 +94,9 @@ public class ContentLoggingUtil {
   /**
    * Extracts response body from ContentCachingResponseWrapper.
    *
+   * <p>If the response is compressed (gzip, deflate, br, compress), returns a placeholder message
+   * instead of the raw compressed bytes.
+   *
    * @param responseWrapper The wrapped response
    * @param maxSize Maximum body size to extract
    * @return Response body as string, or null if empty
@@ -101,7 +109,34 @@ public class ContentLoggingUtil {
       return null;
     }
 
+    // Check if response is compressed
+    var contentEncoding = responseWrapper.getHeader("Content-Encoding");
+    if (isCompressed(contentEncoding)) {
+      return "[compressed: " + contentEncoding + ", " + content.length + " bytes]";
+    }
+
     return extractBody(content, responseWrapper.getCharacterEncoding(), maxSize);
+  }
+
+  /**
+   * Checks if the Content-Encoding indicates compressed content.
+   *
+   * @param contentEncoding The Content-Encoding header value
+   * @return True if the content is compressed
+   */
+  private static boolean isCompressed(String contentEncoding) {
+    if (contentEncoding == null || contentEncoding.isEmpty()) {
+      return false;
+    }
+
+    // Handle multiple encodings (e.g., "gzip, deflate") by checking each
+    var encodings = contentEncoding.toLowerCase().split(",");
+    for (String encoding : encodings) {
+      if (COMPRESSED_ENCODINGS.contains(encoding.trim())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
