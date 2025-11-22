@@ -294,4 +294,98 @@ class ContentLoggingUtilTest {
     // Assert
     assertFalse(details.containsKey("headers"));
   }
+
+  @Test
+  void shouldReturnPlaceholderForGzipCompressedResponse() {
+    // Arrange
+    var compressedBytes = new byte[] {0x1f, (byte) 0x8b, 0x08, 0x00}; // gzip magic bytes
+
+    when(responseWrapper.getContentAsByteArray()).thenReturn(compressedBytes);
+    when(responseWrapper.getHeader("Content-Encoding")).thenReturn("gzip");
+
+    // Act
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
+
+    // Assert
+    assertEquals("[compressed: gzip, 4 bytes]", extractedBody);
+  }
+
+  @Test
+  void shouldReturnPlaceholderForDeflateCompressedResponse() {
+    // Arrange
+    var compressedBytes = new byte[100];
+
+    when(responseWrapper.getContentAsByteArray()).thenReturn(compressedBytes);
+    when(responseWrapper.getHeader("Content-Encoding")).thenReturn("deflate");
+
+    // Act
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
+
+    // Assert
+    assertEquals("[compressed: deflate, 100 bytes]", extractedBody);
+  }
+
+  @Test
+  void shouldReturnPlaceholderForBrotliCompressedResponse() {
+    // Arrange
+    var compressedBytes = new byte[250];
+
+    when(responseWrapper.getContentAsByteArray()).thenReturn(compressedBytes);
+    when(responseWrapper.getHeader("Content-Encoding")).thenReturn("br");
+
+    // Act
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
+
+    // Assert
+    assertEquals("[compressed: br, 250 bytes]", extractedBody);
+  }
+
+  @Test
+  void shouldReturnPlaceholderForMultipleEncodings() {
+    // Arrange
+    var compressedBytes = new byte[500];
+
+    when(responseWrapper.getContentAsByteArray()).thenReturn(compressedBytes);
+    when(responseWrapper.getHeader("Content-Encoding")).thenReturn("gzip, deflate");
+
+    // Act
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
+
+    // Assert
+    assertEquals("[compressed: gzip, deflate, 500 bytes]", extractedBody);
+  }
+
+  @Test
+  void shouldReturnNormalBodyWhenNotCompressed() {
+    // Arrange
+    var responseBody = "{\"data\":\"test\"}";
+    var contentBytes = responseBody.getBytes();
+
+    when(responseWrapper.getContentAsByteArray()).thenReturn(contentBytes);
+    when(responseWrapper.getCharacterEncoding()).thenReturn("UTF-8");
+    when(responseWrapper.getHeader("Content-Encoding")).thenReturn(null);
+
+    // Act
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
+
+    // Assert
+    assertEquals(responseBody, extractedBody);
+  }
+
+  @Test
+  void shouldReturnNormalBodyWhenContentEncodingIsIdentity() {
+    // Arrange
+    var responseBody = "{\"data\":\"test\"}";
+    var contentBytes = responseBody.getBytes();
+
+    when(responseWrapper.getContentAsByteArray()).thenReturn(contentBytes);
+    when(responseWrapper.getCharacterEncoding()).thenReturn("UTF-8");
+    when(responseWrapper.getHeader("Content-Encoding")).thenReturn("identity");
+
+    // Act
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
+
+    // Assert
+    assertEquals(responseBody, extractedBody);
+  }
 }

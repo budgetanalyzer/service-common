@@ -2,6 +2,7 @@ package org.budgetanalyzer.service.reactive.http;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,11 @@ import org.budgetanalyzer.service.config.HttpLoggingProperties;
 public class ReactiveHttpLoggingFilter implements WebFilter {
 
   private static final Logger log = LoggerFactory.getLogger(ReactiveHttpLoggingFilter.class);
+
+  /** Content-Encoding values that indicate compressed content. */
+  private static final Set<String> COMPRESSED_ENCODINGS =
+      Set.of("gzip", "deflate", "br", "compress");
+
   private final HttpLoggingProperties properties;
 
   /**
@@ -156,7 +162,14 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
 
       String responseBody = null;
       if (properties.isIncludeResponseBody()) {
-        responseBody = response.getCachedBody();
+        // Check if response is compressed
+        var contentEncoding = response.getHeaders().getFirst("Content-Encoding");
+        if (isCompressed(contentEncoding)) {
+          responseBody =
+              "[compressed: " + contentEncoding + ", " + response.getCachedBodySize() + " bytes]";
+        } else {
+          responseBody = response.getCachedBody();
+        }
       }
 
       var message = HttpLogFormatter.formatLogMessage("HTTP Response", details, responseBody);
@@ -202,5 +215,26 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       default:
         log.debug(message);
     }
+  }
+
+  /**
+   * Checks if the Content-Encoding indicates compressed content.
+   *
+   * @param contentEncoding the Content-Encoding header value
+   * @return true if the content is compressed
+   */
+  private boolean isCompressed(String contentEncoding) {
+    if (contentEncoding == null || contentEncoding.isEmpty()) {
+      return false;
+    }
+
+    // Handle multiple encodings (e.g., "gzip, deflate") by checking each
+    var encodings = contentEncoding.toLowerCase().split(",");
+    for (String encoding : encodings) {
+      if (COMPRESSED_ENCODINGS.contains(encoding.trim())) {
+        return true;
+      }
+    }
+    return false;
   }
 }

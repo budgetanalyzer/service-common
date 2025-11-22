@@ -64,4 +64,13 @@ public class CachedBodyServerHttpResponseDecorator extends ServerHttpResponseDec
     }
     return body;
   }
+
+  /**
+   * Gets the size of the cached response body in bytes.
+   *
+   * @return number of bytes cached
+   */
+  public int getCachedBodySize() {
+    return cachedBody.length();
+  }
 }
