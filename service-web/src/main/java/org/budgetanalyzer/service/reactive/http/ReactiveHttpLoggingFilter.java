@@ -97,7 +97,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
   private Mono<Void> logRequest(CachedBodyServerHttpRequestDecorator request) {
     try {
       Map<String, Object> details = new HashMap<>();
-      details.put("method", request.getMethod());
+      details.put("method", request.getMethod().name());
       details.put("uri", request.getURI().toString());
 
       if (properties.isIncludeQueryParams() && request.getURI().getQuery() != null) {

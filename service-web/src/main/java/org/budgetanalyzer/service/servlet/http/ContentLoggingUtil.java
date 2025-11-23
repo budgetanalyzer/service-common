@@ -35,7 +35,7 @@ public class ContentLoggingUtil {
       HttpServletRequest request, HttpLoggingProperties properties) {
     var details = new LinkedHashMap<String, Object>();
 
-    details.put("method", request.getMethod());
+    details.put("method", request.getMethod().toUpperCase());
     details.put("uri", request.getRequestURI());
 
     if (properties.isIncludeQueryParams() && request.getQueryString() != null) {
