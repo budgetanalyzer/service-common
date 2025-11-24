@@ -32,11 +32,11 @@ class CorrelationIdFilterTest {
 
   @Mock private FilterChain filterChain;
 
-  private CorrelationIdFilter filter;
+  private CorrelationIdFilter correlationIdFilter;
 
   @BeforeEach
   void setUp() {
-    filter = new CorrelationIdFilter();
+    correlationIdFilter = new CorrelationIdFilter();
     MDC.clear();
   }
 
@@ -51,7 +51,7 @@ class CorrelationIdFilterTest {
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    correlationIdFilter.doFilterInternal(request, response, filterChain);
 
     // Assert
     verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
@@ -66,7 +66,7 @@ class CorrelationIdFilterTest {
         .thenReturn(existingCorrelationId);
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    correlationIdFilter.doFilterInternal(request, response, filterChain);
 
     // Assert
     verify(response).setHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, existingCorrelationId);
@@ -79,7 +79,7 @@ class CorrelationIdFilterTest {
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
 
     // Act
-    filter.doFilterInternal(
+    correlationIdFilter.doFilterInternal(
         request,
         response,
         (req, res) -> {
@@ -99,7 +99,7 @@ class CorrelationIdFilterTest {
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    correlationIdFilter.doFilterInternal(request, response, filterChain);
 
     // Assert
     assertNull(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY));
@@ -113,7 +113,8 @@ class CorrelationIdFilterTest {
 
     // Act & Assert
     assertThrows(
-        RuntimeException.class, () -> filter.doFilterInternal(request, response, filterChain));
+        RuntimeException.class,
+        () -> correlationIdFilter.doFilterInternal(request, response, filterChain));
 
     // MDC should still be cleared
     assertNull(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY));
@@ -128,7 +129,7 @@ class CorrelationIdFilterTest {
     var correlationIds = new String[10];
     for (int i = 0; i < 10; i++) {
       final int index = i;
-      filter.doFilterInternal(
+      correlationIdFilter.doFilterInternal(
           request,
           response,
           (req, res) -> {
@@ -146,7 +147,7 @@ class CorrelationIdFilterTest {
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn("  ");
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    correlationIdFilter.doFilterInternal(request, response, filterChain);
 
     // Assert - Should generate new ID when header is empty/whitespace
     verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
@@ -158,7 +159,7 @@ class CorrelationIdFilterTest {
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
 
     // Act
-    filter.doFilterInternal(
+    correlationIdFilter.doFilterInternal(
         request,
         response,
         (req, res) -> {

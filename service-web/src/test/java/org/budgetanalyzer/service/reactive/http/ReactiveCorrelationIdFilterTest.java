@@ -28,11 +28,11 @@ class ReactiveCorrelationIdFilterTest {
 
   @Mock private WebFilterChain filterChain;
 
-  private ReactiveCorrelationIdFilter filter;
+  private ReactiveCorrelationIdFilter reactiveCorrelationIdFilter;
 
   @BeforeEach
   void setUp() {
-    filter = new ReactiveCorrelationIdFilter();
+    reactiveCorrelationIdFilter = new ReactiveCorrelationIdFilter();
   }
 
   @Test
@@ -42,7 +42,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert
     StepVerifier.create(result)
@@ -76,7 +76,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert
     StepVerifier.create(result)
@@ -104,7 +104,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert
     StepVerifier.create(result)
@@ -131,7 +131,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    filter.filter(exchange, filterChain).block();
+    reactiveCorrelationIdFilter.filter(exchange, filterChain).block();
 
     // Assert
     var responseHeaders = exchange.getResponse().getHeaders();
@@ -158,7 +158,7 @@ class ReactiveCorrelationIdFilterTest {
             });
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert
     StepVerifier.create(result).verifyComplete();
@@ -174,7 +174,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert - Context is accessible only within the reactive chain
     StepVerifier.create(result)
@@ -198,7 +198,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.error(expectedException));
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert - Context should be accessible even when there's an error
     StepVerifier.create(result)
@@ -221,7 +221,7 @@ class ReactiveCorrelationIdFilterTest {
     // Act - Call filter multiple times
     for (int i = 0; i < 10; i++) {
       var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/test"));
-      var result = filter.filter(exchange, filterChain);
+      var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
       StepVerifier.create(result)
           .expectAccessibleContext()
@@ -249,7 +249,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert - Should generate new ID when header is empty/whitespace
     StepVerifier.create(result)
@@ -277,7 +277,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert
     StepVerifier.create(result)
@@ -308,7 +308,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
 
     // Assert - Should generate new ID
     StepVerifier.create(result)
@@ -333,7 +333,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    filter.filter(exchange, filterChain).block();
+    reactiveCorrelationIdFilter.filter(exchange, filterChain).block();
 
     // Assert - Custom header should still exist alongside correlation ID
     var responseHeaders = exchange.getResponse().getHeaders();
@@ -353,7 +353,7 @@ class ReactiveCorrelationIdFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    filter.filter(exchange, filterChain).block();
+    reactiveCorrelationIdFilter.filter(exchange, filterChain).block();
 
     // Assert - Should use the existing correlation ID from request
     var responseHeaders = exchange.getResponse().getHeaders();

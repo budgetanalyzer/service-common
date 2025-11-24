@@ -28,11 +28,11 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
 @DisplayName("ReactiveApiExceptionHandler Tests")
 class ReactiveApiExceptionHandlerTest {
 
-  private ReactiveApiExceptionHandler handler;
+  private ReactiveApiExceptionHandler reactiveApiExceptionHandler;
 
   @BeforeEach
   void setUp() {
-    handler = new ReactiveApiExceptionHandler();
+    reactiveApiExceptionHandler = new ReactiveApiExceptionHandler();
   }
 
   @Test
@@ -40,7 +40,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleInvalidRequestException() {
     var exception = new InvalidRequestException("Invalid request format");
 
-    var result = handler.handleInvalidRequest(exception);
+    var result = reactiveApiExceptionHandler.handleInvalidRequest(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -62,7 +62,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleResourceNotFoundException() {
     var exception = new ResourceNotFoundException("Transaction not found with id: 123");
 
-    var result = handler.handleNotFound(exception);
+    var result = reactiveApiExceptionHandler.handleNotFound(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -84,7 +84,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleBusinessException() {
     var exception = new BusinessException("Amount must be positive", "NEGATIVE_AMOUNT");
 
-    var result = handler.handleBusiness(exception);
+    var result = reactiveApiExceptionHandler.handleBusiness(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -106,7 +106,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleBusinessExceptionWithNullCode() {
     var exception = new BusinessException("Business rule violation", null);
 
-    var result = handler.handleBusiness(exception);
+    var result = reactiveApiExceptionHandler.handleBusiness(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -127,7 +127,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleClientException() {
     var exception = new ClientException("External API failed");
 
-    var result = handler.handleClientException(exception);
+    var result = reactiveApiExceptionHandler.handleClientException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -148,7 +148,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleServiceUnavailableException() {
     var exception = new ServiceUnavailableException("Database connection failed");
 
-    var result = handler.handleServiceUnavailable(exception);
+    var result = reactiveApiExceptionHandler.handleServiceUnavailable(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -180,7 +180,7 @@ class ReactiveApiExceptionHandlerTest {
         new org.springframework.core.MethodParameter(method, -1); // -1 for return type
     var exception = new WebExchangeBindException(methodParam, bindingResult);
 
-    var result = handler.handleValidation(exception);
+    var result = reactiveApiExceptionHandler.handleValidation(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -210,7 +210,7 @@ class ReactiveApiExceptionHandlerTest {
         new org.springframework.core.MethodParameter(method, -1); // -1 for return type
     var exception = new WebExchangeBindException(methodParam, bindingResult);
 
-    var result = handler.handleValidation(exception);
+    var result = reactiveApiExceptionHandler.handleValidation(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -233,7 +233,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleGenericException() {
     var exception = new Exception("Unexpected error occurred");
 
-    var result = handler.handleGenericException(exception);
+    var result = reactiveApiExceptionHandler.handleGenericException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -254,7 +254,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleRuntimeException() {
     var exception = new RuntimeException("Runtime error");
 
-    var result = handler.handleGenericException(exception);
+    var result = reactiveApiExceptionHandler.handleGenericException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -274,7 +274,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleIoException() {
     var exception = new IOException("IO error occurred");
 
-    var result = handler.handleGenericException(exception);
+    var result = reactiveApiExceptionHandler.handleGenericException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -294,7 +294,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleServiceException() {
     var exception = new ServiceException("Service error");
 
-    var result = handler.handleGenericException(exception);
+    var result = reactiveApiExceptionHandler.handleGenericException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -314,7 +314,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleExceptionWithNullMessage() {
     var exception = new InvalidRequestException(null);
 
-    var result = handler.handleInvalidRequest(exception);
+    var result = reactiveApiExceptionHandler.handleInvalidRequest(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -334,7 +334,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleExceptionWithEmptyMessage() {
     var exception = new ResourceNotFoundException("");
 
-    var result = handler.handleNotFound(exception);
+    var result = reactiveApiExceptionHandler.handleNotFound(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -355,7 +355,7 @@ class ReactiveApiExceptionHandlerTest {
     var cause = new IOException("Network error");
     var exception = new ServiceUnavailableException("Service down", cause);
 
-    var result = handler.handleServiceUnavailable(exception);
+    var result = reactiveApiExceptionHandler.handleServiceUnavailable(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -377,7 +377,7 @@ class ReactiveApiExceptionHandlerTest {
     var intermediateCause = new IOException("IO error", rootCause);
     var exception = new ClientException("Client error", intermediateCause);
 
-    var result = handler.handleClientException(exception);
+    var result = reactiveApiExceptionHandler.handleClientException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -398,7 +398,7 @@ class ReactiveApiExceptionHandlerTest {
     var detailedMessage = "Budget limit of $1000.00 exceeded by $250.50";
     var exception = new BusinessException(detailedMessage, "BUDGET_EXCEEDED");
 
-    var result = handler.handleBusiness(exception);
+    var result = reactiveApiExceptionHandler.handleBusiness(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -417,7 +417,7 @@ class ReactiveApiExceptionHandlerTest {
     var parseException = new NumberFormatException("Cannot parse 'abc' as number");
     var exception = new InvalidRequestException("Invalid number format", parseException);
 
-    var result = handler.handleInvalidRequest(exception);
+    var result = reactiveApiExceptionHandler.handleInvalidRequest(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -438,8 +438,8 @@ class ReactiveApiExceptionHandlerTest {
     var exception1 = new ResourceNotFoundException("User not found");
     var exception2 = new ResourceNotFoundException("Product not found");
 
-    var result1 = handler.handleNotFound(exception1);
-    var result2 = handler.handleNotFound(exception2);
+    var result1 = reactiveApiExceptionHandler.handleNotFound(exception1);
+    var result2 = reactiveApiExceptionHandler.handleNotFound(exception2);
 
     StepVerifier.create(result1)
         .assertNext(
@@ -461,7 +461,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleNullPointerExceptionAsInternalError() {
     var exception = new NullPointerException("Null value encountered");
 
-    var result = handler.handleGenericException(exception);
+    var result = reactiveApiExceptionHandler.handleGenericException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -481,7 +481,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleIllegalArgumentExceptionAsInternalError() {
     var exception = new IllegalArgumentException("Invalid argument provided");
 
-    var result = handler.handleGenericException(exception);
+    var result = reactiveApiExceptionHandler.handleGenericException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -501,7 +501,7 @@ class ReactiveApiExceptionHandlerTest {
   void shouldHandleIllegalStateExceptionAsInternalError() {
     var exception = new IllegalStateException("Invalid state");
 
-    var result = handler.handleGenericException(exception);
+    var result = reactiveApiExceptionHandler.handleGenericException(exception);
 
     StepVerifier.create(result)
         .assertNext(
@@ -532,7 +532,7 @@ class ReactiveApiExceptionHandlerTest {
         new org.springframework.core.MethodParameter(method, -1); // -1 for return type
     var exception = new WebExchangeBindException(methodParam, bindingResult);
 
-    var result = handler.handleValidation(exception);
+    var result = reactiveApiExceptionHandler.handleValidation(exception);
 
     StepVerifier.create(result)
         .assertNext(
