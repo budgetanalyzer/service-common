@@ -10,6 +10,19 @@ Multi-module Gradle project providing shared libraries for all Budget Analyzer S
 **Impacts**: transaction-service, currency-service, and all future Spring Boot services.
 Changes here affect all services that depend on these libraries.
 
+## Repository Scope
+
+**Role**: Shared library with downstream write access.
+
+**Allowed**:
+- Read all sibling repositories
+- Write to this repository
+- Write to consumer services: transaction-service, currency-service, token-validation-service, permission-service, session-gateway
+
+**Forbidden**:
+- Writing to orchestration (coordinate changes with user)
+- Writing to budget-analyzer-web (different tech stack)
+
 ## Module Architecture
 
 ### service-core
