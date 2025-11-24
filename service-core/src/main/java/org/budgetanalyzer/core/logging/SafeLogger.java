@@ -16,20 +16,20 @@ public class SafeLogger {
   private static final ObjectMapper SAFE_MAPPER = createSafeMapper();
 
   private static ObjectMapper createSafeMapper() {
-    var mapper = new ObjectMapper();
-    mapper.registerModule(new JavaTimeModule());
-    mapper.registerModule(new SensitiveDataModule());
+    var objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+    objectMapper.registerModule(new SensitiveDataModule());
 
     // Register fallback serializer for unknown types (e.g., Spring HttpMethod)
     var fallbackModule = new SimpleModule("UnknownTypeFallbackModule");
     fallbackModule.setSerializerModifier(new UnknownTypeSerializer.ToStringFallbackModifier());
-    mapper.registerModule(fallbackModule);
+    objectMapper.registerModule(fallbackModule);
 
-    mapper.enable(SerializationFeature.INDENT_OUTPUT);
-    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+    objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
-    return mapper;
+    return objectMapper;
   }
 
   /**

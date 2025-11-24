@@ -4,6 +4,22 @@
 
 All Budget Analyzer microservices follow strict code quality standards enforced through automated tooling and code review.
 
+## Why Open-Source Tooling
+
+**Core Principle**: All development tooling is open-source with no proprietary dependencies.
+
+### Rationale
+
+1. **AI-Assisted Development**: Claude files (CLAUDE.md) can be shared across public repositories without licensing or SSL issues. This enables consistent AI-assisted development workflows across the ecosystem.
+
+2. **Single Core Dev Environment**: We standardize on one tooling stack that works everywhere - local development, CI/CD, and AI agents. No "works on my machine" issues from proprietary formatters or analyzers.
+
+3. **Community Standards**: Google Java Format and Checkstyle are industry-standard, well-documented, and actively maintained. New developers and AI assistants understand them immediately.
+
+4. **Future-Proof**: Open-source tools can be audited, forked, and extended. We're not dependent on any vendor's roadmap or licensing changes.
+
+This is the foundation for collaborative AI-native development - a standardized, reproducible environment that humans and AI can share.
+
 ## Spotless Configuration
 
 **Purpose**: Automatic code formatting with Google Java Format
@@ -75,29 +91,53 @@ The `clean build` command will:
 
 **Never use** individual gradle tasks like `check`, `bootJar`, `checkstyleMain`, etc. Always use the full `clean build` sequence.
 
-## Variable Declarations
+## Variable Declarations and Naming (Unified Design)
 
-**Rule**: Use `var` whenever possible for local variables to reduce verbosity and improve readability.
+**Core Principle**: `var` usage and type-based naming work together as a unified design. The variable name IS the type documentation - no mental mapping required.
 
-### When to Use `var`
+### Why This Works
+
+When you write:
 ```java
-// ✅ GOOD - Type is obvious from right-hand side
-var transaction = new Transaction();
-var list = new ArrayList<String>();
-var result = repository.findById(id);
-var startDate = LocalDate.now();
+var currencySeriesRepository = getCurrencySeriesRepository();
+```
+
+The variable name `currencySeriesRepository` tells you exactly what type it is. Compare to:
+```java
+CurrencySeriesRepository repository = getCurrencySeriesRepository();
+```
+
+Here you must mentally track that `repository` means `CurrencySeriesRepository` throughout the method. With our convention, there's no disconnect - the name IS the type.
+
+### The Two Rules
+
+**Rule 1**: Use `var` whenever possible for local variables
+**Rule 2**: Name variables by their full type in camelCase
+
+These rules are inseparable - using `var` without type-based naming loses type information; using type-based naming without `var` creates redundancy.
+
+### Examples
+```java
+// ✅ CORRECT - Self-documenting, no redundancy
+var currencySeriesRepository = getCurrencySeriesRepository();
+var transactionService = new TransactionService();
+var exchangeRates = provider.getExchangeRates();
+
+// ❌ WRONG - Lost type information
+var repo = getCurrencySeriesRepository();
+var service = new TransactionService();
+
+// ❌ WRONG - Redundant
+CurrencySeriesRepository currencySeriesRepository = getCurrencySeriesRepository();
 ```
 
 ### When NOT to Use `var`
 ```java
-// ❌ Use explicit type when casting is the only alternative
+// Use explicit type when type isn't inferrable
 Map<String, Object> details = Map.of("method", "POST", "uri", "/api/users", "status", 201);
-
-// ❌ Use explicit type when return type isn't obvious
-TransactionService service = createTransactionService();  // Factory method
 ```
 
-## Variable Naming Conventions
+## Variable Naming Details
 
 **Rule**: Variable names should use the full class name in camelCase to improve code readability and IDE autocomplete discoverability.
 

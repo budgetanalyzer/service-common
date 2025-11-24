@@ -42,16 +42,16 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
 
   private static final Logger log = LoggerFactory.getLogger(HttpLoggingFilter.class);
 
-  private final HttpLoggingProperties properties;
+  private final HttpLoggingProperties httpLoggingProperties;
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
   /**
-   * Constructs an HttpLoggingFilter with the specified configuration properties.
+   * Constructs an HttpLoggingFilter with the specified configuration httpLoggingProperties.
    *
-   * @param properties the HTTP logging configuration properties
+   * @param httpLoggingProperties the HTTP logging configuration properties
    */
-  public HttpLoggingFilter(HttpLoggingProperties properties) {
-    this.properties = properties;
+  public HttpLoggingFilter(HttpLoggingProperties httpLoggingProperties) {
+    this.httpLoggingProperties = httpLoggingProperties;
   }
 
   /**
@@ -89,7 +89,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
       @NonNull FilterChain filterChain)
       throws ServletException, IOException {
     // Skip if logging is disabled
-    if (!properties.isEnabled()) {
+    if (!httpLoggingProperties.isEnabled()) {
       filterChain.doFilter(request, response);
       return;
     }
@@ -132,11 +132,12 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    */
   private void logRequest(ContentCachingRequestWrapper request) {
     try {
-      var requestDetails = ContentLoggingUtil.extractRequestDetails(request, properties);
+      var requestDetails = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
 
       String requestBody = null;
-      if (properties.isIncludeRequestBody() && hasBody(request)) {
-        requestBody = ContentLoggingUtil.extractRequestBody(request, properties.getMaxBodySize());
+      if (httpLoggingProperties.isIncludeRequestBody() && hasBody(request)) {
+        requestBody =
+            ContentLoggingUtil.extractRequestBody(request, httpLoggingProperties.getMaxBodySize());
       }
 
       var logMessage =
@@ -158,18 +159,20 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
   private void logResponse(ContentCachingResponseWrapper response, long duration) {
     try {
       // Check if we should only log errors
-      if (properties.isLogErrorsOnly() && response.getStatus() < 400) {
+      if (httpLoggingProperties.isLogErrorsOnly() && response.getStatus() < 400) {
         return;
       }
 
-      var responseDetails = ContentLoggingUtil.extractResponseDetails(response, properties);
+      var responseDetails =
+          ContentLoggingUtil.extractResponseDetails(response, httpLoggingProperties);
 
       responseDetails.put("durationMs", duration);
 
       String responseBody = null;
-      if (properties.isIncludeResponseBody()) {
+      if (httpLoggingProperties.isIncludeResponseBody()) {
         responseBody =
-            ContentLoggingUtil.extractResponseBody(response, properties.getMaxBodySize());
+            ContentLoggingUtil.extractResponseBody(
+                response, httpLoggingProperties.getMaxBodySize());
       }
 
       var logMessage =
@@ -195,7 +198,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    * @param message The message to log
    */
   private void logAtConfiguredLevel(String message) {
-    var level = properties.getLogLevel().toUpperCase();
+    var level = httpLoggingProperties.getLogLevel().toUpperCase();
 
     switch (level) {
       case "TRACE":
@@ -240,7 +243,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
   private boolean shouldSkipLogging(HttpServletRequest request) {
     // Skip health check agents (Kubernetes probes, AWS ELB, GCP health checks)
     var userAgent = request.getHeader("User-Agent");
-    if (properties.isHealthCheckAgent(userAgent)) {
+    if (httpLoggingProperties.isHealthCheckAgent(userAgent)) {
       return true;
     }
 
@@ -249,9 +252,9 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
     var path = request.getServletPath();
 
     // Check explicit include patterns first
-    if (!properties.getIncludePatterns().isEmpty()) {
+    if (!httpLoggingProperties.getIncludePatterns().isEmpty()) {
       var included =
-          properties.getIncludePatterns().stream()
+          httpLoggingProperties.getIncludePatterns().stream()
               .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
       if (!included) {
@@ -260,9 +263,9 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
     }
 
     // Check exclude patterns
-    if (!properties.getExcludePatterns().isEmpty()) {
+    if (!httpLoggingProperties.getExcludePatterns().isEmpty()) {
       var excluded =
-          properties.getExcludePatterns().stream()
+          httpLoggingProperties.getExcludePatterns().stream()
               .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
       if (excluded) {

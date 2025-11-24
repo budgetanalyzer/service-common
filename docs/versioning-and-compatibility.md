@@ -14,13 +14,25 @@
 
 ## Why Backwards Compatibility Matters
 
-### The Lockstep Upgrade Strategy
+### CI/CD-Driven Lockstep Upgrades
 
-Budget Analyzer uses a **lockstep upgrade strategy** for service-core and service-web:
-- When service-core or service-web is updated, ALL consuming services are upgraded together
-- All services stay on the same version of both modules
+Budget Analyzer uses a **CI/CD-driven lockstep upgrade strategy** for service-core and service-web:
+
+**How it works**: Pushes to service-common trigger automated CI/CD releases of all microservices. This is not a manual "war room" coordination - it's fully automated.
+
+**Benefits**:
+- All services stay on the same version of both modules - always latest
 - Integration issues are caught immediately during the coordinated upgrade
 - No version fragmentation across the microservice ecosystem
+- No mental overhead of tracking "which service is on which version"
+
+**Why not independent versioning?** Independent versioning creates operational complexity:
+- Compatibility matrices to maintain
+- "Works on my machine" issues from version mismatches
+- Integration bugs that surface weeks after the actual breaking change
+- Cognitive overhead of version tracking across services
+
+With CI/CD lockstep, the question "which version?" has one answer: latest.
 
 ### Problems with Breaking Changes
 

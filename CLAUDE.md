@@ -482,8 +482,15 @@ All API errors follow `ApiErrorResponse` format with error types, field-level va
 ### Soft Delete Pattern
 Entities extending `SoftDeletableEntity` are never actually deleted from the database - only marked as deleted.
 
-### Backwards Compatibility: Lockstep Upgrades
-**CRITICAL**: ALL changes to service-core and service-web MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these libraries to avoid missing small changes that break things later.
+### Backwards Compatibility: CI/CD-Driven Lockstep Upgrades
+**CRITICAL**: ALL changes to service-core and service-web MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these libraries.
+
+**How it works**: Pushes to service-common trigger automated CI/CD releases of all microservices. All services are always on the latest version - no version tracking mental overhead, no "which services are on which version?" confusion.
+
+**Why lockstep over independent versioning**:
+- **Eliminates version drift**: Integration issues surface immediately during the coordinated upgrade, not weeks later
+- **Simpler operations**: One version across all services means consistent behavior and simpler debugging
+- **Reduced mental overhead**: No compatibility matrices to maintain, no version mismatch investigations
 
 **Note**: Both modules (service-core and service-web) are versioned together and released as a coordinated pair.
 

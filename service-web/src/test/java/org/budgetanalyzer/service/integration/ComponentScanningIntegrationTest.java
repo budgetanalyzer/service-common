@@ -59,15 +59,15 @@ class ComponentScanningIntegrationTest {
   @Test
   @DisplayName("Should be able to autowire CorrelationIdFilter")
   void shouldAutowireCorrelationIdFilter() {
-    var filter = context.getBean(CorrelationIdFilter.class);
-    assertThat(filter).isNotNull();
+    var correlationIdFilter = context.getBean(CorrelationIdFilter.class);
+    assertThat(correlationIdFilter).isNotNull();
   }
 
   @Test
   @DisplayName("Should be able to autowire HttpLoggingFilter")
   void shouldAutowireHttpLoggingFilter() {
-    var filter = context.getBean(HttpLoggingFilter.class);
-    assertThat(filter).isNotNull();
+    var httpLoggingFilter = context.getBean(HttpLoggingFilter.class);
+    assertThat(httpLoggingFilter).isNotNull();
   }
 
   @Test

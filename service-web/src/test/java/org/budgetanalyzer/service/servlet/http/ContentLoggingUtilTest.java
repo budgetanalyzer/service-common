@@ -36,16 +36,16 @@ class ContentLoggingUtilTest {
 
   @Mock private ContentCachingResponseWrapper responseWrapper;
 
-  private HttpLoggingProperties properties;
+  private HttpLoggingProperties httpLoggingProperties;
 
   @BeforeEach
   void setUp() {
-    properties = new HttpLoggingProperties();
-    properties.setEnabled(true);
-    properties.setIncludeRequestHeaders(true);
-    properties.setIncludeResponseHeaders(true);
-    properties.setIncludeQueryParams(true);
-    properties.setIncludeClientIp(true);
+    httpLoggingProperties = new HttpLoggingProperties();
+    httpLoggingProperties.setEnabled(true);
+    httpLoggingProperties.setIncludeRequestHeaders(true);
+    httpLoggingProperties.setIncludeResponseHeaders(true);
+    httpLoggingProperties.setIncludeQueryParams(true);
+    httpLoggingProperties.setIncludeClientIp(true);
   }
 
   @Test
@@ -58,7 +58,7 @@ class ContentLoggingUtilTest {
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
 
     // Assert
     assertEquals("GET", details.get("method"));
@@ -82,7 +82,7 @@ class ContentLoggingUtilTest {
     when(request.getHeader("X-API-Key")).thenReturn("my-secret-key");
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
 
     // Assert
     @SuppressWarnings("unchecked")
@@ -102,7 +102,7 @@ class ContentLoggingUtilTest {
     lenient().when(request.getRemoteAddr()).thenReturn("192.168.1.1");
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
 
     // Assert - Should use first IP from X-Forwarded-For
     assertEquals("203.0.113.1", details.get("clientIp"));
@@ -115,7 +115,7 @@ class ContentLoggingUtilTest {
     when(response.getHeaderNames()).thenReturn(Collections.emptyList());
 
     // Act
-    var details = ContentLoggingUtil.extractResponseDetails(response, properties);
+    var details = ContentLoggingUtil.extractResponseDetails(response, httpLoggingProperties);
 
     // Assert
     assertEquals(200, details.get("status"));
@@ -130,7 +130,7 @@ class ContentLoggingUtilTest {
     when(response.getHeader("Content-Type")).thenReturn("application/json");
 
     // Act
-    var details = ContentLoggingUtil.extractResponseDetails(response, properties);
+    var details = ContentLoggingUtil.extractResponseDetails(response, httpLoggingProperties);
 
     // Assert
     @SuppressWarnings("unchecked")
@@ -255,13 +255,13 @@ class ContentLoggingUtilTest {
   @Test
   void shouldNotIncludeQueryParamsWhenDisabled() {
     // Arrange
-    properties.setIncludeQueryParams(false);
+    httpLoggingProperties.setIncludeQueryParams(false);
     when(request.getMethod()).thenReturn("GET");
     when(request.getRequestURI()).thenReturn("/api/users");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
 
     // Assert
     assertFalse(details.containsKey("queryString"));
@@ -270,12 +270,12 @@ class ContentLoggingUtilTest {
   @Test
   void shouldNotIncludeClientIpWhenDisabled() {
     // Arrange
-    properties.setIncludeClientIp(false);
+    httpLoggingProperties.setIncludeClientIp(false);
     when(request.getMethod()).thenReturn("GET");
     when(request.getRequestURI()).thenReturn("/api/users");
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
 
     // Assert
     assertFalse(details.containsKey("clientIp"));
@@ -284,12 +284,12 @@ class ContentLoggingUtilTest {
   @Test
   void shouldNotIncludeHeadersWhenDisabled() {
     // Arrange
-    properties.setIncludeRequestHeaders(false);
+    httpLoggingProperties.setIncludeRequestHeaders(false);
     when(request.getMethod()).thenReturn("GET");
     when(request.getRequestURI()).thenReturn("/api/users");
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, properties);
+    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
 
     // Assert
     assertFalse(details.containsKey("headers"));

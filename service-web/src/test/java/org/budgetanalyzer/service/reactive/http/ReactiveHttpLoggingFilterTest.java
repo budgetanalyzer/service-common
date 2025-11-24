@@ -30,32 +30,32 @@ class ReactiveHttpLoggingFilterTest {
 
   @Mock private WebFilterChain filterChain;
 
-  private HttpLoggingProperties properties;
-  private ReactiveHttpLoggingFilter filter;
+  private HttpLoggingProperties httpLoggingProperties;
+  private ReactiveHttpLoggingFilter reactiveHttpLoggingFilter;
 
   @BeforeEach
   void setUp() {
-    properties = new HttpLoggingProperties();
-    properties.setEnabled(true);
-    properties.setLogLevel("DEBUG");
-    properties.setIncludeRequestBody(true);
-    properties.setIncludeResponseBody(true);
-    properties.setMaxBodySize(10000);
+    httpLoggingProperties = new HttpLoggingProperties();
+    httpLoggingProperties.setEnabled(true);
+    httpLoggingProperties.setLogLevel("DEBUG");
+    httpLoggingProperties.setIncludeRequestBody(true);
+    httpLoggingProperties.setIncludeResponseBody(true);
+    httpLoggingProperties.setMaxBodySize(10000);
 
-    filter = new ReactiveHttpLoggingFilter(properties);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
   }
 
   @Test
   void shouldBypassFilterWhenDisabled() {
     // Arrange
-    properties.setEnabled(false);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setEnabled(false);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete without decoration
     StepVerifier.create(result).verifyComplete();
@@ -68,7 +68,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete successfully
     StepVerifier.create(result).verifyComplete();
@@ -88,7 +88,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete successfully
     StepVerifier.create(result).verifyComplete();
@@ -113,7 +113,7 @@ class ReactiveHttpLoggingFilterTest {
             });
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert
     StepVerifier.create(result).verifyComplete();
@@ -128,7 +128,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should log response in doFinally
     StepVerifier.create(result).verifyComplete();
@@ -143,7 +143,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and log error
     StepVerifier.create(result).verifyComplete();
@@ -152,8 +152,8 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldSkipNonErrorResponsesWhenLogErrorsOnlyEnabled() {
     // Arrange
-    properties.setLogErrorsOnly(true);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setLogErrorsOnly(true);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(200);
@@ -161,7 +161,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete (logging skipped for non-errors)
     StepVerifier.create(result).verifyComplete();
@@ -170,8 +170,8 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldLogErrorResponseWhenLogErrorsOnlyEnabled() {
     // Arrange
-    properties.setLogErrorsOnly(true);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setLogErrorsOnly(true);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(404);
@@ -179,7 +179,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and log error
     StepVerifier.create(result).verifyComplete();
@@ -194,7 +194,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.error(expectedException));
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should propagate error but still log in doFinally
     StepVerifier.create(result).expectError(RuntimeException.class).verify();
@@ -203,8 +203,8 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldIncludeQueryParametersWhenEnabled() {
     // Arrange
-    properties.setIncludeQueryParams(true);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setIncludeQueryParams(true);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange =
         MockServerWebExchange.from(
@@ -213,7 +213,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and log with query params
     StepVerifier.create(result).verifyComplete();
@@ -222,9 +222,9 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldIncludeHeadersWhenEnabled() {
     // Arrange
-    properties.setIncludeRequestHeaders(true);
-    properties.setIncludeResponseHeaders(true);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setIncludeRequestHeaders(true);
+    httpLoggingProperties.setIncludeResponseHeaders(true);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange =
         MockServerWebExchange.from(
@@ -235,7 +235,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and log with headers
     StepVerifier.create(result).verifyComplete();
@@ -244,15 +244,15 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldIncludeClientIpWhenEnabled() {
     // Arrange
-    properties.setIncludeClientIp(true);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setIncludeClientIp(true);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
 
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and log with client IP
     StepVerifier.create(result).verifyComplete();
@@ -261,8 +261,8 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldHandleUnresolvedRemoteAddressInKubernetes() {
     // Arrange - Simulate Kubernetes environment where InetSocketAddress.getAddress() returns null
-    properties.setIncludeClientIp(true);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setIncludeClientIp(true);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     // Create an unresolved InetSocketAddress (getAddress() returns null)
     var unresolvedAddress = InetSocketAddress.createUnresolved("unresolved-hostname", 8080);
@@ -286,7 +286,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act - Should not throw NPE when getAddress() returns null
-    var result = filter.filter(mockExchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(mockExchange, filterChain);
 
     // Assert - Should complete successfully without NPE
     StepVerifier.create(result).verifyComplete();
@@ -295,8 +295,8 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldNotLogRequestBodyWhenDisabled() {
     // Arrange
-    properties.setIncludeRequestBody(false);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setIncludeRequestBody(false);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var requestBody = "{\"name\":\"John\"}";
     var bodyBuffer =
@@ -309,7 +309,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete without logging request body
     StepVerifier.create(result).verifyComplete();
@@ -318,8 +318,8 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldNotLogResponseBodyWhenDisabled() {
     // Arrange
-    properties.setIncludeResponseBody(false);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setIncludeResponseBody(false);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     exchange.getResponse().setRawStatusCode(200);
@@ -327,7 +327,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete without logging response body
     StepVerifier.create(result).verifyComplete();
@@ -336,8 +336,8 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldRespectMaxBodySizeLimit() {
     // Arrange
-    properties.setMaxBodySize(10); // Very small limit
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setMaxBodySize(10); // Very small limit
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var requestBody = "This is a very long request body that exceeds the max size limit";
     var bodyBuffer =
@@ -350,7 +350,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete with truncated body
     StepVerifier.create(result).verifyComplete();
@@ -365,7 +365,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete without errors
     StepVerifier.create(result).verifyComplete();
@@ -374,14 +374,14 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldLogAtConfiguredLevel() {
     // Arrange
-    properties.setLogLevel("INFO");
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setLogLevel("INFO");
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete with INFO level logging
     StepVerifier.create(result).verifyComplete();
@@ -402,7 +402,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should handle multiple buffers
     StepVerifier.create(result).verifyComplete();
@@ -422,7 +422,7 @@ class ReactiveHttpLoggingFilterTest {
             });
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and log duration
     StepVerifier.create(result).verifyComplete();
@@ -438,7 +438,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and skip logging
     StepVerifier.create(result).verifyComplete();
@@ -455,7 +455,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and skip logging
     StepVerifier.create(result).verifyComplete();
@@ -471,7 +471,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and skip logging
     StepVerifier.create(result).verifyComplete();
@@ -488,7 +488,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete with logging
     StepVerifier.create(result).verifyComplete();
@@ -497,8 +497,8 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldLogHealthCheckWhenSkipHealthCheckAgentsDisabled() {
     // Arrange
-    properties.setSkipHealthCheckAgents(false);
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.setSkipHealthCheckAgents(false);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange =
         MockServerWebExchange.from(
@@ -507,7 +507,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete with logging even for health check
     StepVerifier.create(result).verifyComplete();
@@ -516,15 +516,15 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldSkipLoggingForExcludedPaths() {
     // Arrange
-    properties.getExcludePatterns().add("/actuator/**");
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.getExcludePatterns().add("/actuator/**");
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/actuator/health"));
 
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and skip logging
     StepVerifier.create(result).verifyComplete();
@@ -533,15 +533,15 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldOnlyLogIncludedPaths() {
     // Arrange
-    properties.getIncludePatterns().add("/api/**");
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.getIncludePatterns().add("/api/**");
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/other/endpoint"));
 
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete and skip logging (not in include list)
     StepVerifier.create(result).verifyComplete();
@@ -550,15 +550,15 @@ class ReactiveHttpLoggingFilterTest {
   @Test
   void shouldLogIncludedPaths() {
     // Arrange
-    properties.getIncludePatterns().add("/api/**");
-    filter = new ReactiveHttpLoggingFilter(properties);
+    httpLoggingProperties.getIncludePatterns().add("/api/**");
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
 
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
 
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete with logging
     StepVerifier.create(result).verifyComplete();
@@ -572,7 +572,7 @@ class ReactiveHttpLoggingFilterTest {
     when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     // Act
-    var result = filter.filter(exchange, filterChain);
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
 
     // Assert - Should complete with logging (no user agent is not a health check)
     StepVerifier.create(result).verifyComplete();

@@ -27,26 +27,26 @@ class HttpLoggingFilterTest {
 
   @Mock private FilterChain filterChain;
 
-  private HttpLoggingProperties properties;
-  private HttpLoggingFilter filter;
+  private HttpLoggingProperties httpLoggingProperties;
+  private HttpLoggingFilter httpLoggingFilter;
 
   @BeforeEach
   void setUp() {
-    properties = new HttpLoggingProperties();
-    properties.setEnabled(true);
-    properties.setLogLevel("DEBUG");
-    properties.setIncludeRequestBody(true);
-    properties.setIncludeResponseBody(true);
-    properties.setMaxBodySize(10000);
+    httpLoggingProperties = new HttpLoggingProperties();
+    httpLoggingProperties.setEnabled(true);
+    httpLoggingProperties.setLogLevel("DEBUG");
+    httpLoggingProperties.setIncludeRequestBody(true);
+    httpLoggingProperties.setIncludeResponseBody(true);
+    httpLoggingProperties.setMaxBodySize(10000);
 
-    filter = new HttpLoggingFilter(properties);
+    httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
   }
 
   @Test
   void shouldBypassFilterWhenDisabled() throws Exception {
     // Arrange
-    properties.setEnabled(false);
-    filter = new HttpLoggingFilter(properties);
+    httpLoggingProperties.setEnabled(false);
+    httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
 
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
@@ -56,7 +56,7 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, filterChain);
 
     // Assert - Should call filter chain without wrapping
     verify(filterChain).doFilter(request, response);
@@ -74,7 +74,7 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, filterChain);
 
     // Assert - Filter chain should be called
     verify(filterChain).doFilter(any(), any());
@@ -83,8 +83,8 @@ class HttpLoggingFilterTest {
   @Test
   void shouldExcludePathsMatchingExcludePatterns() throws Exception {
     // Arrange
-    properties.setExcludePatterns(List.of("/actuator/**", "/swagger-ui/**"));
-    filter = new HttpLoggingFilter(properties);
+    httpLoggingProperties.setExcludePatterns(List.of("/actuator/**", "/swagger-ui/**"));
+    httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
 
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
@@ -94,7 +94,7 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, filterChain);
 
     // Assert - Should skip logging and call filter chain with original request/response
     verify(filterChain).doFilter(request, response);
@@ -103,8 +103,8 @@ class HttpLoggingFilterTest {
   @Test
   void shouldIncludeOnlyPathsMatchingIncludePatterns() throws Exception {
     // Arrange
-    properties.setIncludePatterns(List.of("/api/**"));
-    filter = new HttpLoggingFilter(properties);
+    httpLoggingProperties.setIncludePatterns(List.of("/api/**"));
+    httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
 
     var includedRequest = new MockHttpServletRequest();
     includedRequest.setMethod("GET");
@@ -119,22 +119,22 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act - Test included path
-    filter.doFilterInternal(includedRequest, response, filterChain);
+    httpLoggingFilter.doFilterInternal(includedRequest, response, filterChain);
     verify(filterChain).doFilter(any(), any()); // Should wrap and log
 
     reset(filterChain);
 
     // Act - Test excluded path
     var excludedResponse = new MockHttpServletResponse();
-    filter.doFilterInternal(excludedRequest, excludedResponse, filterChain);
+    httpLoggingFilter.doFilterInternal(excludedRequest, excludedResponse, filterChain);
     verify(filterChain).doFilter(eq(excludedRequest), eq(excludedResponse)); // Should skip logging
   }
 
   @Test
   void shouldLogOnlyErrorsWhenLogErrorsOnlyIsEnabled() throws Exception {
     // Arrange
-    properties.setLogErrorsOnly(true);
-    filter = new HttpLoggingFilter(properties);
+    httpLoggingProperties.setLogErrorsOnly(true);
+    httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
 
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
@@ -145,7 +145,7 @@ class HttpLoggingFilterTest {
     response.setStatus(200); // Success status
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, filterChain);
 
     // Assert - Should still call filter chain
     verify(filterChain).doFilter(any(), any());
@@ -164,7 +164,7 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    filter.doFilterInternal(
+    httpLoggingFilter.doFilterInternal(
         request,
         response,
         (req, res) -> {
@@ -189,7 +189,7 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, filterChain);
 
     // Assert - Should complete without errors (body not logged for GET)
     verify(filterChain).doFilter(any(), any());
@@ -206,7 +206,7 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act - Should not throw even if internal logging fails
-    assertDoesNotThrow(() -> filter.doFilterInternal(request, response, filterChain));
+    assertDoesNotThrow(() -> httpLoggingFilter.doFilterInternal(request, response, filterChain));
 
     // Assert
     verify(filterChain).doFilter(any(), any());
@@ -225,7 +225,7 @@ class HttpLoggingFilterTest {
     var responseBody = "{\"users\":[]}";
 
     // Act
-    filter.doFilterInternal(
+    httpLoggingFilter.doFilterInternal(
         request,
         response,
         (req, res) -> {
@@ -241,9 +241,9 @@ class HttpLoggingFilterTest {
   @Test
   void shouldExcludePatternTakePrecedenceOverIncludePattern() throws Exception {
     // Arrange
-    properties.setIncludePatterns(List.of("/api/**"));
-    properties.setExcludePatterns(List.of("/api/internal/**"));
-    filter = new HttpLoggingFilter(properties);
+    httpLoggingProperties.setIncludePatterns(List.of("/api/**"));
+    httpLoggingProperties.setExcludePatterns(List.of("/api/internal/**"));
+    httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
 
     var request = new MockHttpServletRequest();
     request.setMethod("GET");
@@ -253,7 +253,7 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act
-    filter.doFilterInternal(request, response, filterChain);
+    httpLoggingFilter.doFilterInternal(request, response, filterChain);
 
     // Assert - Should skip logging (excluded path)
     verify(filterChain).doFilter(request, response);
