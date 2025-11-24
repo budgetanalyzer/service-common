@@ -21,9 +21,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *       include-request-body: true
  *       include-response-body: true
  *       max-body-size: 10000
- *       exclude-patterns:
- *         - /actuator/**
- *         - /swagger-ui/**
+ *       # Default exclude-patterns: /actuator/**, /swagger-ui/**, /v3/api-docs/**
+ *       # Override defaults by specifying your own list:
+ *       # exclude-patterns:
+ *       #   - /custom/**
  * </pre>
  */
 @ConfigurationProperties(prefix = "budgetanalyzer.service.http-logging")
@@ -56,8 +57,12 @@ public class HttpLoggingProperties {
   /** Maximum request/response body size to log (bytes). Bodies larger than this are truncated. */
   private int maxBodySize = 10000; // 10KB default
 
-  /** URL patterns to exclude from logging (Ant-style patterns). */
-  private List<String> excludePatterns = new ArrayList<>();
+  /**
+   * URL patterns to exclude from logging (Ant-style patterns). Default includes actuator and
+   * swagger endpoints.
+   */
+  private List<String> excludePatterns =
+      new ArrayList<>(List.of("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**"));
 
   /** URL patterns to explicitly include (overrides excludePatterns). */
   private List<String> includePatterns = new ArrayList<>();
@@ -78,6 +83,16 @@ public class HttpLoggingProperties {
 
   /** Log only requests that result in errors (4xx, 5xx status codes). */
   private boolean logErrorsOnly = false;
+
+  /** Skip logging requests from health check agents (Kubernetes, AWS ELB, GCP). */
+  private boolean skipHealthCheckAgents = true;
+
+  /**
+   * User-Agent prefixes that identify health check requests (case-insensitive prefix match).
+   * Default includes Kubernetes probes, AWS ELB, and GCP health checkers.
+   */
+  private List<String> healthCheckUserAgentPrefixes =
+      List.of("kube-probe", "ELB-HealthChecker", "GoogleHC");
 
   // Getters and Setters
 
@@ -313,5 +328,57 @@ public class HttpLoggingProperties {
    */
   public void setLogErrorsOnly(boolean logErrorsOnly) {
     this.logErrorsOnly = logErrorsOnly;
+  }
+
+  /**
+   * Checks whether to skip logging health check agent requests.
+   *
+   * @return true if health check requests should be skipped, false otherwise
+   */
+  public boolean isSkipHealthCheckAgents() {
+    return skipHealthCheckAgents;
+  }
+
+  /**
+   * Sets whether to skip logging health check agent requests.
+   *
+   * @param skipHealthCheckAgents true to skip health check requests, false to log all
+   */
+  public void setSkipHealthCheckAgents(boolean skipHealthCheckAgents) {
+    this.skipHealthCheckAgents = skipHealthCheckAgents;
+  }
+
+  /**
+   * Gets the User-Agent prefixes that identify health check requests.
+   *
+   * @return the list of User-Agent prefixes
+   */
+  public List<String> getHealthCheckUserAgentPrefixes() {
+    return healthCheckUserAgentPrefixes;
+  }
+
+  /**
+   * Sets the User-Agent prefixes that identify health check requests.
+   *
+   * @param healthCheckUserAgentPrefixes the list of User-Agent prefixes
+   */
+  public void setHealthCheckUserAgentPrefixes(List<String> healthCheckUserAgentPrefixes) {
+    this.healthCheckUserAgentPrefixes = healthCheckUserAgentPrefixes;
+  }
+
+  /**
+   * Checks if the given User-Agent matches any health check prefix.
+   *
+   * @param userAgent the User-Agent header value (may be null)
+   * @return true if the User-Agent matches a health check prefix
+   */
+  public boolean isHealthCheckAgent(String userAgent) {
+    if (!skipHealthCheckAgents || userAgent == null || userAgent.isEmpty()) {
+      return false;
+    }
+
+    var lowerUserAgent = userAgent.toLowerCase();
+    return healthCheckUserAgentPrefixes.stream()
+        .anyMatch(prefix -> lowerUserAgent.startsWith(prefix.toLowerCase()));
   }
 }

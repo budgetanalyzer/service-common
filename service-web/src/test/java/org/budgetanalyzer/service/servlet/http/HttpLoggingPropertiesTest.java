@@ -38,8 +38,16 @@ class HttpLoggingPropertiesTest {
     assertTrue(properties.isIncludeClientIp(), "Default includeClientIp should be true");
     assertEquals(10000, properties.getMaxBodySize(), "Default maxBodySize should be 10000");
     assertNotNull(properties.getExcludePatterns(), "Default excludePatterns should not be null");
+    assertEquals(
+        3, properties.getExcludePatterns().size(), "Default excludePatterns should have 3 entries");
     assertTrue(
-        properties.getExcludePatterns().isEmpty(), "Default excludePatterns should be empty");
+        properties.getExcludePatterns().contains("/actuator/**"), "Should contain /actuator/**");
+    assertTrue(
+        properties.getExcludePatterns().contains("/swagger-ui/**"),
+        "Should contain /swagger-ui/**");
+    assertTrue(
+        properties.getExcludePatterns().contains("/v3/api-docs/**"),
+        "Should contain /v3/api-docs/**");
     assertNotNull(properties.getIncludePatterns(), "Default includePatterns should not be null");
     assertTrue(
         properties.getIncludePatterns().isEmpty(), "Default includePatterns should be empty");
@@ -52,6 +60,24 @@ class HttpLoggingPropertiesTest {
         properties.getSensitiveHeaders().contains("Authorization"), "Should contain Authorization");
     assertTrue(properties.getSensitiveHeaders().contains("Cookie"), "Should contain Cookie");
     assertFalse(properties.isLogErrorsOnly(), "Default logErrorsOnly should be false");
+    assertTrue(
+        properties.isSkipHealthCheckAgents(), "Default skipHealthCheckAgents should be true");
+    assertNotNull(
+        properties.getHealthCheckUserAgentPrefixes(),
+        "Default healthCheckUserAgentPrefixes should not be null");
+    assertEquals(
+        3,
+        properties.getHealthCheckUserAgentPrefixes().size(),
+        "Default healthCheckUserAgentPrefixes should have 3 entries");
+    assertTrue(
+        properties.getHealthCheckUserAgentPrefixes().contains("kube-probe"),
+        "Should contain kube-probe");
+    assertTrue(
+        properties.getHealthCheckUserAgentPrefixes().contains("ELB-HealthChecker"),
+        "Should contain ELB-HealthChecker");
+    assertTrue(
+        properties.getHealthCheckUserAgentPrefixes().contains("GoogleHC"),
+        "Should contain GoogleHC");
   }
 
   @Test
@@ -332,6 +358,139 @@ class HttpLoggingPropertiesTest {
               assertTrue(
                   properties.getSensitiveHeaders().contains("WWW-Authenticate"),
                   "Should have default WWW-Authenticate header");
+            });
+  }
+
+  @Test
+  void shouldDetectKubernetesHealthCheckAgent() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+
+    // Act & Assert - Various Kubernetes probe user agents
+    assertTrue(properties.isHealthCheckAgent("kube-probe/1.34"), "Should detect kube-probe/1.34");
+    assertTrue(properties.isHealthCheckAgent("kube-probe/1.22"), "Should detect kube-probe/1.22");
+    assertTrue(
+        properties.isHealthCheckAgent("kube-probe/1.12+"),
+        "Should detect kube-probe with version suffix");
+  }
+
+  @Test
+  void shouldDetectAwsElbHealthCheckAgent() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+
+    // Act & Assert - AWS ELB user agents
+    assertTrue(
+        properties.isHealthCheckAgent("ELB-HealthChecker/2.0"),
+        "Should detect ELB-HealthChecker/2.0 (ALB)");
+    assertTrue(
+        properties.isHealthCheckAgent("ELB-HealthChecker/1.0"),
+        "Should detect ELB-HealthChecker/1.0 (CLB)");
+  }
+
+  @Test
+  void shouldDetectGcpHealthCheckAgent() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+
+    // Act & Assert - GCP health check user agent
+    assertTrue(properties.isHealthCheckAgent("GoogleHC/1.0"), "Should detect GoogleHC/1.0");
+  }
+
+  @Test
+  void shouldNotDetectRegularUserAgents() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+
+    // Act & Assert - Regular user agents should not be detected
+    assertFalse(
+        properties.isHealthCheckAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)"),
+        "Should not detect Mozilla browser");
+    assertFalse(properties.isHealthCheckAgent("curl/7.64.1"), "Should not detect curl");
+    assertFalse(
+        properties.isHealthCheckAgent("PostmanRuntime/7.26.8"), "Should not detect Postman");
+    assertFalse(
+        properties.isHealthCheckAgent("Go-http-client/1.1"), "Should not detect Go HTTP client");
+  }
+
+  @Test
+  void shouldHandleNullAndEmptyUserAgent() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+
+    // Act & Assert
+    assertFalse(properties.isHealthCheckAgent(null), "Should return false for null user agent");
+    assertFalse(properties.isHealthCheckAgent(""), "Should return false for empty user agent");
+  }
+
+  @Test
+  void shouldRespectSkipHealthCheckAgentsFlag() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+    properties.setSkipHealthCheckAgents(false);
+
+    // Act & Assert - Should not detect when disabled
+    assertFalse(
+        properties.isHealthCheckAgent("kube-probe/1.34"),
+        "Should not detect when skipHealthCheckAgents is false");
+  }
+
+  @Test
+  void shouldMatchCaseInsensitively() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+
+    // Act & Assert - Should match regardless of case
+    assertTrue(
+        properties.isHealthCheckAgent("KUBE-PROBE/1.34"), "Should match uppercase KUBE-PROBE");
+    assertTrue(
+        properties.isHealthCheckAgent("Kube-Probe/1.34"), "Should match mixed case Kube-Probe");
+    assertTrue(
+        properties.isHealthCheckAgent("elb-healthchecker/2.0"),
+        "Should match lowercase elb-healthchecker");
+    assertTrue(properties.isHealthCheckAgent("googlehc/1.0"), "Should match lowercase googlehc");
+  }
+
+  @Test
+  void shouldAllowCustomHealthCheckPrefixes() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+    properties.setHealthCheckUserAgentPrefixes(List.of("CustomProbe", "MyHealthCheck"));
+
+    // Act & Assert
+    assertTrue(properties.isHealthCheckAgent("CustomProbe/1.0"), "Should detect custom prefix");
+    assertTrue(
+        properties.isHealthCheckAgent("MyHealthCheck-Agent"),
+        "Should detect custom prefix with suffix");
+    assertFalse(
+        properties.isHealthCheckAgent("kube-probe/1.34"), "Should not detect removed default");
+  }
+
+  @Test
+  void shouldBindHealthCheckPropertiesFromConfiguration() {
+    // Arrange & Act
+    contextRunner
+        .withPropertyValues(
+            "budgetanalyzer.service.http-logging.skip-health-check-agents=false",
+            "budgetanalyzer.service.http-logging.health-check-user-agent-prefixes[0]=CustomAgent",
+            "budgetanalyzer.service.http-logging.health-check-user-agent-prefixes[1]=AnotherAgent")
+        .run(
+            context -> {
+              var properties = context.getBean(HttpLoggingProperties.class);
+
+              // Assert
+              assertFalse(
+                  properties.isSkipHealthCheckAgents(), "Should bind skipHealthCheckAgents");
+              assertEquals(
+                  2,
+                  properties.getHealthCheckUserAgentPrefixes().size(),
+                  "Should bind 2 health check prefixes");
+              assertTrue(
+                  properties.getHealthCheckUserAgentPrefixes().contains("CustomAgent"),
+                  "Should contain CustomAgent");
+              assertTrue(
+                  properties.getHealthCheckUserAgentPrefixes().contains("AnotherAgent"),
+                  "Should contain AnotherAgent");
             });
   }
 
