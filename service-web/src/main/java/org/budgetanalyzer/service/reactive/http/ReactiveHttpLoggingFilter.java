@@ -45,16 +45,16 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
   private static final Set<String> COMPRESSED_ENCODINGS =
       Set.of("gzip", "deflate", "br", "compress");
 
-  private final HttpLoggingProperties properties;
+  private final HttpLoggingProperties httpLoggingProperties;
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
   /**
-   * Constructs a ReactiveHttpLoggingFilter with the specified configuration properties.
+   * Constructs a ReactiveHttpLoggingFilter with the specified configuration httpLoggingProperties.
    *
-   * @param properties the HTTP logging configuration properties
+   * @param httpLoggingProperties the HTTP logging configuration properties
    */
-  public ReactiveHttpLoggingFilter(HttpLoggingProperties properties) {
-    this.properties = properties;
+  public ReactiveHttpLoggingFilter(HttpLoggingProperties httpLoggingProperties) {
+    this.httpLoggingProperties = httpLoggingProperties;
   }
 
   /**
@@ -66,7 +66,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
    */
   @Override
   public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-    if (!properties.isEnabled()) {
+    if (!httpLoggingProperties.isEnabled()) {
       return chain.filter(exchange);
     }
 
@@ -81,7 +81,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
     var decoratedRequest = new CachedBodyServerHttpRequestDecorator(exchange.getRequest());
     var decoratedResponse =
         new CachedBodyServerHttpResponseDecorator(
-            exchange.getResponse(), properties.getMaxBodySize());
+            exchange.getResponse(), httpLoggingProperties.getMaxBodySize());
 
     var decoratedExchange =
         exchange.mutate().request(decoratedRequest).response(decoratedResponse).build();
@@ -108,25 +108,25 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       details.put("method", request.getMethod().name());
       details.put("uri", request.getURI().toString());
 
-      if (properties.isIncludeQueryParams() && request.getURI().getQuery() != null) {
+      if (httpLoggingProperties.isIncludeQueryParams() && request.getURI().getQuery() != null) {
         details.put("queryString", request.getURI().getQuery());
       }
 
-      if (properties.isIncludeClientIp() && request.getRemoteAddress() != null) {
+      if (httpLoggingProperties.isIncludeClientIp() && request.getRemoteAddress() != null) {
         var inetAddress = request.getRemoteAddress().getAddress();
         if (inetAddress != null) {
           details.put("clientIp", inetAddress.getHostAddress());
         }
       }
 
-      if (properties.isIncludeRequestHeaders()) {
+      if (httpLoggingProperties.isIncludeRequestHeaders()) {
         details.put("headers", request.getHeaders());
       }
 
       // Log request body if enabled
-      if (properties.isIncludeRequestBody()) {
+      if (httpLoggingProperties.isIncludeRequestBody()) {
         return request
-            .getCachedBodyAsString(properties.getMaxBodySize())
+            .getCachedBodyAsString(httpLoggingProperties.getMaxBodySize())
             .doOnNext(
                 body -> {
                   var message = HttpLogFormatter.formatLogMessage("HTTP Request", details, body);
@@ -159,7 +159,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       }
 
       // Check if we should only log errors
-      if (properties.isLogErrorsOnly() && statusCode.value() < 400) {
+      if (httpLoggingProperties.isLogErrorsOnly() && statusCode.value() < 400) {
         return;
       }
 
@@ -167,12 +167,12 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       details.put("status", statusCode.value());
       details.put("durationMs", duration);
 
-      if (properties.isIncludeResponseHeaders()) {
+      if (httpLoggingProperties.isIncludeResponseHeaders()) {
         details.put("headers", response.getHeaders());
       }
 
       String responseBody = null;
-      if (properties.isIncludeResponseBody()) {
+      if (httpLoggingProperties.isIncludeResponseBody()) {
         // Check if response is compressed
         var contentEncoding = response.getHeaders().getFirst("Content-Encoding");
         if (isCompressed(contentEncoding)) {
@@ -205,7 +205,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
    * @param message the message to log
    */
   private void logAtConfiguredLevel(String message) {
-    var level = properties.getLogLevel().toUpperCase();
+    var level = httpLoggingProperties.getLogLevel().toUpperCase();
 
     switch (level) {
       case "TRACE":
@@ -258,7 +258,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
   private boolean shouldSkipLogging(ServerHttpRequest request) {
     // Skip health check agents (Kubernetes probes, AWS ELB, GCP health checks)
     var userAgent = request.getHeaders().getFirst("User-Agent");
-    if (properties.isHealthCheckAgent(userAgent)) {
+    if (httpLoggingProperties.isHealthCheckAgent(userAgent)) {
       return true;
     }
 
@@ -266,9 +266,9 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
     var path = request.getURI().getPath();
 
     // Check explicit include patterns first
-    if (!properties.getIncludePatterns().isEmpty()) {
+    if (!httpLoggingProperties.getIncludePatterns().isEmpty()) {
       var included =
-          properties.getIncludePatterns().stream()
+          httpLoggingProperties.getIncludePatterns().stream()
               .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
       if (!included) {
@@ -277,9 +277,9 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
     }
 
     // Check exclude patterns
-    if (!properties.getExcludePatterns().isEmpty()) {
+    if (!httpLoggingProperties.getExcludePatterns().isEmpty()) {
       var excluded =
-          properties.getExcludePatterns().stream()
+          httpLoggingProperties.getExcludePatterns().stream()
               .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
       if (excluded) {

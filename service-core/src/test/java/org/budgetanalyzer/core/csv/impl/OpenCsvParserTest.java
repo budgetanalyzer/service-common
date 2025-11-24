@@ -20,11 +20,11 @@ import org.junit.jupiter.api.Test;
  */
 class OpenCsvParserTest {
 
-  private OpenCsvParser parser;
+  private OpenCsvParser openCsvParser;
 
   @BeforeEach
   void setUp() {
-    parser = new OpenCsvParser();
+    openCsvParser = new OpenCsvParser();
   }
 
   @Test
@@ -32,7 +32,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Age,City\nJohn,30,NYC\nAlice,25,Boston";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals("test.csv", csvData.fileName());
     assertEquals("user-data", csvData.format());
@@ -48,7 +48,7 @@ class OpenCsvParserTest {
     var csvContent = "Transaction Date,Amount,Description,Category\n2024-01-15,99.99,Coffee,Food";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "transactions.csv", "transaction");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "transactions.csv", "transaction");
 
     var headers = csvData.headers();
     assertEquals(4, headers.size());
@@ -63,7 +63,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Age,City\nJohn,30,NYC\nAlice,25,Boston";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
     assertEquals("John", firstRow.values().get("Name"));
@@ -81,7 +81,7 @@ class OpenCsvParserTest {
     var csvContent = "";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "empty.csv", "empty");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "empty.csv", "empty");
 
     assertEquals("empty.csv", csvData.fileName());
     assertEquals("empty", csvData.format());
@@ -94,7 +94,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Age,City";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "headers-only.csv", "test");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "headers-only.csv", "test");
 
     assertEquals(3, csvData.headers().size());
     assertEquals("Name", csvData.headers().get(0));
@@ -108,7 +108,7 @@ class OpenCsvParserTest {
     var csvContent = "  Name  ,  Age  ,  City  \nJohn,30,NYC";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var headers = csvData.headers();
     assertEquals("Name", headers.get(0));
@@ -121,7 +121,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Age,City\n  John  ,  30  ,  NYC  ";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
     assertEquals("John", firstRow.values().get("Name"));
@@ -134,7 +134,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,,Age,City\nJohn,ignored,30,NYC";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
     assertEquals("John", firstRow.values().get("Name"));
@@ -149,7 +149,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Age\nJohn,30\nAlice,25\nBob,35";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(2, csvData.rows().get(0).lineNumber()); // First data row is line 2
     assertEquals(3, csvData.rows().get(1).lineNumber()); // Second data row is line 3
@@ -161,7 +161,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Description\nJohn,\"Smith, Jr.\"\nAlice,\"O'Brien\"";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
     assertEquals("John", firstRow.values().get("Name"));
@@ -186,7 +186,7 @@ class OpenCsvParserTest {
     }
     var inputStream = createInputStream(csvBuilder.toString());
 
-    var csvData = parser.parseCsvInputStream(inputStream, "large.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "large.csv", "user-data");
 
     assertEquals(3, csvData.headers().size());
     assertEquals(1000, csvData.rows().size());
@@ -204,7 +204,7 @@ class OpenCsvParserTest {
             + "2024-01-17,150.00,Groceries";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "transactions.csv", "transaction");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "transactions.csv", "transaction");
 
     assertEquals(3, csvData.rows().size());
 
@@ -229,7 +229,7 @@ class OpenCsvParserTest {
     var csvContent = "Column1,Column2,Column3\nValue1,Value2,Value3";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "test");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "test");
 
     assertNotNull(csvData.headers());
     assertEquals(3, csvData.headers().size());
@@ -243,7 +243,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Age,City\nJohn,,NYC\n,25,Boston";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
     assertEquals("John", firstRow.values().get("Name"));
@@ -261,7 +261,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Age,City\nJohn,30\nAlice";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(3, csvData.headers().size());
     assertEquals(2, csvData.rows().size());
@@ -285,7 +285,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Age\nJohn,30,NYC,Extra";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(2, csvData.headers().size());
     assertEquals(1, csvData.rows().size());
@@ -304,7 +304,7 @@ class OpenCsvParserTest {
         "ID,Name,Email\n1,Alice,alice@example.com\n2,Bob\n3,Carol,carol@example.com,Extra";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(3, csvData.headers().size());
     assertEquals(3, csvData.rows().size());
@@ -333,7 +333,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Description\nJosé,Café au lait\n李明,中文测试\nMüller,Größe";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(3, csvData.rows().size());
 
@@ -357,7 +357,7 @@ class OpenCsvParserTest {
         "\uFEFFName,Age,City\nJohn,30,NYC"; // \uFEFF is the BOM character in Java
     var inputStream = createInputStream(csvContentWithBom);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     // OpenCSV should handle BOM, but first header might include it
     // This test documents current behavior
@@ -373,7 +373,7 @@ class OpenCsvParserTest {
     var inputStream =
         new ByteArrayInputStream(csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_16));
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     // This test documents that UTF-16 may not be automatically detected
     // The parser should still attempt to parse, but results may vary
@@ -389,7 +389,7 @@ class OpenCsvParserTest {
     var inputStream =
         new ByteArrayInputStream(csvContent.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     // This test documents encoding behavior - results depend on system default encoding
     assertNotNull(csvData);
@@ -402,7 +402,7 @@ class OpenCsvParserTest {
     var csvContent = "Product,Rating\nCoffee,☕ Excellent! 😍\nPizza,🍕 Amazing! 🎉";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(2, csvData.rows().size());
 
@@ -421,7 +421,7 @@ class OpenCsvParserTest {
     var csvContentCrlf = "Name,Age\r\nJohn,30\r\nAlice,25";
     var inputStreamCrlf = createInputStream(csvContentCrlf);
 
-    var csvDataCrlf = parser.parseCsvInputStream(inputStreamCrlf, "test.csv", "user-data");
+    var csvDataCrlf = openCsvParser.parseCsvInputStream(inputStreamCrlf, "test.csv", "user-data");
 
     assertEquals(2, csvDataCrlf.headers().size());
     assertEquals(2, csvDataCrlf.rows().size());
@@ -431,7 +431,7 @@ class OpenCsvParserTest {
     var csvContentCr = "Name,Age\rJohn,30\rAlice,25";
     var inputStreamCr = createInputStream(csvContentCr);
 
-    var csvDataCr = parser.parseCsvInputStream(inputStreamCr, "test.csv", "user-data");
+    var csvDataCr = openCsvParser.parseCsvInputStream(inputStreamCr, "test.csv", "user-data");
 
     assertEquals(2, csvDataCr.headers().size());
     assertEquals(2, csvDataCr.rows().size());
@@ -443,7 +443,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Address\nJohn,\"123 Main St\nApt 4B\nNew York\"\nAlice,456 Oak Ave";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(2, csvData.rows().size());
 
@@ -461,7 +461,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Quote\nJohn,\"He said \"\"Hello\"\"\"\nAlice,\"She replied \"\"Hi\"\"\"";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(2, csvData.rows().size());
 
@@ -481,7 +481,7 @@ class OpenCsvParserTest {
     var csvContent = "ID,Data\n1," + longValue + "\n2,Short";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(2, csvData.rows().size());
 
@@ -499,7 +499,7 @@ class OpenCsvParserTest {
     var csvContent = "Name,Notes\nJohn,\"First\tSecond\tThird\"\nAlice,Normal text";
     var inputStream = createInputStream(csvContent);
 
-    var csvData = parser.parseCsvInputStream(inputStream, "test.csv", "user-data");
+    var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     assertEquals(2, csvData.rows().size());
 

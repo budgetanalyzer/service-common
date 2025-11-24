@@ -23,12 +23,12 @@ import io.swagger.v3.oas.models.responses.ApiResponses;
 
 class BaseOpenApiConfigTest {
 
-  private TestOpenApiConfig config;
+  private TestOpenApiConfig testOpenApiConfig;
   private OpenAPI openApi;
 
   @BeforeEach
   void setUp() {
-    config = new TestOpenApiConfig();
+    testOpenApiConfig = new TestOpenApiConfig();
     openApi = new OpenAPI();
     openApi.setPaths(new Paths());
     openApi.setComponents(new Components());
@@ -42,8 +42,8 @@ class BaseOpenApiConfigTest {
       assertTrue(
           context.containsBean("springDocConfigProperties"),
           "Should register SpringDocConfigProperties bean");
-      var props = context.getBean("springDocConfigProperties");
-      assertNotNull(props, "SpringDocConfigProperties should not be null");
+      var springDocConfigProperties = context.getBean("springDocConfigProperties");
+      assertNotNull(springDocConfigProperties, "SpringDocConfigProperties should not be null");
     }
   }
 
@@ -76,7 +76,7 @@ class BaseOpenApiConfigTest {
   @Test
   void shouldAddApiErrorResponseSchemasToComponents() {
     // Arrange
-    var customizer = config.addApiErrorResponseSchemas();
+    var customizer = testOpenApiConfig.addApiErrorResponseSchemas();
 
     // Act
     customizer.customise(openApi);
@@ -93,7 +93,7 @@ class BaseOpenApiConfigTest {
   void shouldAddApiErrorResponseSchemasWhenComponentsIsNull() {
     // Arrange
     openApi.setComponents(null);
-    var customizer = config.addApiErrorResponseSchemas();
+    var customizer = testOpenApiConfig.addApiErrorResponseSchemas();
 
     // Act
     customizer.customise(openApi);
@@ -111,7 +111,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperation();
     openApi.getPaths().addPathItem("/api/users", new PathItem().post(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -128,7 +128,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperation();
     openApi.getPaths().addPathItem("/api/users/{id}", new PathItem().put(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -145,7 +145,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperation();
     openApi.getPaths().addPathItem("/api/users/{id}", new PathItem().patch(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -162,7 +162,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperationWithPathParameter();
     openApi.getPaths().addPathItem("/api/users/{id}", new PathItem().get(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -185,7 +185,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperation(); // No path parameters
     openApi.getPaths().addPathItem("/api/users", new PathItem().get(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -204,7 +204,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperationWithPathParameter();
     openApi.getPaths().addPathItem("/api/users/{id}", new PathItem().delete(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -223,7 +223,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperation(); // No path parameters
     openApi.getPaths().addPathItem("/api/users", new PathItem().delete(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -249,7 +249,7 @@ class BaseOpenApiConfigTest {
         .addPathItem("/api/users/{id}", new PathItem().get(getOp).put(putOp).delete(deleteOp))
         .addPathItem("/api/users", new PathItem().post(postOp));
 
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -273,7 +273,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperation();
     openApi.getPaths().addPathItem("/api/users", new PathItem().post(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -304,7 +304,7 @@ class BaseOpenApiConfigTest {
     // Arrange
     var operation = createOperationWithPathParameter();
     openApi.getPaths().addPathItem("/api/users/{id}", new PathItem().get(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -331,7 +331,7 @@ class BaseOpenApiConfigTest {
   void shouldHandleEmptyPathsGracefully() {
     // Arrange
     openApi.setPaths(null);
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act & Assert - Should not throw exception
     customizer.customise(openApi);
@@ -343,7 +343,7 @@ class BaseOpenApiConfigTest {
     var operation = new Operation();
     operation.setResponses(new ApiResponses());
     openApi.getPaths().addPathItem("/api/users", new PathItem().get(operation));
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);
@@ -363,7 +363,7 @@ class BaseOpenApiConfigTest {
     var operation = createOperationWithPathParameter();
 
     // Act
-    boolean hasPathParams = config.hasPathParameters(operation);
+    boolean hasPathParams = testOpenApiConfig.hasPathParameters(operation);
 
     // Assert
     assertTrue(hasPathParams, "Should detect path parameter");
@@ -375,7 +375,7 @@ class BaseOpenApiConfigTest {
     var operation = createOperation();
 
     // Act
-    boolean hasPathParams = config.hasPathParameters(operation);
+    boolean hasPathParams = testOpenApiConfig.hasPathParameters(operation);
 
     // Assert
     assertFalse(hasPathParams, "Should detect no path parameters");
@@ -391,7 +391,7 @@ class BaseOpenApiConfigTest {
     operation.addParametersItem(queryParam);
 
     // Act
-    boolean hasPathParams = config.hasPathParameters(operation);
+    boolean hasPathParams = testOpenApiConfig.hasPathParameters(operation);
 
     // Assert
     assertFalse(hasPathParams, "Query parameter should not be detected as path parameter");
@@ -414,7 +414,7 @@ class BaseOpenApiConfigTest {
     operation.addParametersItem(queryParam);
 
     // Act
-    boolean hasPathParams = config.hasPathParameters(operation);
+    boolean hasPathParams = testOpenApiConfig.hasPathParameters(operation);
 
     // Assert
     assertTrue(hasPathParams, "Should detect path parameter among mixed parameters");
@@ -424,7 +424,7 @@ class BaseOpenApiConfigTest {
   void shouldBuildExampleApiErrorResponseWithCorrectType() {
     // Arrange & Act
     final var response =
-        config.buildExampleApiErrorResponse(
+        testOpenApiConfig.buildExampleApiErrorResponse(
             org.springframework.http.HttpStatus.NOT_FOUND, "Resource not found", "RESOURCE_001");
 
     // Assert
@@ -461,7 +461,7 @@ class BaseOpenApiConfigTest {
                 .get(createOperationWithPathParameter())
                 .delete(createOperationWithPathParameter()));
 
-    var customizer = config.globalResponseCustomizer();
+    var customizer = testOpenApiConfig.globalResponseCustomizer();
 
     // Act
     customizer.customise(openApi);

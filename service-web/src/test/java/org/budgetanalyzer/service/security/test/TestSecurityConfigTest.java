@@ -20,8 +20,8 @@ class TestSecurityConfigTest {
 
   @Test
   void jwtDecoder_shouldReturnDefaultJwtWhenNoCustomJwtSet() {
-    var config = new TestSecurityConfig();
-    var decoder = config.jwtDecoder();
+    var testSecurityConfig = new TestSecurityConfig();
+    var decoder = testSecurityConfig.jwtDecoder();
 
     var jwt = decoder.decode("any-token-string");
 
@@ -35,8 +35,8 @@ class TestSecurityConfigTest {
     var customJwt = JwtTestBuilder.user("custom-user").withScopes("admin:all").build();
     TestSecurityConfig.CUSTOM_JWT.set(customJwt);
 
-    var config = new TestSecurityConfig();
-    var decoder = config.jwtDecoder();
+    var testSecurityConfig = new TestSecurityConfig();
+    var decoder = testSecurityConfig.jwtDecoder();
 
     var jwt = decoder.decode("any-token-string");
 
@@ -47,8 +47,8 @@ class TestSecurityConfigTest {
 
   @Test
   void jwtDecoder_shouldSwitchBetweenCustomAndDefault() {
-    var config = new TestSecurityConfig();
-    var decoder = config.jwtDecoder();
+    var testSecurityConfig = new TestSecurityConfig();
+    var decoder = testSecurityConfig.jwtDecoder();
 
     // First decode - default JWT
     var defaultJwt = decoder.decode("token");
@@ -81,8 +81,8 @@ class TestSecurityConfigTest {
 
   @Test
   void jwtDecoder_shouldReturnJwtDecoderType() {
-    var config = new TestSecurityConfig();
-    var decoder = config.jwtDecoder();
+    var testSecurityConfig = new TestSecurityConfig();
+    var decoder = testSecurityConfig.jwtDecoder();
 
     assertThat(decoder).isInstanceOf(JwtDecoder.class);
   }
