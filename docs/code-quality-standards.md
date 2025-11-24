@@ -375,20 +375,7 @@ Before committing code, verify:
 
 ## IDE Configuration
 
-### IntelliJ IDEA
-
-**Import Code Style**:
-1. Install Google Java Format plugin
-2. Settings → Editor → Code Style → Java
-3. Import `config/intellij-java-google-style.xml` (if provided)
-4. Enable "Optimize imports on the fly"
-
-**Checkstyle Plugin**:
-1. Install Checkstyle-IDEA plugin
-2. Settings → Tools → Checkstyle
-3. Add configuration file: `config/checkstyle/checkstyle.xml`
-4. Set as active configuration
-5. Enable real-time scanning
+> **Note:** IntelliJ IDEA is not supported. It cannot run containerized AI agents, making it unsuitable for AI-assisted development workflows.
 
 ### VS Code
 
