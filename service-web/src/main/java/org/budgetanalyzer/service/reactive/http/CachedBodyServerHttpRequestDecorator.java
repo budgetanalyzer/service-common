@@ -56,10 +56,17 @@ public class CachedBodyServerHttpRequestDecorator extends ServerHttpRequestDecor
               int readableBytes = Math.min(totalBytes, maxBytes);
               byte[] bytes = new byte[readableBytes];
 
-              // Use asByteBuffer() to get a view without consuming the DataBuffer
-              // This creates a ByteBuffer that shares the same memory but has independent position
-              var byteBuffer = dataBuffer.asByteBuffer();
-              byteBuffer.get(bytes);
+              // Use readableByteBuffers() - recommended replacement for deprecated asByteBuffer()
+              // This provides read access without consuming the DataBuffer
+              try (var buffers = dataBuffer.readableByteBuffers()) {
+                int offset = 0;
+                while (buffers.hasNext() && offset < readableBytes) {
+                  var buffer = buffers.next();
+                  int toRead = Math.min(buffer.remaining(), readableBytes - offset);
+                  buffer.get(bytes, offset, toRead);
+                  offset += toRead;
+                }
+              }
 
               var charset = getCharset();
               var body = new String(bytes, charset);
