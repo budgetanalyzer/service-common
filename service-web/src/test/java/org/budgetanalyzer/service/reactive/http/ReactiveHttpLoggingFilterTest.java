@@ -1,8 +1,10 @@
 package org.budgetanalyzer.service.reactive.http;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -11,8 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilterChain;
 
 import reactor.core.publisher.Flux;
@@ -255,6 +259,40 @@ class ReactiveHttpLoggingFilterTest {
   }
 
   @Test
+  void shouldHandleUnresolvedRemoteAddressInKubernetes() {
+    // Arrange - Simulate Kubernetes environment where InetSocketAddress.getAddress() returns null
+    properties.setIncludeClientIp(true);
+    filter = new ReactiveHttpLoggingFilter(properties);
+
+    // Create an unresolved InetSocketAddress (getAddress() returns null)
+    var unresolvedAddress = InetSocketAddress.createUnresolved("unresolved-hostname", 8080);
+
+    // Mock the exchange to return the unresolved address
+    var mockRequest = mock(ServerHttpRequest.class);
+    when(mockRequest.getMethod()).thenReturn(org.springframework.http.HttpMethod.GET);
+    when(mockRequest.getURI()).thenReturn(java.net.URI.create("/api/users"));
+    when(mockRequest.getRemoteAddress()).thenReturn(unresolvedAddress);
+    when(mockRequest.getHeaders()).thenReturn(org.springframework.http.HttpHeaders.EMPTY);
+    when(mockRequest.getBody()).thenReturn(Flux.empty());
+
+    var mockExchange = mock(ServerWebExchange.class);
+    var mockResponse =
+        MockServerWebExchange.from(MockServerHttpRequest.get("/api/users")).getResponse();
+    when(mockExchange.getRequest()).thenReturn(mockRequest);
+    when(mockExchange.getResponse()).thenReturn(mockResponse);
+    when(mockExchange.mutate())
+        .thenReturn(MockServerWebExchange.from(MockServerHttpRequest.get("/api/users")).mutate());
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act - Should not throw NPE when getAddress() returns null
+    var result = filter.filter(mockExchange, filterChain);
+
+    // Assert - Should complete successfully without NPE
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
   void shouldNotLogRequestBodyWhenDisabled() {
     // Arrange
     properties.setIncludeRequestBody(false);
@@ -387,6 +425,156 @@ class ReactiveHttpLoggingFilterTest {
     var result = filter.filter(exchange, filterChain);
 
     // Assert - Should complete and log duration
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldSkipLoggingForKubernetesHealthCheckAgent() {
+    // Arrange
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/api/users").header("User-Agent", "kube-probe/1.34"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete and skip logging
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldSkipLoggingForAwsElbHealthCheckAgent() {
+    // Arrange
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/actuator/health")
+                .header("User-Agent", "ELB-HealthChecker/2.0"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete and skip logging
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldSkipLoggingForGcpHealthCheckAgent() {
+    // Arrange
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/health").header("User-Agent", "GoogleHC/1.0"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete and skip logging
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldNotSkipLoggingForRegularUserAgent() {
+    // Arrange
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/api/users")
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete with logging
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldLogHealthCheckWhenSkipHealthCheckAgentsDisabled() {
+    // Arrange
+    properties.setSkipHealthCheckAgents(false);
+    filter = new ReactiveHttpLoggingFilter(properties);
+
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/api/users").header("User-Agent", "kube-probe/1.34"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete with logging even for health check
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldSkipLoggingForExcludedPaths() {
+    // Arrange
+    properties.getExcludePatterns().add("/actuator/**");
+    filter = new ReactiveHttpLoggingFilter(properties);
+
+    var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/actuator/health"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete and skip logging
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldOnlyLogIncludedPaths() {
+    // Arrange
+    properties.getIncludePatterns().add("/api/**");
+    filter = new ReactiveHttpLoggingFilter(properties);
+
+    var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/other/endpoint"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete and skip logging (not in include list)
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldLogIncludedPaths() {
+    // Arrange
+    properties.getIncludePatterns().add("/api/**");
+    filter = new ReactiveHttpLoggingFilter(properties);
+
+    var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete with logging
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldHandleMissingUserAgentHeader() {
+    // Arrange
+    var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/users"));
+
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    // Act
+    var result = filter.filter(exchange, filterChain);
+
+    // Assert - Should complete with logging (no user agent is not a health check)
     StepVerifier.create(result).verifyComplete();
   }
 }

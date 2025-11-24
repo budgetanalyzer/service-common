@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -44,6 +46,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       Set.of("gzip", "deflate", "br", "compress");
 
   private final HttpLoggingProperties properties;
+  private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
   /**
    * Constructs a ReactiveHttpLoggingFilter with the specified configuration properties.
@@ -64,6 +67,11 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
   @Override
   public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
     if (!properties.isEnabled()) {
+      return chain.filter(exchange);
+    }
+
+    // Skip if request should not be logged (health checks, excluded paths)
+    if (shouldSkipLogging(exchange.getRequest())) {
       return chain.filter(exchange);
     }
 
@@ -105,7 +113,10 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       }
 
       if (properties.isIncludeClientIp() && request.getRemoteAddress() != null) {
-        details.put("clientIp", request.getRemoteAddress().getAddress().getHostAddress());
+        var inetAddress = request.getRemoteAddress().getAddress();
+        if (inetAddress != null) {
+          details.put("clientIp", inetAddress.getHostAddress());
+        }
       }
 
       if (properties.isIncludeRequestHeaders()) {
@@ -235,6 +246,47 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
         return true;
       }
     }
+    return false;
+  }
+
+  /**
+   * Determines if logging should be skipped for this request.
+   *
+   * @param request the server HTTP request
+   * @return true if logging should be skipped
+   */
+  private boolean shouldSkipLogging(ServerHttpRequest request) {
+    // Skip health check agents (Kubernetes probes, AWS ELB, GCP health checks)
+    var userAgent = request.getHeaders().getFirst("User-Agent");
+    if (properties.isHealthCheckAgent(userAgent)) {
+      return true;
+    }
+
+    // Get path for pattern matching
+    var path = request.getURI().getPath();
+
+    // Check explicit include patterns first
+    if (!properties.getIncludePatterns().isEmpty()) {
+      var included =
+          properties.getIncludePatterns().stream()
+              .anyMatch(pattern -> pathMatcher.match(pattern, path));
+
+      if (!included) {
+        return true; // Not in include list, skip
+      }
+    }
+
+    // Check exclude patterns
+    if (!properties.getExcludePatterns().isEmpty()) {
+      var excluded =
+          properties.getExcludePatterns().stream()
+              .anyMatch(pattern -> pathMatcher.match(pattern, path));
+
+      if (excluded) {
+        return true; // Explicitly excluded, skip
+      }
+    }
+
     return false;
   }
 }

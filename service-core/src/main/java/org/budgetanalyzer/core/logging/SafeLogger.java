@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /** Utility for safely logging objects with sensitive data masked. */
@@ -15,12 +16,18 @@ public class SafeLogger {
   private static final ObjectMapper SAFE_MAPPER = createSafeMapper();
 
   private static ObjectMapper createSafeMapper() {
-    ObjectMapper mapper = new ObjectMapper();
+    var mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
     mapper.registerModule(new SensitiveDataModule());
 
+    // Register fallback serializer for unknown types (e.g., Spring HttpMethod)
+    var fallbackModule = new SimpleModule("UnknownTypeFallbackModule");
+    fallbackModule.setSerializerModifier(new UnknownTypeSerializer.ToStringFallbackModifier());
+    mapper.registerModule(fallbackModule);
+
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
     return mapper;
   }

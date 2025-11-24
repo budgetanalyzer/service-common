@@ -238,6 +238,12 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    * @return True if logging should be skipped
    */
   private boolean shouldSkipLogging(HttpServletRequest request) {
+    // Skip health check agents (Kubernetes probes, AWS ELB, GCP health checks)
+    var userAgent = request.getHeader("User-Agent");
+    if (properties.isHealthCheckAgent(userAgent)) {
+      return true;
+    }
+
     // Use servlet path to exclude context path from pattern matching
     // This allows patterns like "/actuator/**" to work regardless of context path
     var path = request.getServletPath();
