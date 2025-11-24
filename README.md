@@ -2,8 +2,6 @@
 
 [![Build](https://github.com/budgetanalyzer/service-common/actions/workflows/build.yml/badge.svg)](https://github.com/budgetanalyzer/service-common/actions/workflows/build.yml)
 
-> **⚠️ Work in Progress**: This project is under active development. Features and documentation are subject to change.
-
 Shared libraries for Budget Analyzer microservices - a personal finance management application.
 
 ## Overview
