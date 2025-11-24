@@ -1,22 +1,36 @@
 # Spring Boot Conventions - Budget Analyzer Microservices
 
-## Architecture Layers
+## Service-Centric Architecture
 
-**Pattern**: Clean layered architecture with clear separation of concerns
+**Pattern**: Modern Spring Boot layered architecture where services are first-class citizens and entities are data carriers.
 
 ```
 Controller Layer (HTTP concerns)
     ↓ calls
-Service Layer (business logic)
+Service Layer (business logic - the heart of the application)
     ↓ calls
 Repository Layer (data access)
 ```
+
+### Why Service-Centric?
+
+This is a deliberate architectural choice for modern Spring Boot applications:
+
+1. **Services as first-class citizens**: All business logic lives in `*Service` classes. When you need to understand or modify business rules, you know exactly where to look.
+
+2. **Entities as data carriers**: JPA entities define structure and relationships, not behavior. This works naturally with JPA/Hibernate's proxy-based lazy loading and transaction boundaries.
+
+3. **Proven at scale**: This pattern is battle-tested across thousands of production Spring Boot applications. It scales by adding services, not by bloating entities.
+
+4. **Clear transaction boundaries**: `@Transactional` at the service layer gives predictable, testable transaction behavior.
+
+5. **Testability**: Services are easy to unit test with mocked repositories. No complex entity lifecycle management in tests.
 
 **Rules**:
 - Controllers never call repositories directly
 - Services contain all business logic
 - Repositories are thin data access only
-- No business logic in entities (domain models are anemic)
+- Entities define data structure, not behavior
 
 ## Package Structure
 
