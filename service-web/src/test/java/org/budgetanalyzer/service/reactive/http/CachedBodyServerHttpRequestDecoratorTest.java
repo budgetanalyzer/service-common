@@ -303,4 +303,67 @@ class CachedBodyServerHttpRequestDecoratorTest {
     // Act & Assert
     assertEquals(originalRequest.getURI(), decorator.getURI());
   }
+
+  @Test
+  void shouldNotConsumeBodyWhenReadingForLogging() {
+    // Arrange - This test verifies the critical fix:
+    // Reading body for logging should NOT prevent downstream handlers from reading it
+    var requestBody = "{\"user\":\"test\",\"action\":\"login\"}";
+    var bodyBuffer = bufferFactory.wrap(requestBody.getBytes(StandardCharsets.UTF_8));
+
+    var originalRequest =
+        MockServerHttpRequest.post("/api/auth")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Flux.just(bodyBuffer));
+
+    var decorator = new CachedBodyServerHttpRequestDecorator(originalRequest);
+
+    // Act - First read via getCachedBodyAsString (simulates logging filter)
+    var loggingRead = decorator.getCachedBodyAsString(10000);
+
+    // Verify logging read succeeds
+    StepVerifier.create(loggingRead).expectNext(requestBody).verifyComplete();
+
+    // Act - Now read via getBody() (simulates downstream handler reading for processing)
+    var handlerRead =
+        decorator
+            .getBody()
+            .map(
+                buffer -> {
+                  byte[] bytes = new byte[buffer.readableByteCount()];
+                  buffer.read(bytes);
+                  return new String(bytes, StandardCharsets.UTF_8);
+                })
+            .collectList();
+
+    // Assert - Handler should receive the full body
+    StepVerifier.create(handlerRead)
+        .assertNext(
+            parts -> {
+              var fullBody = String.join("", parts);
+              assertEquals(requestBody, fullBody);
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  void shouldAllowMultipleLoggingReads() {
+    // Arrange - Verify multiple logging reads don't consume the buffer
+    var requestBody = "test content";
+    var bodyBuffer = bufferFactory.wrap(requestBody.getBytes(StandardCharsets.UTF_8));
+
+    var originalRequest = MockServerHttpRequest.post("/test").body(Flux.just(bodyBuffer));
+
+    var decorator = new CachedBodyServerHttpRequestDecorator(originalRequest);
+
+    // Act - Multiple logging reads
+    var read1 = decorator.getCachedBodyAsString(1000);
+    var read2 = decorator.getCachedBodyAsString(1000);
+    var read3 = decorator.getCachedBodyAsString(1000);
+
+    // Assert - All reads should return the same content
+    StepVerifier.create(read1).expectNext(requestBody).verifyComplete();
+    StepVerifier.create(read2).expectNext(requestBody).verifyComplete();
+    StepVerifier.create(read3).expectNext(requestBody).verifyComplete();
+  }
 }

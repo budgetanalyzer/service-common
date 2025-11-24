@@ -62,8 +62,8 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    * <ul>
    *   <li>Checks if logging is enabled and if the path should be logged
    *   <li>Wraps request and response to enable content caching
-   *   <li>Logs request details before processing
    *   <li>Processes the request through the filter chain
+   *   <li>Logs request details after processing (so body is available)
    *   <li>Logs response details after processing with duration
    *   <li>Copies cached response content back to actual response
    * </ul>
@@ -107,14 +107,14 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
     var startTime = System.currentTimeMillis();
 
     try {
-      // Log request before processing
-      logRequest(requestWrapper);
-
-      // Process request
+      // Process request first - body will be cached by ContentCachingRequestWrapper
       filterChain.doFilter(requestWrapper, responseWrapper);
 
     } finally {
       var duration = System.currentTimeMillis() - startTime;
+
+      // Log request after processing - body is now available in the cache
+      logRequest(requestWrapper);
 
       // Log response after processing
       logResponse(responseWrapper, duration);

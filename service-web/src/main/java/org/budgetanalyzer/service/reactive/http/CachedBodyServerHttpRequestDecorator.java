@@ -39,7 +39,10 @@ public class CachedBodyServerHttpRequestDecorator extends ServerHttpRequestDecor
   }
 
   /**
-   * Reads the cached body as a string.
+   * Reads the cached body as a string without consuming the buffer.
+   *
+   * <p>Uses a ByteBuffer view to read bytes without advancing the DataBuffer's position, ensuring
+   * downstream handlers can still read the full body.
    *
    * @param maxBytes maximum bytes to read
    * @return Mono with body string
@@ -49,15 +52,20 @@ public class CachedBodyServerHttpRequestDecorator extends ServerHttpRequestDecor
         .next()
         .map(
             dataBuffer -> {
-              int readableBytes = Math.min(dataBuffer.readableByteCount(), maxBytes);
+              int totalBytes = dataBuffer.readableByteCount();
+              int readableBytes = Math.min(totalBytes, maxBytes);
               byte[] bytes = new byte[readableBytes];
-              dataBuffer.read(bytes);
+
+              // Use asByteBuffer() to get a view without consuming the DataBuffer
+              // This creates a ByteBuffer that shares the same memory but has independent position
+              var byteBuffer = dataBuffer.asByteBuffer();
+              byteBuffer.get(bytes);
 
               var charset = getCharset();
               var body = new String(bytes, charset);
 
-              if (dataBuffer.readableByteCount() > maxBytes) {
-                var truncated = dataBuffer.readableByteCount() - maxBytes;
+              if (totalBytes > maxBytes) {
+                var truncated = totalBytes - maxBytes;
                 return body + "... [TRUNCATED - " + truncated + " bytes omitted]";
               }
 
