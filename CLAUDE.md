@@ -1,5 +1,26 @@
 # Service-Common - Shared Spring Boot Libraries
 
+## Tree Position
+
+**Archetype**: platform
+**Scope**: budgetanalyzer ecosystem
+**Role**: Shared library; provides patterns all Java services consume
+
+### Relationships
+- **Abstracts for**: Discover via `grep -l "service-common" /workspace/*/build.gradle.kts`
+- **Observed by**: architecture-conversations, orchestration
+
+### Permissions
+- **Read**: All siblings
+- **Write**: This repository + consumer services (for lockstep upgrades)
+- **Forbidden**: Writing to orchestration, budget-analyzer-web
+
+### Discovery
+```bash
+# My consumers
+grep -l "service-common" /workspace/*/build.gradle.kts 2>/dev/null
+```
+
 ## Purpose
 
 Multi-module Gradle project providing shared libraries for all Budget Analyzer Spring Boot microservices. Consists of two modules:
@@ -9,19 +30,6 @@ Multi-module Gradle project providing shared libraries for all Budget Analyzer S
 
 **Impacts**: transaction-service, currency-service, and all future Spring Boot services.
 Changes here affect all services that depend on these libraries.
-
-## Repository Scope
-
-**Role**: Shared library with downstream write access.
-
-**Allowed**:
-- Read all sibling repositories
-- Write to this repository
-- Write to consumer services: transaction-service, currency-service, token-validation-service, permission-service, session-gateway
-
-**Forbidden**:
-- Writing to orchestration (coordinate changes with user)
-- Writing to budget-analyzer-web (different tech stack)
 
 ## Module Architecture
 
@@ -654,3 +662,7 @@ Claude's training data may default to an outdated year. When using WebSearch for
 1. Check `<env>Today's date</env>` for the actual current year
 2. Include that year in searches (e.g., "Spring Boot best practices 2025" not 2024)
 3. This ensures results reflect current standards, not outdated patterns
+
+## Conversation Capture
+
+When the user asks to save this conversation, write it to `/workspace/architecture-conversations/conversations/` following the format in INDEX.md.
