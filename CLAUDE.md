@@ -64,9 +64,9 @@ Changes here affect all services that depend on these libraries.
 
 **Dependencies**: service-core (transitive), Spring Boot Starter Web (compileOnly), Spring Boot Starter WebFlux (compileOnly), SpringDoc OpenAPI (compileOnly)
 
-**Note**: service-web now supports BOTH servlet and reactive stacks through conditional autoconfiguration. Consuming services must explicitly declare their web stack dependency (see Breaking Changes section).
+**Note**: service-web supports BOTH servlet and reactive stacks through conditional autoconfiguration.
 
-**Note**: Actuator comes from service-core, available to all services (web and non-web)
+**Note**: Actuator comes from service-core, available to all services (web and non-web).
 
 **Note**: service-web transitively includes service-core, so consuming services typically only need service-web.
 
@@ -79,69 +79,31 @@ Changes here affect all services that depend on these libraries.
 
 ### Which Module to Depend On?
 
-**Most microservices → Use service-web** (includes service-core transitively)
-**Need only base entities/CSV/logging → Use service-core** (minimal dependencies)
-
-## Breaking Changes (Version 0.0.1-SNAPSHOT)
-
-### JPA Dependency Management
-
-**BREAKING**: service-core now declares `spring-boot-starter-data-jpa` as `compileOnly` instead of `implementation`. Services using JPA entities (`AuditableEntity`, `SoftDeletableEntity`) or repository utilities (`SoftDeleteOperations`) must explicitly declare the JPA dependency.
-
-**Required for services using JPA entities:**
+**Servlet service with database (most common):**
 ```kotlin
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")  // NOW REQUIRED
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
 }
 ```
 
-**Why?** This prevents non-database services (like reactive gateways) from inheriting unnecessary JPA and database dependencies through service-web → service-core transitive dependency chain.
-
-**Who needs to add this:**
-- Services using `AuditableEntity` or `SoftDeletableEntity` base classes
-- Services using `SoftDeleteOperations` repository utilities
-- Any service with JPA repositories and database persistence
-
-**Who does NOT need this:**
-- Pure web services without databases (e.g., session-gateway)
-- Services only using service-core's CSV parsing or logging utilities
-
-### Web Stack Dependency Management
-
-**BREAKING**: As of version 0.0.1-SNAPSHOT, consuming services must explicitly declare their web stack dependency.
-
-**Servlet services:**
+**Reactive service (e.g., gateways):**
 ```kotlin
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")  // NOW REQUIRED
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
 }
 ```
 
-**Reactive services:**
+**Non-web service (batch jobs, workers):**
 ```kotlin
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-webflux")  // NOW REQUIRED
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-core:0.0.1-SNAPSHOT")
 }
 ```
 
-**Why?** This prevents classpath conflicts where reactive services would inherit servlet dependencies (and vice versa).
-
-### Package Reorganization
-
-Components have been reorganized to separate servlet and reactive implementations:
-
-| Old Package | New Package | Type |
-|-------------|-------------|------|
-| `org.budgetanalyzer.service.http.*` | `org.budgetanalyzer.service.servlet.http.*` | Servlet |
-| `org.budgetanalyzer.service.api.ServletApiExceptionHandler` | `org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler` | Servlet |
-| N/A | `org.budgetanalyzer.service.reactive.http.*` | Reactive (NEW) |
-| N/A | `org.budgetanalyzer.service.reactive.api.*` | Reactive (NEW) |
-| `org.budgetanalyzer.service.http.HttpLoggingProperties` | `org.budgetanalyzer.service.config.HttpLoggingProperties` | Shared |
-
-**Impact**: Internal to service-web only. Consuming services don't import these classes directly since they're registered via Spring Boot autoconfiguration.
+**Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (gateways inheriting JPA).
 
 ## Spring Boot Conventions
 
