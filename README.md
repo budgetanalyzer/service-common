@@ -1,5 +1,9 @@
 # Service Common
 
+> "Archetype: platform. Role: Shared library; provides patterns all Java services consume."
+>
+> — [CLAUDE.md](CLAUDE.md#tree-position)
+
 [![Build](https://github.com/budgetanalyzer/service-common/actions/workflows/build.yml/badge.svg)](https://github.com/budgetanalyzer/service-common/actions/workflows/build.yml)
 
 Shared libraries for Budget Analyzer microservices - a personal finance management application.
