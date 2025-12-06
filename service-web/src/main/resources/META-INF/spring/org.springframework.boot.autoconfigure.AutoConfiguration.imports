@@ -1,2 +1,3 @@
 org.budgetanalyzer.service.config.ServiceWebAutoConfiguration
 org.budgetanalyzer.service.security.OAuth2ResourceServerSecurityConfig
+org.budgetanalyzer.service.permission.PermissionClientAutoConfiguration

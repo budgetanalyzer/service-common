@@ -18,12 +18,16 @@ dependencies {
     api(libs.commons.lang3)
     api(libs.spring.boot.starter.validation)
 
+    // Resilience4j circuit breaker - transitive (needed for PermissionClient)
+    api(libs.resilience4j.circuitbreaker)
+
     // Stack-specific - compile-only (NOT transitive)
     // Services must explicitly add the stack they need
     compileOnly(libs.spring.boot.starter.web)
     compileOnly(libs.spring.boot.starter.webflux)
     compileOnly(libs.spring.boot.starter.data.jpa)
     compileOnly(libs.spring.boot.starter.oauth2.resource.server)
+    compileOnly(libs.spring.boot.starter.data.redis)
 
     // SpringDoc - compile-only (services choose servlet or reactive version)
     compileOnly(libs.springdoc.openapi)
@@ -36,6 +40,7 @@ dependencies {
     testImplementation(libs.spring.boot.starter.webflux)
     testImplementation(libs.spring.boot.starter.data.jpa)
     testImplementation(libs.spring.boot.starter.oauth2.resource.server)
+    testImplementation(libs.spring.boot.starter.data.redis)
     testImplementation(libs.springdoc.openapi)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.security.test)
