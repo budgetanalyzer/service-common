@@ -142,15 +142,16 @@ public class PermissionClientAutoConfiguration {
   /**
    * Configuration for Redis-based caching and cache invalidation.
    *
-   * <p>Only activated when Redis is on the classpath and caching is enabled.
+   * <p>Only activated when Redis is on the classpath and caching is enabled. This is a nested
+   * configuration that requires the parent auto-configuration to be active.
    */
-  @Configuration
-  @ConditionalOnClass(RedisConnectionFactory.class)
+  @Configuration(proxyBeanMethods = false)
   @ConditionalOnProperty(
-      prefix = "budgetanalyzer.permission.cache",
+      prefix = "budgetanalyzer.permission",
       name = "enabled",
       havingValue = "true",
-      matchIfMissing = true)
+      matchIfMissing = false)
+  @ConditionalOnClass(RedisConnectionFactory.class)
   static class RedisCacheConfiguration {
 
     private static final Logger redisLogger =
@@ -217,9 +218,15 @@ public class PermissionClientAutoConfiguration {
   /**
    * Configuration when Redis is not available.
    *
-   * <p>Creates a null-safe PermissionClient without caching.
+   * <p>Creates a null-safe PermissionClient without caching. This is a nested configuration that
+   * requires the parent auto-configuration to be active.
    */
-  @Configuration
+  @Configuration(proxyBeanMethods = false)
+  @ConditionalOnProperty(
+      prefix = "budgetanalyzer.permission",
+      name = "enabled",
+      havingValue = "true",
+      matchIfMissing = false)
   @ConditionalOnMissingBean(StringRedisTemplate.class)
   static class NoCacheConfiguration {
 
