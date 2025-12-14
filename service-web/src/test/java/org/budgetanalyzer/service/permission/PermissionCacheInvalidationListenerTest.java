@@ -1,6 +1,7 @@
 package org.budgetanalyzer.service.permission;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -81,7 +82,7 @@ class PermissionCacheInvalidationListenerTest {
 
     // Then
     verify(redisTemplate).keys("permissions:auth0|123:*");
-    verify(redisTemplate, never()).delete(any(Set.class));
+    verify(redisTemplate, never()).delete(anySet());
   }
 
   @Test
@@ -102,7 +103,7 @@ class PermissionCacheInvalidationListenerTest {
 
     // Then
     verify(redisTemplate, never()).keys(any());
-    verify(redisTemplate, never()).delete(any(Set.class));
+    verify(redisTemplate, never()).delete(anySet());
   }
 
   @Test

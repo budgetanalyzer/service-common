@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import org.budgetanalyzer.service.security.test.JwtTestBuilder;
 
@@ -19,10 +22,35 @@ class SecurityContextUtilTest {
   @AfterEach
   void cleanup() {
     SecurityContextHolder.clearContext();
+    RequestContextHolder.resetRequestAttributes();
+  }
+
+  // --- getCurrentUserId tests ---
+
+  @Test
+  void getCurrentUserId_shouldReturnInternalUserIdFromHeader() {
+    // Set up request with X-Internal-User-Id header
+    var request = new MockHttpServletRequest();
+    request.addHeader(SecurityContextUtil.INTERNAL_USER_ID_HEADER, "usr_abc123");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+    // Also set up JWT (should be ignored when header is present)
+    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+    var authentication = new JwtAuthenticationToken(jwt);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    var userId = SecurityContextUtil.getCurrentUserId();
+
+    assertThat(userId).isPresent().contains("usr_abc123");
   }
 
   @Test
-  void getCurrentUserId_shouldReturnSubjectFromJwt() {
+  void getCurrentUserId_shouldFallbackToJwtWhenHeaderMissing() {
+    // Set up request without header
+    var request = new MockHttpServletRequest();
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+    // Set up JWT
     var jwt = JwtTestBuilder.user("auth0|123456789").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -33,12 +61,71 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void getCurrentUserId_shouldReturnEmptyWhenNoAuthentication() {
+  void getCurrentUserId_shouldFallbackToJwtWhenHeaderBlank() {
+    // Set up request with blank header
+    var request = new MockHttpServletRequest();
+    request.addHeader(SecurityContextUtil.INTERNAL_USER_ID_HEADER, "   ");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+    // Set up JWT
+    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+    var authentication = new JwtAuthenticationToken(jwt);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    var userId = SecurityContextUtil.getCurrentUserId();
+
+    assertThat(userId).isPresent().contains("auth0|123456789");
+  }
+
+  @Test
+  void getCurrentUserId_shouldReturnEmptyWhenNoHeaderAndNoAuthentication() {
+    var request = new MockHttpServletRequest();
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
     SecurityContextHolder.clearContext();
 
     var userId = SecurityContextUtil.getCurrentUserId();
 
     assertThat(userId).isEmpty();
+  }
+
+  // --- getAuth0Sub tests ---
+
+  @Test
+  void getAuth0Sub_shouldReturnSubjectFromJwt() {
+    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+    var authentication = new JwtAuthenticationToken(jwt);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    var auth0Sub = SecurityContextUtil.getAuth0Sub();
+
+    assertThat(auth0Sub).isPresent().contains("auth0|123456789");
+  }
+
+  @Test
+  void getAuth0Sub_shouldReturnEmptyWhenNoAuthentication() {
+    SecurityContextHolder.clearContext();
+
+    var auth0Sub = SecurityContextUtil.getAuth0Sub();
+
+    assertThat(auth0Sub).isEmpty();
+  }
+
+  @Test
+  void getAuth0Sub_shouldIgnoreHeader() {
+    // Set up request with X-Internal-User-Id header
+    var request = new MockHttpServletRequest();
+    request.addHeader(SecurityContextUtil.INTERNAL_USER_ID_HEADER, "usr_abc123");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+    // Set up JWT with different sub
+    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+    var authentication = new JwtAuthenticationToken(jwt);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    // getAuth0Sub should always return JWT sub, ignoring header
+    var auth0Sub = SecurityContextUtil.getAuth0Sub();
+
+    assertThat(auth0Sub).isPresent().contains("auth0|123456789");
   }
 
   @Test
