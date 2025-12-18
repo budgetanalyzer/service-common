@@ -2,6 +2,8 @@ package org.budgetanalyzer.core.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
@@ -206,8 +208,7 @@ class AuditableEntitySecurityIntegrationTest {
   @DisplayName("Should not populate user fields for anonymous user")
   void shouldNotPopulateUserFieldsForAnonymousUser() {
     // Set anonymous authentication
-    var anonymousAuth =
-        new UsernamePasswordAuthenticationToken("anonymousUser", null, java.util.List.of());
+    var anonymousAuth = new UsernamePasswordAuthenticationToken("anonymousUser", null, List.of());
     SecurityContextHolder.getContext().setAuthentication(anonymousAuth);
 
     var entity = new TestAuditableEntity("Test Entity");
@@ -225,7 +226,7 @@ class AuditableEntitySecurityIntegrationTest {
    * @param userId the user ID to set
    */
   private void setAuthenticatedUser(String userId) {
-    var authentication = new UsernamePasswordAuthenticationToken(userId, null, java.util.List.of());
+    var authentication = new UsernamePasswordAuthenticationToken(userId, null, List.of());
     SecurityContextHolder.getContext().setAuthentication(authentication);
   }
 }

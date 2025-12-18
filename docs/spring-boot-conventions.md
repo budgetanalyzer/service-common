@@ -137,12 +137,13 @@ public class TransactionService { }
 - **Example**: `TransactionRepository`, `BudgetRepository`
 
 ### DTOs
-- **Pattern**: `*Request`, `*Response` (API layer), `*DTO` (Service layer)
+- **Pattern**: `*Request`, `*Response` (API layer), readable English names (Service layer)
 - **Packages**:
   - `*.api.request` - API request DTOs
   - `*.api.response` - API response DTOs
   - `*.service.dto` - Service-layer DTOs (internal)
-- **Example**: `CreateTransactionRequest`, `TransactionResponse`, `TransactionDTO`
+- **Example**: `CreateTransactionRequest`, `TransactionResponse`, `EffectivePermissions`, `ViewCriteria`
+- **Forbidden**: `*Dto`, `*DTO` suffixes - use descriptive names instead (e.g., `ViewCriteria` not `ViewCriteriaDto`)
 
 ### Prefer Records for DTOs
 
@@ -862,4 +863,4 @@ See [testing-patterns.md](testing-patterns.md) for detailed testing guidelines.
 
 *The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use this link to access the referenced controller:*
 
-- [AdminCurrencySeriesController.java](https://github.com/budgetanalyzer/currency-service/blob/main/src/main/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesController.java)
+- [AdminCurrencySeriesController.java](https://github.com/budgetanalyzerllc/currency-service/blob/main/src/main/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesController.java)

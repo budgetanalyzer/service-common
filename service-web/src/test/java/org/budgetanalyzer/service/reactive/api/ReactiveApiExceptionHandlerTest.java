@@ -9,6 +9,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
@@ -167,7 +168,7 @@ class ReactiveApiExceptionHandlerTest {
   @Test
   @DisplayName("Should handle WebExchangeBindException with VALIDATION_ERROR type and field errors")
   void shouldHandleWebExchangeBindException() throws Exception {
-    var target = new TestDto("", -1);
+    var target = new TestPayload("", -1);
     var bindingResult = new BeanPropertyBindingResult(target, "testDto");
     bindingResult.addError(
         new FieldError("testDto", "name", "", false, null, null, "must not be blank"));
@@ -175,9 +176,8 @@ class ReactiveApiExceptionHandlerTest {
         new FieldError("testDto", "age", -1, false, null, null, "must be positive"));
 
     // Create a MethodParameter for the exception
-    var method = TestDto.class.getMethod("getName");
-    var methodParam =
-        new org.springframework.core.MethodParameter(method, -1); // -1 for return type
+    var method = TestPayload.class.getMethod("getName");
+    var methodParam = new MethodParameter(method, -1); // -1 for return type
     var exception = new WebExchangeBindException(methodParam, bindingResult);
 
     var result = reactiveApiExceptionHandler.handleValidation(exception);
@@ -199,15 +199,14 @@ class ReactiveApiExceptionHandlerTest {
   @Test
   @DisplayName("Should handle WebExchangeBindException with single field error")
   void shouldHandleWebExchangeBindExceptionWithSingleFieldError() throws Exception {
-    var target = new TestDto("", 25);
+    var target = new TestPayload("", 25);
     var bindingResult = new BeanPropertyBindingResult(target, "testDto");
     bindingResult.addError(
         new FieldError("testDto", "name", "", false, null, null, "must not be blank"));
 
     // Create a MethodParameter for the exception
-    var method = TestDto.class.getMethod("getName");
-    var methodParam =
-        new org.springframework.core.MethodParameter(method, -1); // -1 for return type
+    var method = TestPayload.class.getMethod("getName");
+    var methodParam = new MethodParameter(method, -1); // -1 for return type
     var exception = new WebExchangeBindException(methodParam, bindingResult);
 
     var result = reactiveApiExceptionHandler.handleValidation(exception);
@@ -519,7 +518,7 @@ class ReactiveApiExceptionHandlerTest {
   @Test
   @DisplayName("Should handle WebExchangeBindException with global errors")
   void shouldHandleWebExchangeBindExceptionWithGlobalErrors() throws Exception {
-    var target = new TestDto("valid", 25);
+    var target = new TestPayload("valid", 25);
     var bindingResult = new BeanPropertyBindingResult(target, "testDto");
     // Add a global error (not field-specific)
     bindingResult.reject("global.error", "Global validation failed");
@@ -527,9 +526,8 @@ class ReactiveApiExceptionHandlerTest {
         new FieldError("testDto", "name", "valid", false, null, null, "name error"));
 
     // Create a MethodParameter for the exception
-    var method = TestDto.class.getMethod("getName");
-    var methodParam =
-        new org.springframework.core.MethodParameter(method, -1); // -1 for return type
+    var method = TestPayload.class.getMethod("getName");
+    var methodParam = new MethodParameter(method, -1); // -1 for return type
     var exception = new WebExchangeBindException(methodParam, bindingResult);
 
     var result = reactiveApiExceptionHandler.handleValidation(exception);
@@ -549,12 +547,12 @@ class ReactiveApiExceptionHandlerTest {
         .verifyComplete();
   }
 
-  /** Test DTO for validation tests. */
-  private static class TestDto {
+  /** Test payload for validation tests. */
+  private static class TestPayload {
     private String name;
     private int age;
 
-    public TestDto(String name, int age) {
+    public TestPayload(String name, int age) {
       this.name = name;
       this.age = age;
     }

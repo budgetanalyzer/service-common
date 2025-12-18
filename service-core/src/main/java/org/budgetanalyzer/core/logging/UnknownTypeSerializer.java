@@ -1,6 +1,7 @@
 package org.budgetanalyzer.core.logging;
 
 import java.io.IOException;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanDescription;
@@ -57,7 +58,7 @@ public class UnknownTypeSerializer extends StdSerializer<Object> {
           || clazz == Boolean.class
           || clazz.isArray()
           || Iterable.class.isAssignableFrom(clazz)
-          || java.util.Map.class.isAssignableFrom(clazz);
+          || Map.class.isAssignableFrom(clazz);
     }
   }
 }

@@ -11,6 +11,8 @@ import static org.mockito.Mockito.startsWith;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -138,7 +140,7 @@ class CorrelationIdFilterTest {
     }
 
     // Assert - All should be unique
-    assertEquals(10, java.util.Arrays.stream(correlationIds).distinct().count());
+    assertEquals(10, Arrays.stream(correlationIds).distinct().count());
   }
 
   @Test

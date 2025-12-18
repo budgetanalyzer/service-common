@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -425,7 +426,7 @@ class BaseOpenApiConfigTest {
     // Arrange & Act
     final var response =
         testOpenApiConfig.buildExampleApiErrorResponse(
-            org.springframework.http.HttpStatus.NOT_FOUND, "Resource not found", "RESOURCE_001");
+            HttpStatus.NOT_FOUND, "Resource not found", "RESOURCE_001");
 
     // Assert
     assertNotNull(response, "Response should not be null");

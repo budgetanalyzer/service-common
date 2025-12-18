@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ class CsvDataTest {
   @Test
   void shouldConstructWithAllValidFields() {
     var headers = List.of("Name", "Age", "City");
-    var row = new CsvRow(2, java.util.Map.of("Name", "John", "Age", "30", "City", "NYC"));
+    var row = new CsvRow(2, Map.of("Name", "John", "Age", "30", "City", "NYC"));
     var rows = List.of(row);
 
     var csvData = new CsvData("test.csv", "user-data", headers, rows);
