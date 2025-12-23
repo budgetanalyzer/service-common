@@ -199,4 +199,53 @@ class FieldErrorTest {
 
     assertEquals(field, fieldError.getField());
   }
+
+  // ==================== Indexed Field Error Tests ====================
+
+  @Test
+  @DisplayName("Should create indexed field error with all parameters")
+  void shouldCreateIndexedFieldErrorWithAllParameters() {
+    var index = 44;
+    var field = "amount";
+    var message = "must not be null";
+    var rejectedValue = "invalid";
+
+    var fieldError = FieldError.of(index, field, message, rejectedValue);
+
+    assertEquals(index, fieldError.getIndex());
+    assertEquals(field, fieldError.getField());
+    assertEquals(message, fieldError.getMessage());
+    assertEquals(rejectedValue, fieldError.getRejectedValue());
+  }
+
+  @Test
+  @DisplayName("Should create indexed field error with null rejected value")
+  void shouldCreateIndexedFieldErrorWithNullRejectedValue() {
+    var index = 0;
+    var field = "date";
+    var message = "date is required";
+
+    var fieldError = FieldError.of(index, field, message, null);
+
+    assertEquals(index, fieldError.getIndex());
+    assertEquals(field, fieldError.getField());
+    assertEquals(message, fieldError.getMessage());
+    assertNull(fieldError.getRejectedValue());
+  }
+
+  @Test
+  @DisplayName("Should create indexed field error with zero index")
+  void shouldCreateIndexedFieldErrorWithZeroIndex() {
+    var fieldError = FieldError.of(0, "field", "error", null);
+
+    assertEquals(0, fieldError.getIndex());
+  }
+
+  @Test
+  @DisplayName("Non-indexed field error should have null index")
+  void nonIndexedFieldErrorShouldHaveNullIndex() {
+    var fieldError = FieldError.of("email", "invalid format", "bad-email");
+
+    assertNull(fieldError.getIndex());
+  }
 }

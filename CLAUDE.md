@@ -14,6 +14,22 @@ Do not over-validate ideas. The user wants honest pushback, not agreement.
 - Don't say "great question" or "that's a really interesting point"
 - Skip the preamble and caveats — just answer
 
+## Critical Conventions (Always Apply)
+
+**These rules apply to ALL code changes. No judgment call needed.**
+
+### DTO Naming
+- **API request/response classes**: `*Request`, `*Response` (e.g., `CreateTransactionRequest`, `TransactionResponse`)
+- **NEVER use**: `*Dto`, `*DTO`, `*dto` — these suffixes are forbidden
+- **Internal projections**: `*Projection` for JPA projections, `*View` for read models
+
+### Variable Naming
+- **Class-level fields**: Use the full class name, not abbreviations
+  - ✅ `private final TransactionRepository transactionRepository;`
+  - ❌ `private final TransactionRepository repository;`
+  - ❌ `private final TransactionRepository txnRepo;`
+- **Local variables**: `var` is preferred, short names acceptable for limited scope
+
 ## Tree Position
 
 **Archetype**: platform

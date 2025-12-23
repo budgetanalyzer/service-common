@@ -3,8 +3,10 @@ package org.budgetanalyzer.service.servlet.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import org.budgetanalyzer.service.api.ApiErrorType;
+import org.budgetanalyzer.service.api.FieldError;
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
 import org.budgetanalyzer.service.exception.InvalidRequestException;
@@ -104,6 +107,42 @@ class ServletApiExceptionHandlerTest {
     assertEquals(ApiErrorType.APPLICATION_ERROR, response.getType());
     assertEquals("Business rule violation", response.getMessage());
     assertNull(response.getCode());
+  }
+
+  @Test
+  @DisplayName("Should handle BusinessException with field errors")
+  void shouldHandleBusinessExceptionWithFieldErrors() {
+    var fieldErrors =
+        List.of(
+            FieldError.of(0, "amount", "must not be null", null),
+            FieldError.of(2, "date", "must be a valid date", "invalid-date"));
+    var exception =
+        new BusinessException("Batch validation failed", "BATCH_VALIDATION_FAILED", fieldErrors);
+
+    var response = servletApiExceptionHandler.handle(exception, webRequest);
+
+    assertNotNull(response);
+    assertEquals(ApiErrorType.APPLICATION_ERROR, response.getType());
+    assertEquals("Batch validation failed", response.getMessage());
+    assertEquals("BATCH_VALIDATION_FAILED", response.getCode());
+    assertNotNull(response.getFieldErrors());
+    assertEquals(2, response.getFieldErrors().size());
+    assertEquals(Integer.valueOf(0), response.getFieldErrors().get(0).getIndex());
+    assertEquals("amount", response.getFieldErrors().get(0).getField());
+    assertEquals("must not be null", response.getFieldErrors().get(0).getMessage());
+  }
+
+  @Test
+  @DisplayName("Should handle BusinessException without field errors")
+  void shouldHandleBusinessExceptionWithoutFieldErrors() {
+    var exception = new BusinessException("Simple business error", "SIMPLE_ERROR");
+
+    var response = servletApiExceptionHandler.handle(exception, webRequest);
+
+    assertNotNull(response);
+    assertEquals(ApiErrorType.APPLICATION_ERROR, response.getType());
+    // Field errors should be null or empty when not provided
+    assertTrue(response.getFieldErrors() == null || response.getFieldErrors().isEmpty());
   }
 
   @Test
