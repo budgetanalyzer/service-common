@@ -1,9 +1,5 @@
 # Service-Common - Shared Spring Boot Libraries
 
-## Current Date
-
-Use `<env>` block in system context for `Today's date`. Training data is stale — always check `<env>` when dating documents or determining current year.
-
 ## Honest Discourse
 
 Do not over-validate ideas. The user wants honest pushback, not agreement.
@@ -610,17 +606,6 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 3. Do NOT attempt to hack around missing prerequisites - this leads to broken implementations that must be deleted
 4. Complete prerequisites first, then return to the original task
 
-### Execution Bias
-
-When a task is clear and you have the tools to complete it, **do it** rather than describing what needs to be done.
-
-- Bad: "To verify this works, you'll need to run the build for each service..."
-- Good: "Let me run the builds and verify." [runs builds]
-
-The user can always ask for explanation afterward. But they can't un-waste time spent reading instructions for tasks you could have just done.
-
-**Exception — git operations**: Never run git commands (commit, push, checkout, reset, etc.) without explicit user request. The user controls git workflow entirely. You may suggest what to commit, but don't do it.
-
 ### Critical Rules
 **All code must be production-quality** - No shortcuts, prototypes, or workarounds
 **Use pure JPA only** - No Hibernate-specific imports (`org.hibernate.*`)
@@ -669,16 +654,3 @@ The user can always ask for explanation afterward. But they can't un-waste time 
 - [Orchestration Repository](https://github.com/budgetanalyzerllc/orchestration)
 - [Orchestration CLAUDE.md](https://github.com/budgetanalyzerllc/orchestration/blob/main/CLAUDE.md)
 
-## Web Search Protocol
-
-BEFORE any WebSearch tool call:
-1. Read `Today's date` from `<env>` block
-2. Extract the current year
-3. Use current year in queries about "latest", "best", "current" topics
-4. NEVER use previous years unless explicitly searching historical content
-
-FAILURE MODE: Training data defaults to 2023/2024. Override with `<env>` year.
-
-## Conversation Capture
-
-When the user asks to save this conversation, write it to `/workspace/architecture-conversations/conversations/` following the format in INDEX.md.
