@@ -642,8 +642,8 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 - [docs/code-quality-standards.md](docs/code-quality-standards.md) - Spotless/Checkstyle details, formatting rules, IDE configuration
 
 **System architecture** (load when understanding cross-service concerns):
-- System-wide architecture: [orchestration/CLAUDE.md](../orchestration/CLAUDE.md)
-- Individual service CLAUDE.md files - Service-specific concerns
+- System-wide architecture: [orchestration/AGENTS.md](../orchestration/AGENTS.md)
+- Individual service AGENTS.md files - Service-specific concerns
 
 ---
 
@@ -652,5 +652,5 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 *The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use these links to access other repositories:*
 
 - [Orchestration Repository](https://github.com/budgetanalyzerllc/orchestration)
-- [Orchestration CLAUDE.md](https://github.com/budgetanalyzerllc/orchestration/blob/main/CLAUDE.md)
+- [Orchestration AGENTS.md](https://github.com/budgetanalyzerllc/orchestration/blob/main/AGENTS.md)
 

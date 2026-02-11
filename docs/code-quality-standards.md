@@ -10,7 +10,7 @@ All Budget Analyzer microservices follow strict code quality standards enforced 
 
 ### Rationale
 
-1. **AI-Assisted Development**: Claude files (CLAUDE.md) can be shared across public repositories without licensing or SSL issues. This enables consistent AI-assisted development workflows across the ecosystem.
+1. **AI-Assisted Development**: Claude files (AGENTS.md) can be shared across public repositories without licensing or SSL issues. This enables consistent AI-assisted development workflows across the ecosystem.
 
 2. **Single Core Dev Environment**: We standardize on one tooling stack that works everywhere - local development, CI/CD, and AI agents. No "works on my machine" issues from proprietary formatters or analyzers.
 
