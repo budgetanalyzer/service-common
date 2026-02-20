@@ -818,4 +818,4 @@ void tearDown() {
 
 *The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use this link to access the referenced test file:*
 
-- [AdminCurrencySeriesControllerTest.java](https://github.com/budgetanalyzerllc/currency-service/blob/main/src/test/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesControllerTest.java)
+- [AdminCurrencySeriesControllerTest.java](https://github.com/budgetanalyzer/currency-service/blob/main/src/test/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesControllerTest.java)

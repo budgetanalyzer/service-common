@@ -651,6 +651,6 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 
 *The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use these links to access other repositories:*
 
-- [Orchestration Repository](https://github.com/budgetanalyzerllc/orchestration)
-- [Orchestration AGENTS.md](https://github.com/budgetanalyzerllc/orchestration/blob/main/AGENTS.md)
+- [Orchestration Repository](https://github.com/budgetanalyzer/orchestration)
+- [Orchestration AGENTS.md](https://github.com/budgetanalyzer/orchestration/blob/main/AGENTS.md)
 

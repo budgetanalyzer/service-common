@@ -33,9 +33,9 @@ public class SecurityContextUtil {
   /**
    * Header name for the internal user ID passed by session-gateway.
    *
-   * <p>This header contains the vendor-independent user ID from permission-service, decoupled from
-   * the identity provider (e.g., Auth0). Session-gateway resolves Auth0 sub → internal user ID at
-   * login and adds this header to all proxied requests.
+   * <p>This header contains the vendor-independent internal user ID, decoupled from the identity
+   * provider (e.g., Auth0). Session-gateway resolves Auth0 sub → internal user ID at login and adds
+   * this header to all proxied requests.
    */
   public static final String INTERNAL_USER_ID_HEADER = "X-Internal-User-Id";
 
@@ -51,7 +51,7 @@ public class SecurityContextUtil {
    * <p>The user ID is extracted in the following priority order:
    *
    * <ol>
-   *   <li>X-Internal-User-Id header (vendor-independent ID from permission-service)
+   *   <li>X-Internal-User-Id header (vendor-independent internal user ID from gateway)
    *   <li>JWT 'sub' claim (fallback for backwards compatibility during migration)
    * </ol>
    *

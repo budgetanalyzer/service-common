@@ -4,7 +4,7 @@
 >
 > — [AGENTS.md](AGENTS.md#tree-position)
 
-[![Build](https://github.com/budgetanalyzerllc/service-common/actions/workflows/build.yml/badge.svg)](https://github.com/budgetanalyzerllc/service-common/actions/workflows/build.yml)
+[![Build](https://github.com/budgetanalyzer/service-common/actions/workflows/build.yml/badge.svg)](https://github.com/budgetanalyzer/service-common/actions/workflows/build.yml)
 
 Shared libraries for Budget Analyzer microservices - a personal finance management application.
 
@@ -227,10 +227,10 @@ service-common/
 
 ## Related Repositories
 
-- **Orchestration**: https://github.com/budgetanalyzerllc/orchestration
-- **Transaction Service**: https://github.com/budgetanalyzerllc/transaction-service
-- **Currency Service**: https://github.com/budgetanalyzerllc/currency-service
-- **Web Frontend**: https://github.com/budgetanalyzerllc/budget-analyzer-web
+- **Orchestration**: https://github.com/budgetanalyzer/orchestration
+- **Transaction Service**: https://github.com/budgetanalyzer/transaction-service
+- **Currency Service**: https://github.com/budgetanalyzer/currency-service
+- **Web Frontend**: https://github.com/budgetanalyzer/budget-analyzer-web
 
 ## License
 
