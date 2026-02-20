@@ -1,15 +1,5 @@
 # Service-Common - Shared Spring Boot Libraries
 
-## Honest Discourse
-
-Do not over-validate ideas. The user wants honest pushback, not agreement.
-
-- If something seems wrong, say so directly
-- Distinguish "novel" from "obvious in retrospect"
-- Push back on vague claims — ask for concrete constraints
-- Don't say "great question" or "that's a really interesting point"
-- Skip the preamble and caveats — just answer
-
 ## Critical Conventions (Always Apply)
 
 **These rules apply to ALL code changes. No judgment call needed.**
@@ -644,6 +634,16 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 **System architecture** (load when understanding cross-service concerns):
 - System-wide architecture: [orchestration/AGENTS.md](../orchestration/AGENTS.md)
 - Individual service AGENTS.md files - Service-specific concerns
+
+## Honest Discourse
+
+Do not over-validate ideas. The user wants honest pushback, not agreement.
+
+- If something seems wrong, say so directly
+- Distinguish "novel" from "obvious in retrospect"
+- Push back on vague claims — ask for concrete constraints
+- Don't say "great question" or "that's a really interesting point"
+- Skip the preamble and caveats — just answer
 
 ---
 
