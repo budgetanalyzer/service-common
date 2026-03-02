@@ -1,5 +1,21 @@
 # Service-Common - Shared Spring Boot Libraries
 
+## Critical Conventions (Always Apply)
+
+**These rules apply to ALL code changes. No judgment call needed.**
+
+### DTO Naming
+- **API request/response classes**: `*Request`, `*Response` (e.g., `CreateTransactionRequest`, `TransactionResponse`)
+- **NEVER use**: `*Dto`, `*DTO`, `*dto` — these suffixes are forbidden
+- **Internal projections**: `*Projection` for JPA projections, `*View` for read models
+
+### Variable Naming
+- **Class-level fields**: Use the full class name, not abbreviations
+  - ✅ `private final TransactionRepository transactionRepository;`
+  - ❌ `private final TransactionRepository repository;`
+  - ❌ `private final TransactionRepository txnRepo;`
+- **Local variables**: `var` is preferred, short names acceptable for limited scope
+
 ## Tree Position
 
 **Archetype**: platform
@@ -113,9 +129,9 @@ dependencies {
 
 **When to consult details**:
 - Setting up new service → Read [Architecture Layers](docs/spring-boot-conventions.md#architecture-layers) and [Package Structure](docs/spring-boot-conventions.md#package-structure)
-- Creating entities → See [Base Entity Classes](docs/spring-boot-conventions.md#base-entity-classes) (AuditableEntity, SoftDeletableEntity)
-- Writing controllers → Review [HTTP Response Patterns](docs/spring-boot-conventions.md#http-response-patterns) (201 Created with Location header)
-- Dependency injection → Check [Dependency Injection](docs/spring-boot-conventions.md#dependency-injection) section
+- Creating entities → Read [Base Entity Classes](docs/spring-boot-conventions.md#base-entity-classes) (AuditableEntity, SoftDeletableEntity)
+- Writing controllers → Read [HTTP Response Patterns](docs/spring-boot-conventions.md#http-response-patterns) (201 Created with Location header)
+- Dependency injection → Read [Dependency Injection](docs/spring-boot-conventions.md#dependency-injection) section
 
 **Quick reference**:
 - Controllers: `*Controller` + `@RestController` + thin (HTTP concerns only)
@@ -146,10 +162,10 @@ grep -r "@MappedSuperclass" service-core/src/
 **Pattern**: Centralized `@RestControllerAdvice` handler that converts all exceptions to standardized `ApiErrorResponse` format with HTTP status codes, error types, and field-level validation messages.
 
 **When to consult details**:
-- Throwing exceptions in code → See [Exception Hierarchy](docs/error-handling.md#exception-hierarchy) for which exception to use
+- Throwing exceptions in code → Read [Exception Hierarchy](docs/error-handling.md#exception-hierarchy) for which exception to use
 - Creating custom exceptions → Read [Custom Exception Examples](docs/error-handling.md#custom-exceptions)
-- Handling validation errors → Review [Validation Error Handling](docs/error-handling.md#validation-errors)
-- Understanding error responses → Check [ApiErrorResponse Format](docs/error-handling.md#apierrorresponse-format)
+- Handling validation errors → Read [Validation Error Handling](docs/error-handling.md#validation-errors)
+- Understanding error responses → Read [ApiErrorResponse Format](docs/error-handling.md#apierrorresponse-format)
 
 **Quick reference**:
 - `ResourceNotFoundException` → 404 (entity not found)
@@ -174,10 +190,10 @@ cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiException
 **Pattern**: Comprehensive test coverage using unit tests for logic, integration tests with TestContainers for persistence, and test correct behavior (never test around bugs).
 
 **When to consult details**:
-- Writing unit tests → See [Unit Testing Patterns](docs/testing-patterns.md#unit-tests) (mocking, naming, structure)
+- Writing unit tests → Read [Unit Testing Patterns](docs/testing-patterns.md#unit-tests) (mocking, naming, structure)
 - Writing integration tests → Read [Integration Testing](docs/testing-patterns.md#integration-tests) (TestContainers, @SpringBootTest)
-- Setting up TestContainers → Check [TestContainers Setup](docs/testing-patterns.md#testcontainers) (PostgreSQL, Redis, RabbitMQ)
-- Understanding test philosophy → Review [Testing Philosophy](docs/testing-patterns.md#philosophy) (test correct behavior)
+- Setting up TestContainers → Read [TestContainers Setup](docs/testing-patterns.md#testcontainers) (PostgreSQL, Redis, RabbitMQ)
+- Understanding test philosophy → Read [Testing Philosophy](docs/testing-patterns.md#philosophy) (test correct behavior)
 
 **Quick reference**:
 - Unit tests: `*Test.java` (no Spring context, fast, isolated)
@@ -277,7 +293,7 @@ dependencies {
 
 **Spring Boot Autoconfiguration**: Both modules automatically register their components via Spring Boot's autoconfiguration mechanism. **No manual component scanning or @ComponentScan is required** - exception handling, security, filters, and all other components are automatically available.
 
-**Optional**: If your service uses non-standard package structure (not `@SpringBootApplication` in root package), you may need explicit component scanning:
+**Non-standard package structure**: If your service doesn't have `@SpringBootApplication` in the root package, add explicit component scanning:
 ```java
 @SpringBootApplication(scanBasePackages = {
     "org.budgetanalyzer.yourservice"  // Your service packages
@@ -459,6 +475,17 @@ All code must be production-ready. No shortcuts, prototypes, or workarounds.
 - Forbidden: `org.hibernate.*`
 - Allowed: `jakarta.persistence.*`
 
+### Vendor Independence
+**CRITICAL**: Avoid lock-in to external providers. Abstract all external dependencies behind interfaces. Internal identifiers must be provider-agnostic.
+
+**Applies to**: Auth providers (Auth0), data providers (FRED), cloud services (AWS/GCP), payment processors, email services, SMS gateways — any external system.
+
+**Pattern**: Service → Interface → Provider Implementation → External Client. The interface is yours; the implementation is swappable.
+
+**Identifiers**: Use internal IDs (`usr_`, `txn_`, etc.) as foreign keys and in cross-service communication. Translate external IDs (Auth0 sub, Stripe customer ID) at the boundary. Never let external ID formats leak into your domain model.
+
+**Why**: The cost of abstraction is bounded (one interface, one translation layer). The cost of provider migration without abstraction is unbounded (every table, every service, every log).
+
 ### Standardized Error Responses
 All API errors follow `ApiErrorResponse` format with error types, field-level validation, and error codes.
 
@@ -478,10 +505,10 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 **Note**: Both modules (service-core and service-web) are versioned together and released as a coordinated pair.
 
 **When to consult details**:
-- Determining if a change is breaking → See [What's Breaking vs. Safe](docs/versioning-and-compatibility.md#examples-whats-breaking-vs-safe)
+- Determining if a change is breaking → Read [What's Breaking vs. Safe](docs/versioning-and-compatibility.md#examples-whats-breaking-vs-safe)
 - Deprecating APIs → Read [Deprecation Process](docs/versioning-and-compatibility.md#3-deprecate-before-removal)
-- Database schema changes → Review [Database Migrations](docs/versioning-and-compatibility.md#database-migrations)
-- Version bumps → Check [Semantic Versioning](docs/versioning-and-compatibility.md#semantic-versioning) and [Version Bump Checklist](docs/versioning-and-compatibility.md#version-bump-checklist)
+- Database schema changes → Read [Database Migrations](docs/versioning-and-compatibility.md#database-migrations)
+- Version bumps → Read [Semantic Versioning](docs/versioning-and-compatibility.md#semantic-versioning) and [Version Bump Checklist](docs/versioning-and-compatibility.md#version-bump-checklist)
 
 **Quick reference**:
 - Add new, don't modify existing (extend rather than change)
@@ -515,9 +542,9 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 
 **When to consult details**:
 - Integrating external APIs → Read [Provider Abstraction Pattern](docs/advanced-patterns.md#provider-abstraction-pattern)
-- Event-driven messaging → See [Transactional Outbox](docs/advanced-patterns.md#event-driven-messaging-with-transactional-outbox)
-- Implementing caching → Review [Redis Distributed Caching](docs/advanced-patterns.md#redis-distributed-caching)
-- Scheduled tasks in multi-pod deployment → Check [ShedLock](docs/advanced-patterns.md#distributed-locking-with-shedlock)
+- Event-driven messaging → Read [Transactional Outbox](docs/advanced-patterns.md#event-driven-messaging-with-transactional-outbox)
+- Implementing caching → Read [Redis Distributed Caching](docs/advanced-patterns.md#redis-distributed-caching)
+- Scheduled tasks in multi-pod deployment → Read [ShedLock](docs/advanced-patterns.md#distributed-locking-with-shedlock)
 - Database schema changes → Read [Flyway Migrations](docs/advanced-patterns.md#database-migrations-with-flyway)
 
 **Quick reference**:
@@ -605,8 +632,18 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 - [docs/code-quality-standards.md](docs/code-quality-standards.md) - Spotless/Checkstyle details, formatting rules, IDE configuration
 
 **System architecture** (load when understanding cross-service concerns):
-- System-wide architecture: [orchestration/CLAUDE.md](../orchestration/CLAUDE.md)
-- Individual service CLAUDE.md files - Service-specific concerns
+- System-wide architecture: [orchestration/AGENTS.md](../orchestration/AGENTS.md)
+- Individual service AGENTS.md files - Service-specific concerns
+
+## Honest Discourse
+
+Do not over-validate ideas. The user wants honest pushback, not agreement.
+
+- If something seems wrong, say so directly
+- Distinguish "novel" from "obvious in retrospect"
+- Push back on vague claims — ask for concrete constraints
+- Don't say "great question" or "that's a really interesting point"
+- Skip the preamble and caveats — just answer
 
 ---
 
@@ -615,18 +652,5 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 *The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use these links to access other repositories:*
 
 - [Orchestration Repository](https://github.com/budgetanalyzer/orchestration)
-- [Orchestration CLAUDE.md](https://github.com/budgetanalyzer/orchestration/blob/main/CLAUDE.md)
+- [Orchestration AGENTS.md](https://github.com/budgetanalyzer/orchestration/blob/main/AGENTS.md)
 
-## Web Search Protocol
-
-BEFORE any WebSearch tool call:
-1. Read `Today's date` from `<env>` block
-2. Extract the current year
-3. Use current year in queries about "latest", "best", "current" topics
-4. NEVER use previous years unless explicitly searching historical content
-
-FAILURE MODE: Training data defaults to 2023/2024. Override with `<env>` year.
-
-## Conversation Capture
-
-When the user asks to save this conversation, write it to `/workspace/architecture-conversations/conversations/` following the format in INDEX.md.

@@ -449,7 +449,7 @@ Before bumping service-common version:
 1. **Update CHANGELOG.md**: Document all changes, especially deprecations
 2. **Notify service teams**: Announce releases in team channels
 3. **Provide migration examples**: Show before/after code for breaking changes
-4. **Update documentation**: Keep CLAUDE.md and docs/ in sync
+4. **Update documentation**: Keep AGENTS.md and docs/ in sync
 5. **Test thoroughly**: Verify against all consuming services before release
 
 ### For deprecations:

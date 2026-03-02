@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
@@ -72,8 +73,7 @@ class AuditableEntityTest {
             && !entity.getUpdatedAt().isAfter(afterPersist),
         "updatedAt should be within persist time range");
     // createdAt and updatedAt should be very close (within 1 millisecond)
-    var timeDiffMillis =
-        java.time.Duration.between(entity.getCreatedAt(), entity.getUpdatedAt()).toMillis();
+    var timeDiffMillis = Duration.between(entity.getCreatedAt(), entity.getUpdatedAt()).toMillis();
     assertTrue(
         Math.abs(timeDiffMillis) <= 1,
         "createdAt and updatedAt should be within 1ms on initial persist");
@@ -163,7 +163,7 @@ class AuditableEntityTest {
 
     // Assert - Allow for sub-millisecond database precision differences
     var timeDiffMillis =
-        java.time.Duration.between(originalCreatedAt, reloadedEntity.getCreatedAt()).toMillis();
+        Duration.between(originalCreatedAt, reloadedEntity.getCreatedAt()).toMillis();
     assertTrue(
         Math.abs(timeDiffMillis) <= 1,
         "createdAt should be immutable (within 1ms precision after reload)");
@@ -226,8 +226,7 @@ class AuditableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert - createdAt and updatedAt should be very close (PreUpdate not called separately)
-    var timeDiffMillis =
-        java.time.Duration.between(entity.getCreatedAt(), entity.getUpdatedAt()).toMillis();
+    var timeDiffMillis = Duration.between(entity.getCreatedAt(), entity.getUpdatedAt()).toMillis();
     assertTrue(
         Math.abs(timeDiffMillis) <= 1,
         "PreUpdate should not be triggered on persist (timestamps within 1ms)");

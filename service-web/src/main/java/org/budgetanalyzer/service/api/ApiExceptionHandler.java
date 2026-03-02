@@ -58,15 +58,24 @@ public interface ApiExceptionHandler {
   /**
    * Builds a business error response with error code.
    *
+   * <p>If the exception contains field-level errors (e.g., from batch validation), they are
+   * included in the response.
+   *
    * @param exception the exception
    * @return API error response
    */
   default ApiErrorResponse buildBusinessError(BusinessException exception) {
-    return ApiErrorResponse.builder()
-        .type(ApiErrorType.APPLICATION_ERROR)
-        .code(exception.getCode())
-        .message(exception.getMessage())
-        .build();
+    var builder =
+        ApiErrorResponse.builder()
+            .type(ApiErrorType.APPLICATION_ERROR)
+            .code(exception.getCode())
+            .message(exception.getMessage());
+
+    if (exception.hasFieldErrors()) {
+      builder.fieldErrors(exception.getFieldErrors());
+    }
+
+    return builder.build();
   }
 
   /**

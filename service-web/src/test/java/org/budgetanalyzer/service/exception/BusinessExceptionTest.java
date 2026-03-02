@@ -1,12 +1,17 @@
 package org.budgetanalyzer.service.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import org.budgetanalyzer.service.api.FieldError;
 
 /** Unit tests for {@link BusinessException}. */
 @DisplayName("BusinessException Tests")
@@ -83,7 +88,7 @@ class BusinessExceptionTest {
     var message = "Business rule violation";
     var code = "RULE_VIOLATION";
 
-    var exception = new BusinessException(message, code, null);
+    var exception = new BusinessException(message, code, (Throwable) null);
 
     assertEquals(message, exception.getMessage());
     assertEquals(code, exception.getCode());
@@ -91,9 +96,9 @@ class BusinessExceptionTest {
   }
 
   @Test
-  @DisplayName("Should handle all null values")
-  void shouldHandleAllNullValues() {
-    var exception = new BusinessException(null, null, null);
+  @DisplayName("Should handle all null values with cause constructor")
+  void shouldHandleAllNullValuesWithCauseConstructor() {
+    var exception = new BusinessException(null, null, (Throwable) null);
 
     assertNull(exception.getMessage());
     assertNull(exception.getCode());
@@ -150,5 +155,66 @@ class BusinessExceptionTest {
     var exception = new BusinessException("Application error", "ERR_1001");
 
     assertEquals("ERR_1001", exception.getCode());
+  }
+
+  // ==================== Field Errors Tests ====================
+
+  @Test
+  @DisplayName("Should create exception with field errors")
+  void shouldCreateExceptionWithFieldErrors() {
+    var fieldErrors =
+        List.of(
+            FieldError.of(0, "amount", "must not be null", null),
+            FieldError.of(2, "date", "must be a valid date", "invalid-date"));
+
+    var exception =
+        new BusinessException("Batch validation failed", "BATCH_VALIDATION_FAILED", fieldErrors);
+
+    assertEquals("Batch validation failed", exception.getMessage());
+    assertEquals("BATCH_VALIDATION_FAILED", exception.getCode());
+    assertTrue(exception.hasFieldErrors());
+    assertEquals(2, exception.getFieldErrors().size());
+    assertEquals(0, exception.getFieldErrors().get(0).getIndex());
+    assertEquals("amount", exception.getFieldErrors().get(0).getField());
+  }
+
+  @Test
+  @DisplayName("Should have empty field errors by default")
+  void shouldHaveEmptyFieldErrorsByDefault() {
+    var exception = new BusinessException("Error", "CODE");
+
+    assertFalse(exception.hasFieldErrors());
+    assertTrue(exception.getFieldErrors().isEmpty());
+  }
+
+  @Test
+  @DisplayName("Should have empty field errors with cause constructor")
+  void shouldHaveEmptyFieldErrorsWithCauseConstructor() {
+    var exception = new BusinessException("Error", "CODE", new RuntimeException("cause"));
+
+    assertFalse(exception.hasFieldErrors());
+    assertTrue(exception.getFieldErrors().isEmpty());
+  }
+
+  @Test
+  @DisplayName("Should return immutable field errors list")
+  void shouldReturnImmutableFieldErrorsList() {
+    var fieldErrors = List.of(FieldError.of(0, "field", "error", null));
+
+    var exception = new BusinessException("Error", "CODE", fieldErrors);
+
+    var returnedErrors = exception.getFieldErrors();
+    org.junit.jupiter.api.Assertions.assertThrows(
+        UnsupportedOperationException.class,
+        () -> returnedErrors.add(FieldError.of(1, "other", "error", null)));
+  }
+
+  @Test
+  @DisplayName("Should handle null field errors list")
+  void shouldHandleNullFieldErrorsList() {
+    var exception = new BusinessException("Error", "CODE", (List<FieldError>) null);
+
+    assertFalse(exception.hasFieldErrors());
+    assertTrue(exception.getFieldErrors().isEmpty());
   }
 }

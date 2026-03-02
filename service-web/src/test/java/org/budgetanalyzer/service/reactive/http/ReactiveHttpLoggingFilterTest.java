@@ -5,7 +5,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
@@ -269,10 +273,10 @@ class ReactiveHttpLoggingFilterTest {
 
     // Mock the exchange to return the unresolved address
     var mockRequest = mock(ServerHttpRequest.class);
-    when(mockRequest.getMethod()).thenReturn(org.springframework.http.HttpMethod.GET);
-    when(mockRequest.getURI()).thenReturn(java.net.URI.create("/api/users"));
+    when(mockRequest.getMethod()).thenReturn(HttpMethod.GET);
+    when(mockRequest.getURI()).thenReturn(URI.create("/api/users"));
     when(mockRequest.getRemoteAddress()).thenReturn(unresolvedAddress);
-    when(mockRequest.getHeaders()).thenReturn(org.springframework.http.HttpHeaders.EMPTY);
+    when(mockRequest.getHeaders()).thenReturn(HttpHeaders.EMPTY);
     when(mockRequest.getBody()).thenReturn(Flux.empty());
 
     var mockExchange = mock(ServerWebExchange.class);
@@ -418,7 +422,7 @@ class ReactiveHttpLoggingFilterTest {
         .thenAnswer(
             invocation -> {
               // Simulate some processing time
-              return Mono.delay(java.time.Duration.ofMillis(10)).then();
+              return Mono.delay(Duration.ofMillis(10)).then();
             });
 
     // Act

@@ -2,7 +2,7 @@
 
 > "Archetype: platform. Role: Shared library; provides patterns all Java services consume."
 >
-> — [CLAUDE.md](CLAUDE.md#tree-position)
+> — [AGENTS.md](AGENTS.md#tree-position)
 
 [![Build](https://github.com/budgetanalyzer/service-common/actions/workflows/build.yml/badge.svg)](https://github.com/budgetanalyzer/service-common/actions/workflows/build.yml)
 
@@ -152,7 +152,7 @@ cat service-web/src/main/java/org/budgetanalyzer/service/security/OAuth2Resource
 grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
 ```
 
-For complete details, see the [Autoconfiguration section in CLAUDE.md](CLAUDE.md#autoconfiguration).
+For complete details, see the [Autoconfiguration section in AGENTS.md](AGENTS.md#autoconfiguration).
 
 ### Building and Publishing
 
