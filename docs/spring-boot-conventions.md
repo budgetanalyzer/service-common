@@ -635,7 +635,7 @@ public class Transaction extends AuditableEntity {
 Transaction tx = repository.findById(id).orElseThrow();
 Instant created = tx.getCreatedAt();       // When created
 Instant updated = tx.getUpdatedAt();       // When last modified
-String creator = tx.getCreatedBy();        // Who created it (e.g., "auth0|123...")
+String creator = tx.getCreatedBy();        // Who created it (e.g., "usr_507f1f77...")
 String modifier = tx.getUpdatedBy();       // Who last modified it
 ```
 

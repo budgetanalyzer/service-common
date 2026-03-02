@@ -33,7 +33,7 @@ class SecurityContextAuditorAwareTest {
   @Test
   void shouldReturnUserIdWhenAuthenticated() {
     // Arrange
-    String userId = "auth0|123456789";
+    String userId = "usr_123456789";
     Authentication auth =
         new UsernamePasswordAuthenticationToken(userId, "password", Collections.emptyList());
     SecurityContextHolder.getContext().setAuthentication(auth);
@@ -141,12 +141,11 @@ class SecurityContextAuditorAwareTest {
   }
 
   @Test
-  void shouldHandleJwtStyleUserId() {
-    // Arrange - Auth0 style user ID
-    String auth0UserId = "auth0|507f1f77bcf86cd799439011";
+  void shouldHandleIdpStyleUserId() {
+    // Arrange - IdP style user ID
+    String idpUserId = "idp|507f1f77bcf86cd799439011";
     Authentication auth =
-        new UsernamePasswordAuthenticationToken(
-            auth0UserId, "credentials", Collections.emptyList());
+        new UsernamePasswordAuthenticationToken(idpUserId, "credentials", Collections.emptyList());
     SecurityContextHolder.getContext().setAuthentication(auth);
 
     // Act
@@ -154,7 +153,7 @@ class SecurityContextAuditorAwareTest {
 
     // Assert
     assertTrue(result.isPresent(), "Should return auditor for JWT-style user ID");
-    assertEquals(auth0UserId, result.get(), "Should preserve full Auth0 user ID format");
+    assertEquals(idpUserId, result.get(), "Should preserve full IdP user ID format");
   }
 
   @Test

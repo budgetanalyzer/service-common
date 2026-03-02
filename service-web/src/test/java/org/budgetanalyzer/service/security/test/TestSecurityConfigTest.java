@@ -26,8 +26,8 @@ class TestSecurityConfigTest {
     var jwt = decoder.decode("any-token-string");
 
     assertThat(jwt).isNotNull();
-    assertThat(jwt.getSubject()).isEqualTo("test-user");
-    assertThat(jwt.getClaimAsString("scope")).isEqualTo("openid profile email");
+    assertThat(jwt.getSubject()).isEqualTo("usr_test123");
+    assertThat(jwt.getClaimAsString("iss")).isEqualTo("session-gateway");
   }
 
   @Test
@@ -52,7 +52,7 @@ class TestSecurityConfigTest {
 
     // First decode - default JWT
     var defaultJwt = decoder.decode("token");
-    assertThat(defaultJwt.getSubject()).isEqualTo("test-user");
+    assertThat(defaultJwt.getSubject()).isEqualTo("usr_test123");
 
     // Set custom JWT
     var customJwt = JwtTestBuilder.user("custom-user").build();
@@ -67,7 +67,7 @@ class TestSecurityConfigTest {
 
     // Third decode - back to default JWT
     var backToDefault = decoder.decode("token");
-    assertThat(backToDefault.getSubject()).isEqualTo("test-user");
+    assertThat(backToDefault.getSubject()).isEqualTo("usr_test123");
   }
 
   @Test

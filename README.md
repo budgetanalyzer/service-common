@@ -108,8 +108,8 @@ When service-core is on your classpath, you automatically get:
 When service-web is on your classpath, you automatically get:
 - **Global Exception Handler** - All exceptions converted to standardized ApiErrorResponse format
   - Maps: 400 (Bad Request), 404 (Not Found), 422 (Business Logic), 500 (Server Error)
-- **OAuth2 JWT Security** - Automatic JWT validation with Auth0
-  - Requires: `spring.security.oauth2.resourceserver.jwt.issuer-uri` configuration
+- **OAuth2 JWT Security** - Automatic JWT validation with gateway-minted JWTs
+  - Requires: `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` configuration
 - **Correlation ID Filter** - Automatically adds correlation IDs to all requests
 - **HTTP Logging Filter** - Optional (enable with `budgetanalyzer.service.http-logging.enabled=true`)
 - **OpenAPI Base Config** - Standard error response schemas (extend BaseOpenApiConfig in your service)
@@ -121,7 +121,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${AUTH0_ISSUER_URI}
+          jwk-set-uri: ${GATEWAY_JWKS_URI}
 
 budgetanalyzer:
   service:

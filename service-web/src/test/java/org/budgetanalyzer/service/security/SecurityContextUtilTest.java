@@ -35,7 +35,7 @@ class SecurityContextUtilTest {
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
     // Also set up JWT (should be ignored when header is present)
-    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+    var jwt = JwtTestBuilder.user("usr_abc123").withIdpSub("idp|123456789").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -45,19 +45,19 @@ class SecurityContextUtilTest {
   }
 
   @Test
-  void getCurrentUserId_shouldFallbackToJwtWhenHeaderMissing() {
+  void getCurrentUserId_shouldFallbackToJwtSubWhenHeaderMissing() {
     // Set up request without header
     var request = new MockHttpServletRequest();
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-    // Set up JWT
-    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+    // Set up JWT — sub is the internal user ID in gateway JWTs
+    var jwt = JwtTestBuilder.user("usr_abc123").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
     var userId = SecurityContextUtil.getCurrentUserId();
 
-    assertThat(userId).isPresent().contains("auth0|123456789");
+    assertThat(userId).isPresent().contains("usr_abc123");
   }
 
   @Test
@@ -68,13 +68,13 @@ class SecurityContextUtilTest {
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
     // Set up JWT
-    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+    var jwt = JwtTestBuilder.user("usr_abc123").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
     var userId = SecurityContextUtil.getCurrentUserId();
 
-    assertThat(userId).isPresent().contains("auth0|123456789");
+    assertThat(userId).isPresent().contains("usr_abc123");
   }
 
   @Test
@@ -88,49 +88,61 @@ class SecurityContextUtilTest {
     assertThat(userId).isEmpty();
   }
 
-  // --- getAuth0Sub tests ---
+  // --- getIdpSub tests ---
 
   @Test
-  void getAuth0Sub_shouldReturnSubjectFromJwt() {
-    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+  void getIdpSub_shouldReturnIdpSubFromJwt() {
+    var jwt = JwtTestBuilder.user("usr_abc123").withIdpSub("idp|123456789").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-    var auth0Sub = SecurityContextUtil.getAuth0Sub();
+    var idpSub = SecurityContextUtil.getIdpSub();
 
-    assertThat(auth0Sub).isPresent().contains("auth0|123456789");
+    assertThat(idpSub).isPresent().contains("idp|123456789");
   }
 
   @Test
-  void getAuth0Sub_shouldReturnEmptyWhenNoAuthentication() {
+  void getIdpSub_shouldReturnEmptyWhenNoAuthentication() {
     SecurityContextHolder.clearContext();
 
-    var auth0Sub = SecurityContextUtil.getAuth0Sub();
+    var idpSub = SecurityContextUtil.getIdpSub();
 
-    assertThat(auth0Sub).isEmpty();
+    assertThat(idpSub).isEmpty();
   }
 
   @Test
-  void getAuth0Sub_shouldIgnoreHeader() {
+  void getIdpSub_shouldReturnEmptyWhenIdpSubClaimMissing() {
+    // Build a JWT without the idp_sub claim by overriding it with null via custom claim
+    var jwt = JwtTestBuilder.user("usr_abc123").withClaim("idp_sub", null).build();
+    var authentication = new JwtAuthenticationToken(jwt);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    var idpSub = SecurityContextUtil.getIdpSub();
+
+    assertThat(idpSub).isEmpty();
+  }
+
+  @Test
+  void getIdpSub_shouldIgnoreHeader() {
     // Set up request with X-Internal-User-Id header
     var request = new MockHttpServletRequest();
     request.addHeader(SecurityContextUtil.INTERNAL_USER_ID_HEADER, "usr_abc123");
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-    // Set up JWT with different sub
-    var jwt = JwtTestBuilder.user("auth0|123456789").build();
+    // Set up JWT with idp_sub
+    var jwt = JwtTestBuilder.user("usr_abc123").withIdpSub("idp|123456789").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-    // getAuth0Sub should always return JWT sub, ignoring header
-    var auth0Sub = SecurityContextUtil.getAuth0Sub();
+    // getIdpSub should return idp_sub, ignoring header
+    var idpSub = SecurityContextUtil.getIdpSub();
 
-    assertThat(auth0Sub).isPresent().contains("auth0|123456789");
+    assertThat(idpSub).isPresent().contains("idp|123456789");
   }
 
   @Test
   void getCurrentUserEmail_shouldReturnEmailFromJwt() {
-    var jwt = JwtTestBuilder.user("test-user").withClaim("email", "test@example.com").build();
+    var jwt = JwtTestBuilder.user("usr_test123").withClaim("email", "test@example.com").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -141,7 +153,7 @@ class SecurityContextUtilTest {
 
   @Test
   void getCurrentUserEmail_shouldReturnEmptyWhenEmailClaimMissing() {
-    var jwt = JwtTestBuilder.user("test-user").build();
+    var jwt = JwtTestBuilder.user("usr_test123").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -162,7 +174,7 @@ class SecurityContextUtilTest {
   @Test
   void getAllClaims_shouldReturnAllJwtClaims() {
     var jwt =
-        JwtTestBuilder.user("test-user")
+        JwtTestBuilder.user("usr_test123")
             .withClaim("email", "test@example.com")
             .withClaim("organization_id", "org-123")
             .build();
@@ -173,7 +185,7 @@ class SecurityContextUtilTest {
 
     assertThat(claims).isPresent();
     assertThat(claims.get())
-        .containsEntry("sub", "test-user")
+        .containsEntry("sub", "usr_test123")
         .containsEntry("email", "test@example.com")
         .containsEntry("organization_id", "org-123");
   }
@@ -189,7 +201,7 @@ class SecurityContextUtilTest {
 
   @Test
   void logAuthenticationContext_shouldNotThrowExceptionWhenAuthenticated() {
-    var jwt = JwtTestBuilder.user("test-user").withClaim("email", "test@example.com").build();
+    var jwt = JwtTestBuilder.user("usr_test123").withClaim("email", "test@example.com").build();
     var authentication = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 

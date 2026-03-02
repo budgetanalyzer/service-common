@@ -329,7 +329,7 @@ grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
   - Provides `createdAt`, `updatedAt` (timestamps) and `createdBy`, `updatedBy` (user tracking)
 - **SecurityContextAuditorAware Bean** - Provides current user ID for JPA auditing
   - Extracts user ID from `Authentication.getName()` in Spring Security context
-  - Typically contains Auth0 user ID (e.g., `auth0|507f1f77bcf86cd799439011`)
+  - Contains internal user ID (e.g., `usr_507f1f77bcf86cd799439011`) from gateway JWT
   - Returns empty for anonymous users or system operations (fields remain null)
 - **OpenCsvParser Bean** - CSV parser component automatically available for injection
 
@@ -380,7 +380,10 @@ grep -r "@Component" service-core/src/main/java/
 
 **Shared Configuration**:
 - **HttpLoggingProperties** - Shared between servlet and reactive
-- **OAuth2ResourceServerSecurityConfig** - JWT security (servlet and reactive compatible)
+- **OAuth2ResourceServerSecurityConfig** - JWT security validating gateway-minted JWTs
+  - Validates JWTs against session-gateway JWKS endpoint
+  - Extracts `permissions` claim as direct authorities (e.g., `transactions:read`)
+  - Extracts `roles` claim as ROLE_-prefixed authorities (e.g., `ROLE_ADMIN`)
   - Public endpoints: `/actuator/health/**`
   - Protected: All other endpoints (requires valid JWT)
   - `JwtDecoder` bean (conditional - only if not already defined)
@@ -405,10 +408,10 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${AUTH0_ISSUER_URI}  # Auth0 tenant URL
+          jwk-set-uri: ${GATEWAY_JWKS_URI}  # e.g., http://session-gateway:8081/.well-known/jwks.json
 
-# Environment variable (defaults to https://api.budgetanalyzer.org)
-AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+# Optional: override expected issuer (default: "session-gateway")
+# budgetanalyzer.security.gateway.expected-issuer: session-gateway
 ```
 
 **OpenAPI Base Configuration** (`BaseOpenApiConfig`):
@@ -456,7 +459,7 @@ grep -r "@Configuration" service-web/src/main/java/
 
 **service-web** (mostly automatic):
 - ✅ Exception handling - automatic
-- ✅ Security - automatic (requires OAuth2 properties in config)
+- ✅ Security - automatic (requires `jwk-set-uri` property pointing to gateway JWKS)
 - ✅ Correlation ID filter - automatic
 - ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`
 - ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`
@@ -478,11 +481,11 @@ All code must be production-ready. No shortcuts, prototypes, or workarounds.
 ### Vendor Independence
 **CRITICAL**: Avoid lock-in to external providers. Abstract all external dependencies behind interfaces. Internal identifiers must be provider-agnostic.
 
-**Applies to**: Auth providers (Auth0), data providers (FRED), cloud services (AWS/GCP), payment processors, email services, SMS gateways — any external system.
+**Applies to**: Auth providers (e.g., Auth0, Okta), data providers (FRED), cloud services (AWS/GCP), payment processors, email services, SMS gateways — any external system.
 
 **Pattern**: Service → Interface → Provider Implementation → External Client. The interface is yours; the implementation is swappable.
 
-**Identifiers**: Use internal IDs (`usr_`, `txn_`, etc.) as foreign keys and in cross-service communication. Translate external IDs (Auth0 sub, Stripe customer ID) at the boundary. Never let external ID formats leak into your domain model.
+**Identifiers**: Use internal IDs (`usr_`, `txn_`, etc.) as foreign keys and in cross-service communication. Translate external IDs (IdP sub, Stripe customer ID) at the boundary. Never let external ID formats leak into your domain model.
 
 **Why**: The cost of abstraction is bounded (one interface, one translation layer). The cost of provider migration without abstraction is unbounded (every table, every service, every log).
 

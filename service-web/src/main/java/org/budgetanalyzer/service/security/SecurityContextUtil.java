@@ -34,7 +34,7 @@ public class SecurityContextUtil {
    * Header name for the internal user ID passed by session-gateway.
    *
    * <p>This header contains the vendor-independent internal user ID, decoupled from the identity
-   * provider (e.g., Auth0). Session-gateway resolves Auth0 sub → internal user ID at login and adds
+   * provider. Session-gateway resolves identity provider sub → internal user ID at login and adds
    * this header to all proxied requests.
    */
   public static final String INTERNAL_USER_ID_HEADER = "X-Internal-User-Id";
@@ -52,12 +52,11 @@ public class SecurityContextUtil {
    *
    * <ol>
    *   <li>X-Internal-User-Id header (vendor-independent internal user ID from gateway)
-   *   <li>JWT 'sub' claim (fallback for backwards compatibility during migration)
+   *   <li>JWT 'sub' claim (the internal user ID in gateway-minted JWTs)
    * </ol>
    *
-   * <p>The header approach is preferred because it decouples services from the identity provider.
-   * The JWT fallback ensures services work during rolling deployment when session-gateway hasn't
-   * been updated yet, or for requests that bypass session-gateway.
+   * <p>The header approach is preferred for explicit routing. The JWT sub fallback works because
+   * gateway-minted JWTs already use the internal user ID as the subject claim.
    *
    * @return Optional containing the user ID if available, empty otherwise
    */
@@ -74,11 +73,11 @@ public class SecurityContextUtil {
       }
     }
 
-    // Priority 2: Fallback to JWT sub claim for backwards compatibility
+    // Priority 2: Fallback to JWT sub claim (internal user ID in gateway JWTs)
     var authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication instanceof JwtAuthenticationToken jwtAuth) {
       var jwt = jwtAuth.getToken();
-      var userId = jwt.getSubject(); // Extract 'sub' claim (Auth0 identifier)
+      var userId = jwt.getSubject();
       logger.trace("Extracted user ID from JWT sub (fallback): {}", userId);
       return Optional.ofNullable(userId);
     }
@@ -88,22 +87,23 @@ public class SecurityContextUtil {
   }
 
   /**
-   * Extracts the Auth0 subject identifier from the JWT.
+   * Extracts the identity provider subject identifier from the JWT's idp_sub claim.
    *
-   * <p>Use this method when you specifically need the Auth0 identifier (e.g., for Auth0 Management
-   * API calls). For general user identification, prefer {@link #getCurrentUserId()} which returns
-   * the vendor-independent internal user ID.
+   * <p>In gateway-minted JWTs, the original identity provider subject is stored in the {@code
+   * idp_sub} claim, while {@code sub} contains the internal user ID. Use this method when you
+   * specifically need the identity provider identifier (e.g., for IdP management API calls). For
+   * general user identification, prefer {@link #getCurrentUserId()}.
    *
-   * @return Optional containing the Auth0 sub claim if authenticated, empty otherwise
+   * @return Optional containing the IdP sub (idp_sub claim) if authenticated, empty otherwise
    */
-  public static Optional<String> getAuth0Sub() {
+  public static Optional<String> getIdpSub() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
 
     if (authentication instanceof JwtAuthenticationToken jwtAuth) {
       var jwt = jwtAuth.getToken();
-      var auth0Sub = jwt.getSubject();
-      logger.trace("Extracted Auth0 sub from JWT: {}", auth0Sub);
-      return Optional.ofNullable(auth0Sub);
+      var idpSub = jwt.getClaimAsString("idp_sub");
+      logger.trace("Extracted IdP sub from JWT idp_sub: {}", idpSub);
+      return Optional.ofNullable(idpSub);
     }
 
     logger.trace("No JWT authentication found in security context");

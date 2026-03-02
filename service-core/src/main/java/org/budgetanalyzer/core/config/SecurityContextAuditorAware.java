@@ -15,7 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * org.budgetanalyzer.core.domain.AuditableEntity}.
  *
  * <p>The user ID is extracted from {@link Authentication#getName()}, which typically contains the
- * subject claim from the JWT token (Auth0 user ID).
+ * subject claim from the JWT token (internal user ID).
  *
  * <p>Returns an empty Optional when:
  *
