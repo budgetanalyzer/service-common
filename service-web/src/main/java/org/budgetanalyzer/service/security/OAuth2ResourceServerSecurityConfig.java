@@ -85,7 +85,10 @@ public class OAuth2ResourceServerSecurityConfig {
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     logger.info("Configuring OAuth2 Resource Server security");
 
-    http.authorizeHttpRequests(
+    // Disable CSRF — all consumers are stateless REST APIs using JWT bearer tokens.
+    // CSRF protects against session-cookie-based attacks which don't apply here.
+    http.csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(
             authorize ->
                 authorize
                     // Allow actuator health endpoint (for load balancer health checks)
