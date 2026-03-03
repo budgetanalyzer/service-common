@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -218,27 +219,45 @@ class ServletApiExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("Should re-throw AccessDeniedException for Spring Security to handle as 403")
-  void shouldRethrowAccessDeniedException() {
+  @DisplayName("Should handle AccessDeniedException with PERMISSION_DENIED type and 403")
+  void shouldHandleAccessDeniedExceptionWith403() {
     var exception = new AccessDeniedException("Forbidden");
 
-    var thrown =
-        org.junit.jupiter.api.Assertions.assertThrows(
-            AccessDeniedException.class, () -> servletApiExceptionHandler.handle(exception));
+    var response = servletApiExceptionHandler.handle(exception);
 
-    assertEquals(exception, thrown);
+    assertNotNull(response);
+    assertEquals(ApiErrorType.PERMISSION_DENIED, response.getType());
+    assertEquals("You do not have permission to perform this action", response.getMessage());
+    assertNull(response.getCode());
+    assertNull(response.getFieldErrors());
   }
 
   @Test
-  @DisplayName("Should re-throw AuthenticationException for Spring Security to handle as 401")
-  void shouldRethrowAuthenticationException() {
+  @DisplayName("Should handle AuthorizationDeniedException with PERMISSION_DENIED type and 403")
+  void shouldHandleAuthorizationDeniedExceptionWith403() {
+    var exception = new AuthorizationDeniedException("Access Denied");
+
+    var response = servletApiExceptionHandler.handle(exception);
+
+    assertNotNull(response);
+    assertEquals(ApiErrorType.PERMISSION_DENIED, response.getType());
+    assertEquals("You do not have permission to perform this action", response.getMessage());
+    assertNull(response.getCode());
+    assertNull(response.getFieldErrors());
+  }
+
+  @Test
+  @DisplayName("Should handle AuthenticationException with UNAUTHORIZED type and 401")
+  void shouldHandleAuthenticationExceptionWith401() {
     var exception = new BadCredentialsException("Bad credentials");
 
-    var thrown =
-        org.junit.jupiter.api.Assertions.assertThrows(
-            BadCredentialsException.class, () -> servletApiExceptionHandler.handle(exception));
+    var response = servletApiExceptionHandler.handle(exception);
 
-    assertEquals(exception, thrown);
+    assertNotNull(response);
+    assertEquals(ApiErrorType.UNAUTHORIZED, response.getType());
+    assertEquals("Authentication required", response.getMessage());
+    assertNull(response.getCode());
+    assertNull(response.getFieldErrors());
   }
 
   @Test

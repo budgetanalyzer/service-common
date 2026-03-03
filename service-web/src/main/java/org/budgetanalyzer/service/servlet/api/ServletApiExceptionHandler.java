@@ -7,6 +7,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -50,8 +51,9 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
  *   <li>{@link MethodArgumentTypeMismatchException} → 400 Bad Request
  *   <li>{@link MissingServletRequestPartException} → 400 Bad Request
- *   <li>{@link AccessDeniedException} → Re-thrown for Spring Security (403 Forbidden)
- *   <li>{@link AuthenticationException} → Re-thrown for Spring Security (401 Unauthorized)
+ *   <li>{@link AccessDeniedException} → 403 Forbidden
+ *   <li>{@link AuthorizationDeniedException} → 403 Forbidden
+ *   <li>{@link AuthenticationException} → 401 Unauthorized
  *   <li>Generic {@link Exception} → 500 Internal Server Error
  * </ul>
  *
@@ -258,33 +260,51 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   }
 
   /**
-   * Re-throws {@link AccessDeniedException} so Spring Security's {@code ExceptionTranslationFilter}
-   * can handle it and return HTTP 403 Forbidden.
-   *
-   * <p>Without this handler, the catch-all {@code Exception} handler would intercept the exception
-   * and return 500 Internal Server Error instead of the correct 403 status.
+   * Handles {@link AccessDeniedException} and returns HTTP 403 Forbidden.
    *
    * @param exception the access denied exception from {@code @PreAuthorize} or Spring Security
-   * @throws AccessDeniedException always re-thrown for Spring Security to handle
+   * @return standardized error response with PERMISSION_DENIED type
    */
   @ExceptionHandler
-  public void handle(AccessDeniedException exception) throws AccessDeniedException {
-    throw exception;
+  @ResponseStatus(value = HttpStatus.FORBIDDEN)
+  public ApiErrorResponse handle(AccessDeniedException exception) {
+    log.warn(
+        "Handled security exception: {} message: {}",
+        exception.getClass().getSimpleName(),
+        exception.getMessage());
+    return buildPermissionDeniedError();
   }
 
   /**
-   * Re-throws {@link AuthenticationException} so Spring Security's {@code
-   * ExceptionTranslationFilter} can handle it and return HTTP 401 Unauthorized.
+   * Handles {@link AuthorizationDeniedException} and returns HTTP 403 Forbidden.
    *
-   * <p>Without this handler, the catch-all {@code Exception} handler would intercept the exception
-   * and return 500 Internal Server Error instead of the correct 401 status.
-   *
-   * @param exception the authentication exception from Spring Security
-   * @throws AuthenticationException always re-thrown for Spring Security to handle
+   * @param exception the authorization denied exception from Spring Security
+   * @return standardized error response with PERMISSION_DENIED type
    */
   @ExceptionHandler
-  public void handle(AuthenticationException exception) throws AuthenticationException {
-    throw exception;
+  @ResponseStatus(value = HttpStatus.FORBIDDEN)
+  public ApiErrorResponse handle(AuthorizationDeniedException exception) {
+    log.warn(
+        "Handled security exception: {} message: {}",
+        exception.getClass().getSimpleName(),
+        exception.getMessage());
+    return buildPermissionDeniedError();
+  }
+
+  /**
+   * Handles {@link AuthenticationException} and returns HTTP 401 Unauthorized.
+   *
+   * @param exception the authentication exception from Spring Security
+   * @return standardized error response with UNAUTHORIZED type
+   */
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
+  public ApiErrorResponse handle(AuthenticationException exception) {
+    log.warn(
+        "Handled security exception: {} message: {}",
+        exception.getClass().getSimpleName(),
+        exception.getMessage());
+    return buildUnauthorizedError();
   }
 
   /**

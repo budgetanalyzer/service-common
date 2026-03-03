@@ -103,4 +103,28 @@ public interface ApiExceptionHandler {
         .message("An unexpected error occurred")
         .build();
   }
+
+  /**
+   * Builds an unauthorized error response for authentication failures.
+   *
+   * @return API error response with UNAUTHORIZED type
+   */
+  default ApiErrorResponse buildUnauthorizedError() {
+    return ApiErrorResponse.builder()
+        .type(ApiErrorType.UNAUTHORIZED)
+        .message("Authentication required")
+        .build();
+  }
+
+  /**
+   * Builds a permission denied error response for authorization failures.
+   *
+   * @return API error response with PERMISSION_DENIED type
+   */
+  default ApiErrorResponse buildPermissionDeniedError() {
+    return ApiErrorResponse.builder()
+        .type(ApiErrorType.PERMISSION_DENIED)
+        .message("You do not have permission to perform this action")
+        .build();
+  }
 }
