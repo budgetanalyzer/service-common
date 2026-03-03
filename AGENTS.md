@@ -362,7 +362,7 @@ grep -r "@Component" service-core/src/main/java/
 - Activates when `@ConditionalOnWebApplication(type = SERVLET)`
 - **ServletApiExceptionHandler** - Global exception handling with `@RestControllerAdvice`
   - Converts all exceptions to standardized `ApiErrorResponse` format
-  - Handles: `InvalidRequestException` (400), `ResourceNotFoundException` (404), `BusinessException` (422), `ServiceException` (500), validation errors, generic exceptions
+  - Handles: `InvalidRequestException` (400), `AuthenticationException` (401), `AccessDeniedException` (403), `AuthorizationDeniedException` (403), `ResourceNotFoundException` (404), `BusinessException` (422), `ServiceException` (500), validation errors, generic exceptions
   - Priority: `@Order(LOWEST_PRECEDENCE)` - services can override
 - **CorrelationIdFilter** - Always enabled - Adds correlation ID (MDC + response header)
 - **HttpLoggingFilter** - Opt-in via configuration
@@ -372,7 +372,7 @@ grep -r "@Component" service-core/src/main/java/
 - Activates when `@ConditionalOnWebApplication(type = REACTIVE)`
 - **ReactiveApiExceptionHandler** - Global exception handling with `@ControllerAdvice`
   - Converts all exceptions to standardized `ApiErrorResponse` format
-  - Handles reactive-specific validation (`WebExchangeBindException`) plus all standard exceptions
+  - Handles: `InvalidRequestException` (400), `AuthenticationException` (401), `AccessDeniedException` (403), `AuthorizationDeniedException` (403), `ResourceNotFoundException` (404), `BusinessException` (422), reactive-specific validation (`WebExchangeBindException`), generic exceptions
   - Returns `Mono<ResponseEntity<ApiErrorResponse>>`
 - **ReactiveCorrelationIdFilter** - Always enabled - Adds correlation ID (Reactor Context + response header)
 - **ReactiveHttpLoggingFilter** - Opt-in via configuration
@@ -485,7 +485,7 @@ All code must be production-ready. No shortcuts, prototypes, or workarounds.
 
 **Pattern**: Service → Interface → Provider Implementation → External Client. The interface is yours; the implementation is swappable.
 
-**Identifiers**: Use internal IDs (`usr_`, `txn_`, etc.) as foreign keys and in cross-service communication. Translate external IDs (IdP sub, Stripe customer ID) at the boundary. Never let external ID formats leak into your domain model.
+**Identifiers**: Use prefixed string IDs (`usr_`, `txn_`, `req_`) as foreign keys and in cross-service communication. These IDs flow across service boundaries and into JWTs — auto-increment longs couple identity to a single database; string UUIDs are portable by default. Prefixes make IDs self-describing in logs, JWTs, and database queries. Always use full UUIDs (32 hex chars) — never truncate (entropy reduction with no storage benefit since the type is `String` either way). Format: `{prefix}_{full-uuid-hex}` (e.g., `usr_507f1f77bcf86cd799439011abcdef12`). Translate external IDs (IdP sub, Stripe customer ID) at the boundary. Never let external ID formats leak into your domain model.
 
 **Why**: The cost of abstraction is bounded (one interface, one translation layer). The cost of provider migration without abstraction is unbounded (every table, every service, every log).
 

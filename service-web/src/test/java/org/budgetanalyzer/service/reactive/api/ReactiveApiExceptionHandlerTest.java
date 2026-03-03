@@ -11,6 +11,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.support.WebExchangeBindException;
@@ -223,6 +226,72 @@ class ReactiveApiExceptionHandlerTest {
               assertEquals(1, body.getFieldErrors().size());
               assertEquals("name", body.getFieldErrors().get(0).getField());
               assertEquals("must not be blank", body.getFieldErrors().get(0).getMessage());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle AccessDeniedException with PERMISSION_DENIED type and 403")
+  void shouldHandleAccessDeniedExceptionWith403() {
+    var exception = new AccessDeniedException("Forbidden");
+
+    var result = reactiveApiExceptionHandler.handleAccessDenied(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.PERMISSION_DENIED, body.getType());
+              assertEquals("You do not have permission to perform this action", body.getMessage());
+              assertNull(body.getCode());
+              assertNull(body.getFieldErrors());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle AuthorizationDeniedException with PERMISSION_DENIED type and 403")
+  void shouldHandleAuthorizationDeniedExceptionWith403() {
+    var exception = new AuthorizationDeniedException("Access Denied");
+
+    var result = reactiveApiExceptionHandler.handleAuthorizationDenied(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.PERMISSION_DENIED, body.getType());
+              assertEquals("You do not have permission to perform this action", body.getMessage());
+              assertNull(body.getCode());
+              assertNull(body.getFieldErrors());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle AuthenticationException with UNAUTHORIZED type and 401")
+  void shouldHandleAuthenticationExceptionWith401() {
+    var exception = new BadCredentialsException("Bad credentials");
+
+    var result = reactiveApiExceptionHandler.handleAuthentication(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.UNAUTHORIZED, body.getType());
+              assertEquals("Authentication required", body.getMessage());
+              assertNull(body.getCode());
+              assertNull(body.getFieldErrors());
             })
         .verifyComplete();
   }

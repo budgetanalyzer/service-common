@@ -198,6 +198,18 @@ This project enforces code quality through:
 - **Checkstyle** for code standards
 - **Spotless** for automated formatting
 
+## Conventions
+
+### Prefixed String IDs
+
+All cross-service identifiers use the format `{prefix}_{full-uuid-hex}` (e.g., `usr_507f1f77bcf86cd799439011abcdef12`, `req_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6`).
+
+- **Why strings over longs**: These IDs flow across service boundaries and into JWTs. Auto-increment longs couple identity to a single database; string UUIDs are portable by default.
+- **Why prefixes**: `usr_`, `txn_`, `req_` make IDs self-describing in logs, JWTs, and database queries.
+- **Why full UUIDs**: Always use 32 hex chars (128 bits). Never truncate — entropy reduction with no storage benefit since the type is `String` either way.
+
+See the [Vendor Independence section in AGENTS.md](AGENTS.md#vendor-independence) for the full rationale.
+
 ## Project Structure
 
 ```

@@ -167,13 +167,13 @@ class CorrelationIdFilterTest {
         (req, res) -> {
           String correlationId = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
 
-          // Assert format: req_<16 hex chars>
+          // Assert format: req_<32 hex chars>
           assertNotNull(correlationId);
           assertTrue(correlationId.startsWith("req_"));
-          assertEquals(20, correlationId.length()); // "req_" (4) + 16 hex chars
+          assertEquals(36, correlationId.length()); // "req_" (4) + 32 hex chars
           assertTrue(
-              correlationId.substring(4).matches("[0-9a-f]{16}"),
-              "Correlation ID should contain 16 hexadecimal characters");
+              correlationId.substring(4).matches("[0-9a-f]{32}"),
+              "Correlation ID should contain 32 hexadecimal characters");
         });
   }
 }

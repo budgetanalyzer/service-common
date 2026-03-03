@@ -7,6 +7,9 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -41,6 +44,9 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *   <li>{@link ClientException} → 503 Service Unavailable
  *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
  *   <li>{@link WebExchangeBindException} → 400 Bad Request (validation errors)
+ *   <li>{@link AccessDeniedException} → 403 Forbidden
+ *   <li>{@link AuthorizationDeniedException} → 403 Forbidden
+ *   <li>{@link AuthenticationException} → 401 Unauthorized
  *   <li>Generic {@link Exception} → 500 Internal Server Error
  * </ul>
  *
@@ -157,6 +163,56 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
     return Mono.just(
         ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
             .body(buildServiceUnavailableError(exception)));
+  }
+
+  /**
+   * Handles {@link AccessDeniedException} and returns HTTP 403 Forbidden.
+   *
+   * @param exception the access denied exception from Spring Security
+   * @return Mono with standardized error response with PERMISSION_DENIED type
+   */
+  @ExceptionHandler(AccessDeniedException.class)
+  public Mono<ResponseEntity<ApiErrorResponse>> handleAccessDenied(
+      AccessDeniedException exception) {
+    log.warn(
+        "Handled security exception: {} message: {}",
+        exception.getClass().getSimpleName(),
+        exception.getMessage());
+    return Mono.just(
+        ResponseEntity.status(HttpStatus.FORBIDDEN).body(buildPermissionDeniedError()));
+  }
+
+  /**
+   * Handles {@link AuthorizationDeniedException} and returns HTTP 403 Forbidden.
+   *
+   * @param exception the authorization denied exception from Spring Security
+   * @return Mono with standardized error response with PERMISSION_DENIED type
+   */
+  @ExceptionHandler(AuthorizationDeniedException.class)
+  public Mono<ResponseEntity<ApiErrorResponse>> handleAuthorizationDenied(
+      AuthorizationDeniedException exception) {
+    log.warn(
+        "Handled security exception: {} message: {}",
+        exception.getClass().getSimpleName(),
+        exception.getMessage());
+    return Mono.just(
+        ResponseEntity.status(HttpStatus.FORBIDDEN).body(buildPermissionDeniedError()));
+  }
+
+  /**
+   * Handles {@link AuthenticationException} and returns HTTP 401 Unauthorized.
+   *
+   * @param exception the authentication exception from Spring Security
+   * @return Mono with standardized error response with UNAUTHORIZED type
+   */
+  @ExceptionHandler(AuthenticationException.class)
+  public Mono<ResponseEntity<ApiErrorResponse>> handleAuthentication(
+      AuthenticationException exception) {
+    log.warn(
+        "Handled security exception: {} message: {}",
+        exception.getClass().getSimpleName(),
+        exception.getMessage());
+    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(buildUnauthorizedError()));
   }
 
   /**

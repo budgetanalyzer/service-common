@@ -22,15 +22,15 @@ class CorrelationIdGeneratorTest {
   @Test
   void testGenerate_hasCorrectLength() {
     var correlationId = CorrelationIdGenerator.generate();
-    // Format: "req_" (4 chars) + 16 hex chars = 20 total
-    assertThat(correlationId).hasSize(20);
+    // Format: "req_" (4 chars) + 32 hex chars = 36 total
+    assertThat(correlationId).hasSize(36);
   }
 
   @Test
   void testGenerate_containsOnlyHexCharactersAfterPrefix() {
     var correlationId = CorrelationIdGenerator.generate();
     var hexPart = correlationId.substring(4); // Skip "req_" prefix
-    assertThat(hexPart).matches("[0-9a-f]{16}");
+    assertThat(hexPart).matches("[0-9a-f]{32}");
   }
 
   @Test
