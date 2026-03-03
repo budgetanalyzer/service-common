@@ -26,16 +26,16 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * Jwt jwt = JwtTestBuilder.defaultJwt();
  *
  * // Custom user with specific permissions
- * Jwt jwt = JwtTestBuilder.user("usr_john123")
+ * var jwt = JwtTestBuilder.user("usr_john123")
  *     .withPermissions("transactions:read", "transactions:write")
  *     .withRoles("USER")
  *     .build();
  *
  * // Admin user with all permissions
- * Jwt jwt = JwtTestBuilder.admin().build();
+ * var jwt = JwtTestBuilder.admin().build();
  *
  * // Custom claims for advanced scenarios
- * Jwt jwt = JwtTestBuilder.user("usr_test123")
+ * var jwt = JwtTestBuilder.user("usr_test123")
  *     .withClaim("organization_id", "org-123")
  *     .withClaim("email", "test@example.com")
  *     .build();
@@ -279,7 +279,7 @@ public class JwtTestBuilder {
    * @return the constructed JWT
    */
   public Jwt build() {
-    Jwt.Builder builder =
+    var builder =
         Jwt.withTokenValue("test-token")
             .header("alg", "RS256")
             .header("typ", "JWT")
