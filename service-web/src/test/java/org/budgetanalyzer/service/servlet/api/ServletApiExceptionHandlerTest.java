@@ -11,6 +11,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -213,6 +215,30 @@ class ServletApiExceptionHandlerTest {
     assertNotNull(response);
     assertEquals(ApiErrorType.INVALID_REQUEST, response.getType());
     assertNotNull(response.getMessage());
+  }
+
+  @Test
+  @DisplayName("Should re-throw AccessDeniedException for Spring Security to handle as 403")
+  void shouldRethrowAccessDeniedException() {
+    var exception = new AccessDeniedException("Forbidden");
+
+    var thrown =
+        org.junit.jupiter.api.Assertions.assertThrows(
+            AccessDeniedException.class, () -> servletApiExceptionHandler.handle(exception));
+
+    assertEquals(exception, thrown);
+  }
+
+  @Test
+  @DisplayName("Should re-throw AuthenticationException for Spring Security to handle as 401")
+  void shouldRethrowAuthenticationException() {
+    var exception = new BadCredentialsException("Bad credentials");
+
+    var thrown =
+        org.junit.jupiter.api.Assertions.assertThrows(
+            BadCredentialsException.class, () -> servletApiExceptionHandler.handle(exception));
+
+    assertEquals(exception, thrown);
   }
 
   @Test
