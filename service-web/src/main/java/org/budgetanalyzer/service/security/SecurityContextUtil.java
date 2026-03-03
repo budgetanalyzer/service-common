@@ -153,6 +153,24 @@ public class SecurityContextUtil {
   }
 
   /**
+   * Checks whether the currently authenticated user has the specified role.
+   *
+   * <p>Roles are stored as Spring Security authorities with the "ROLE_" prefix (e.g.,
+   * "ROLE_ADMIN"). This method handles the prefix automatically — pass the role name without it.
+   *
+   * @param role the role name without the "ROLE_" prefix (e.g., "ADMIN")
+   * @return true if the user has the specified role, false otherwise
+   */
+  public static boolean hasRole(String role) {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null) {
+      return false;
+    }
+    return authentication.getAuthorities().stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_" + role));
+  }
+
+  /**
    * Logs user authentication context for audit purposes.
    *
    * <p>Logs the user ID, email, and granted authorities from the JWT. This provides visibility into
