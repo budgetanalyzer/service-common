@@ -115,8 +115,8 @@ public class JwtTestBuilder {
    * <ul>
    *   <li>Subject: "usr_admin456"
    *   <li>Roles: ["ADMIN"]
-   *   <li>Permissions: all CRUD permissions for transactions, accounts, budgets, users, roles, and
-   *       audit
+   *   <li>Permissions: all CRUD permissions for transactions, accounts, budgets, users, roles,
+   *       audit, currencies, and statement formats
    * </ul>
    *
    * @return builder for method chaining
@@ -140,7 +140,12 @@ public class JwtTestBuilder {
             "users:delete",
             "roles:read",
             "roles:write",
-            "audit:read");
+            "audit:read",
+            "currencies:read",
+            "currencies:write",
+            "statementformats:read",
+            "statementformats:write",
+            "statementformats:delete");
   }
 
   /**

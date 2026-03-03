@@ -61,7 +61,12 @@ class JwtTestBuilderTest {
             "users:delete",
             "roles:read",
             "roles:write",
-            "audit:read");
+            "audit:read",
+            "currencies:read",
+            "currencies:write",
+            "statementformats:read",
+            "statementformats:write",
+            "statementformats:delete");
   }
 
   @Test
