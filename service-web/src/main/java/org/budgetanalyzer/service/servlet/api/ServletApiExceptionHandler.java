@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -48,6 +50,8 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
  *   <li>{@link MethodArgumentTypeMismatchException} → 400 Bad Request
  *   <li>{@link MissingServletRequestPartException} → 400 Bad Request
+ *   <li>{@link AccessDeniedException} → Re-thrown for Spring Security (403 Forbidden)
+ *   <li>{@link AuthenticationException} → Re-thrown for Spring Security (401 Unauthorized)
  *   <li>Generic {@link Exception} → 500 Internal Server Error
  * </ul>
  *
@@ -251,6 +255,36 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
       MissingServletRequestParameterException exception, WebRequest request) {
     logException(ApiErrorType.INVALID_REQUEST, null, exception);
     return buildInvalidRequestError(new InvalidRequestException(exception.getMessage()));
+  }
+
+  /**
+   * Re-throws {@link AccessDeniedException} so Spring Security's {@code ExceptionTranslationFilter}
+   * can handle it and return HTTP 403 Forbidden.
+   *
+   * <p>Without this handler, the catch-all {@code Exception} handler would intercept the exception
+   * and return 500 Internal Server Error instead of the correct 403 status.
+   *
+   * @param exception the access denied exception from {@code @PreAuthorize} or Spring Security
+   * @throws AccessDeniedException always re-thrown for Spring Security to handle
+   */
+  @ExceptionHandler
+  public void handle(AccessDeniedException exception) throws AccessDeniedException {
+    throw exception;
+  }
+
+  /**
+   * Re-throws {@link AuthenticationException} so Spring Security's {@code
+   * ExceptionTranslationFilter} can handle it and return HTTP 401 Unauthorized.
+   *
+   * <p>Without this handler, the catch-all {@code Exception} handler would intercept the exception
+   * and return 500 Internal Server Error instead of the correct 401 status.
+   *
+   * @param exception the authentication exception from Spring Security
+   * @throws AuthenticationException always re-thrown for Spring Security to handle
+   */
+  @ExceptionHandler
+  public void handle(AuthenticationException exception) throws AuthenticationException {
+    throw exception;
   }
 
   /**

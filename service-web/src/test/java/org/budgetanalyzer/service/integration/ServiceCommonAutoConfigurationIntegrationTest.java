@@ -27,7 +27,6 @@ import org.budgetanalyzer.service.servlet.http.HttpLoggingFilter;
     classes = {ServletTestApplication.class, TestSecurityConfig.class},
     properties = {
       "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
-      "AUTH0_AUDIENCE=https://test-api.example.com",
       "spring.main.web-application-type=servlet"
     })
 @DisplayName("Service Common Auto-Configuration Integration Tests")
@@ -101,7 +100,6 @@ class ServiceCommonAutoConfigurationIntegrationTest {
       properties = {
         "budgetanalyzer.service.http-logging.enabled=false",
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
-        "AUTH0_AUDIENCE=https://test-api.example.com",
         "spring.main.web-application-type=servlet"
       })
   @DisplayName("HTTP Logging Disabled Tests")

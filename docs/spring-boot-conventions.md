@@ -632,11 +632,11 @@ public class Transaction extends AuditableEntity {
 }
 
 // Accessing audit fields
-Transaction tx = repository.findById(id).orElseThrow();
-Instant created = tx.getCreatedAt();       // When created
-Instant updated = tx.getUpdatedAt();       // When last modified
-String creator = tx.getCreatedBy();        // Who created it (e.g., "auth0|123...")
-String modifier = tx.getUpdatedBy();       // Who last modified it
+var tx = repository.findById(id).orElseThrow();
+var created = tx.getCreatedAt();       // When created
+var updated = tx.getUpdatedAt();       // When last modified
+var creator = tx.getCreatedBy();        // Who created it (e.g., "usr_507f1f77...")
+var modifier = tx.getUpdatedBy();       // Who last modified it
 ```
 
 **Note**: User tracking requires Spring Security on the classpath. Services not using security will have null `createdBy`/`updatedBy` values.

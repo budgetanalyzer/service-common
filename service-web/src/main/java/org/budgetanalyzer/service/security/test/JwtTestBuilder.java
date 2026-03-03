@@ -3,38 +3,39 @@ package org.budgetanalyzer.service.security.test;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * Fluent builder for creating test JWT tokens with custom claims.
+ * Fluent builder for creating test JWT tokens matching the gateway JWT shape.
  *
- * <p><b>⚠️ FOR TESTING ONLY</b> - This builder creates mock JWTs for integration tests. Do NOT use
- * in production code.
+ * <p><b>WARNING: FOR TESTING ONLY</b> - This builder creates mock JWTs for integration tests. Do
+ * NOT use in production code.
  *
- * <p>Provides a readable, type-safe API for constructing JWTs in tests with different users,
- * scopes, roles, and custom claims.
+ * <p>Provides a readable, type-safe API for constructing JWTs in tests with different users, roles,
+ * permissions, and custom claims. Default JWT shape matches the session-gateway internal JWT
+ * format.
  *
  * <p><b>Usage Examples:</b>
  *
  * <pre>{@code
- * // Default test user with basic scopes
+ * // Default test user with basic permissions
  * Jwt jwt = JwtTestBuilder.defaultJwt();
  *
- * // Custom user with specific scopes
- * Jwt jwt = JwtTestBuilder.user("john.doe")
- *     .withScopes("read:rates", "write:rates")
+ * // Custom user with specific permissions
+ * var jwt = JwtTestBuilder.user("usr_john123")
+ *     .withPermissions("transactions:read", "transactions:write")
+ *     .withRoles("USER")
  *     .build();
  *
  * // Admin user with all permissions
- * Jwt jwt = JwtTestBuilder.admin()
- *     .withScopes("read:rates", "write:rates", "admin:currencies")
- *     .build();
+ * var jwt = JwtTestBuilder.admin().build();
  *
  * // Custom claims for advanced scenarios
- * Jwt jwt = JwtTestBuilder.user("test-user")
+ * var jwt = JwtTestBuilder.user("usr_test123")
  *     .withClaim("organization_id", "org-123")
  *     .withClaim("email", "test@example.com")
  *     .build();
@@ -46,14 +47,19 @@ import org.springframework.security.oauth2.jwt.Jwt;
  */
 public class JwtTestBuilder {
 
-  private static final String DEFAULT_SUBJECT = "test-user";
-  private static final String DEFAULT_ISSUER = "https://test-issuer.example.com/";
-  private static final String DEFAULT_AUDIENCE = "https://test-api.example.com";
-  private static final String DEFAULT_SCOPE = "openid profile email";
+  private static final String DEFAULT_SUBJECT = "usr_test123";
+  private static final String DEFAULT_ISSUER = "session-gateway";
+  private static final String DEFAULT_IDP_SUB = "idp|test-user-idp-sub";
+  private static final List<String> DEFAULT_ROLES = List.of("USER");
+  private static final List<String> DEFAULT_PERMISSIONS =
+      List.of("transactions:read", "accounts:read", "budgets:read");
 
   private String subject;
-  private String scope;
   private String issuer;
+  private String idpSub;
+  private List<String> roles;
+  private List<String> permissions;
+  private String scope;
   private String audience;
   private Instant issuedAt;
   private Instant expiresAt;
@@ -61,24 +67,26 @@ public class JwtTestBuilder {
 
   private JwtTestBuilder() {
     this.subject = DEFAULT_SUBJECT;
-    this.scope = DEFAULT_SCOPE;
     this.issuer = DEFAULT_ISSUER;
-    this.audience = DEFAULT_AUDIENCE;
+    this.idpSub = DEFAULT_IDP_SUB;
+    this.roles = DEFAULT_ROLES;
+    this.permissions = DEFAULT_PERMISSIONS;
     this.issuedAt = Instant.now();
     this.expiresAt = Instant.now().plusSeconds(3600); // 1 hour
     this.customClaims = new HashMap<>();
   }
 
   /**
-   * Creates a default test JWT with standard test claims.
+   * Creates a default test JWT with standard gateway claims.
    *
    * <p>Default claims:
    *
    * <ul>
-   *   <li>Subject: "test-user"
-   *   <li>Scopes: "openid profile email"
-   *   <li>Issuer: "https://test-issuer.example.com/"
-   *   <li>Audience: "https://test-api.example.com"
+   *   <li>Subject: "usr_test123"
+   *   <li>Issuer: "session-gateway"
+   *   <li>IDP Sub: "idp|test-user-idp-sub"
+   *   <li>Roles: ["USER"]
+   *   <li>Permissions: ["transactions:read", "accounts:read", "budgets:read"]
    *   <li>Issued: now
    *   <li>Expires: 1 hour from now
    * </ul>
@@ -92,7 +100,7 @@ public class JwtTestBuilder {
   /**
    * Creates a builder for a custom user.
    *
-   * @param subject the user subject (username or user ID)
+   * @param subject the user subject (internal user ID, e.g., "usr_abc123")
    * @return builder for method chaining
    */
   public static JwtTestBuilder user(String subject) {
@@ -100,12 +108,39 @@ public class JwtTestBuilder {
   }
 
   /**
-   * Creates a builder for an admin user with default admin subject.
+   * Creates a builder for an admin user with full permissions.
+   *
+   * <p>Admin defaults:
+   *
+   * <ul>
+   *   <li>Subject: "usr_admin456"
+   *   <li>Roles: ["ADMIN"]
+   *   <li>Permissions: all CRUD permissions for transactions, accounts, budgets, users, roles, and
+   *       audit
+   * </ul>
    *
    * @return builder for method chaining
    */
   public static JwtTestBuilder admin() {
-    return new JwtTestBuilder().withSubject("admin-user");
+    return new JwtTestBuilder()
+        .withSubject("usr_admin456")
+        .withRoles("ADMIN")
+        .withPermissions(
+            "transactions:read",
+            "transactions:write",
+            "transactions:delete",
+            "accounts:read",
+            "accounts:write",
+            "accounts:delete",
+            "budgets:read",
+            "budgets:write",
+            "budgets:delete",
+            "users:read",
+            "users:write",
+            "users:delete",
+            "roles:read",
+            "roles:write",
+            "audit:read");
   }
 
   /**
@@ -122,7 +157,9 @@ public class JwtTestBuilder {
   /**
    * Sets the scope claim as a space-separated string.
    *
-   * <p>Scopes are converted to Spring Security authorities with "SCOPE_" prefix.
+   * <p>Scopes are only included in the JWT when explicitly set via this method. Gateway JWTs do not
+   * include scopes by default; this method exists for backwards compatibility with tests that
+   * require scope-based assertions.
    *
    * @param scopes individual scope values (e.g., "read:rates", "write:rates")
    * @return this builder for method chaining
@@ -133,9 +170,51 @@ public class JwtTestBuilder {
   }
 
   /**
+   * Sets the roles claim as a list.
+   *
+   * <p>Roles are mapped to Spring Security authorities with "ROLE_" prefix (e.g., "ADMIN" becomes
+   * "ROLE_ADMIN").
+   *
+   * @param roles role values (e.g., "ADMIN", "USER")
+   * @return this builder for method chaining
+   */
+  public JwtTestBuilder withRoles(String... roles) {
+    this.roles = List.of(roles);
+    return this;
+  }
+
+  /**
+   * Sets the permissions claim as a list.
+   *
+   * <p>Permissions are mapped directly to Spring Security authorities (e.g., "transactions:read"
+   * becomes a {@code SimpleGrantedAuthority("transactions:read")}).
+   *
+   * @param permissions permission values (e.g., "transactions:read", "accounts:write")
+   * @return this builder for method chaining
+   */
+  public JwtTestBuilder withPermissions(String... permissions) {
+    this.permissions = List.of(permissions);
+    return this;
+  }
+
+  /**
+   * Sets the idp_sub (identity provider subject) claim.
+   *
+   * <p>This is the original subject from the identity provider, preserved for backwards
+   * compatibility and IdP-specific operations.
+   *
+   * @param idpSub the identity provider subject (e.g., "idp|507f1f77...")
+   * @return this builder for method chaining
+   */
+  public JwtTestBuilder withIdpSub(String idpSub) {
+    this.idpSub = idpSub;
+    return this;
+  }
+
+  /**
    * Sets the issuer (iss) claim.
    *
-   * @param issuer the token issuer URI
+   * @param issuer the token issuer
    * @return this builder for method chaining
    */
   public JwtTestBuilder withIssuer(String issuer) {
@@ -145,6 +224,9 @@ public class JwtTestBuilder {
 
   /**
    * Sets the audience (aud) claim.
+   *
+   * <p>Audience is only included in the JWT when explicitly set via this method. Gateway JWTs do
+   * not include an audience claim; this method exists for backwards compatibility.
    *
    * @param audience the intended audience
    * @return this builder for method chaining
@@ -180,7 +262,7 @@ public class JwtTestBuilder {
    * Adds a custom claim to the JWT.
    *
    * <p>Useful for testing scenarios that require additional claims beyond the standard ones (sub,
-   * scope, iss, aud, iat, exp).
+   * iss, idp_sub, roles, permissions, iat, exp).
    *
    * @param name the claim name
    * @param value the claim value
@@ -197,16 +279,27 @@ public class JwtTestBuilder {
    * @return the constructed JWT
    */
   public Jwt build() {
-    Jwt.Builder builder =
+    var builder =
         Jwt.withTokenValue("test-token")
             .header("alg", "RS256")
             .header("typ", "JWT")
             .claim("sub", subject)
-            .claim("scope", scope)
-            .claim("aud", audience)
             .claim("iss", issuer)
+            .claim("idp_sub", idpSub)
+            .claim("roles", roles)
+            .claim("permissions", permissions)
             .issuedAt(issuedAt)
             .expiresAt(expiresAt);
+
+    // Only include scope if explicitly set (gateway JWTs don't have scopes)
+    if (scope != null) {
+      builder.claim("scope", scope);
+    }
+
+    // Only include audience if explicitly set (gateway JWTs don't have audience)
+    if (audience != null) {
+      builder.claim("aud", audience);
+    }
 
     // Add any custom claims
     customClaims.forEach(builder::claim);

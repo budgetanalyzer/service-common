@@ -1,5 +1,8 @@
 package org.budgetanalyzer.service.security;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,12 +12,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 import com.nimbusds.jose.JOSEObjectType;
@@ -26,15 +30,16 @@ import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
  * <p>This auto-configuration provides:
  *
  * <ul>
- *   <li>JWT token validation from Auth0 (via NGINX gateway)
- *   <li>User identity extraction from JWT 'sub' claim
- *   <li>Role/scope extraction from JWT claims
+ *   <li>JWT token validation against the session-gateway JWKS endpoint
+ *   <li>User identity extraction from JWT 'sub' claim (internal user ID)
+ *   <li>Permission extraction from JWT 'permissions' claim (direct authorities)
+ *   <li>Role extraction from JWT 'roles' claim (ROLE_-prefixed authorities)
  *   <li>Method-level security with @PreAuthorize annotations
  * </ul>
  *
  * <p><b>Usage:</b> All services consuming service-web automatically inherit this configuration.
- * Services must configure {@code spring.security.oauth2.resourceserver.jwt.issuer-uri} and {@code
- * AUTH0_AUDIENCE} in their application.yml.
+ * Services must configure {@code spring.security.oauth2.resourceserver.jwt.jwk-set-uri} in their
+ * application.yml pointing to the session-gateway's JWKS endpoint.
  *
  * <p><b>Testing:</b> In tests, use {@link
  * org.budgetanalyzer.service.security.test.TestSecurityConfig} with {@code @Import} to provide a
@@ -52,11 +57,14 @@ public class OAuth2ResourceServerSecurityConfig {
   private static final Logger logger =
       LoggerFactory.getLogger(OAuth2ResourceServerSecurityConfig.class);
 
-  @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}")
-  private String issuerUri;
+  @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
+  private String jwkSetUri;
 
-  @Value("${AUTH0_AUDIENCE:https://api.budgetanalyzer.org}")
-  private String audience;
+  @Value("${budgetanalyzer.security.gateway.expected-issuer:session-gateway}")
+  private String expectedIssuer;
+
+  @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}")
+  private String legacyIssuerUri;
 
   /**
    * Configures HTTP security with OAuth2 Resource Server JWT validation.
@@ -77,7 +85,10 @@ public class OAuth2ResourceServerSecurityConfig {
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     logger.info("Configuring OAuth2 Resource Server security");
 
-    http.authorizeHttpRequests(
+    // Disable CSRF — all consumers are stateless REST APIs using JWT bearer tokens.
+    // CSRF protects against session-cookie-based attacks which don't apply here.
+    http.csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(
             authorize ->
                 authorize
                     // Allow actuator health endpoint (for load balancer health checks)
@@ -154,17 +165,19 @@ public class OAuth2ResourceServerSecurityConfig {
   }
 
   /**
-   * Configures JWT decoder with support for PS256, RS256, and ES256 algorithms.
+   * Configures JWT decoder to validate gateway-minted JWTs via JWKS endpoint.
    *
    * <p>This decoder:
    *
    * <ul>
-   *   <li>Fetches JWKS from Auth0's well-known endpoint
-   *   <li>Validates issuer matches configured issuer URI
-   *   <li>Validates audience matches configured API audience
+   *   <li>Fetches JWKS from the session-gateway's well-known endpoint
+   *   <li>Validates issuer matches the expected gateway issuer
    *   <li>Accepts both "JWT" and "at+jwt" token types (OAuth 2.0 RFC 9068)
-   *   <li>Supports PS256, RS256, and ES256 signature algorithms
    * </ul>
+   *
+   * <p>A migration guard detects if the legacy {@code issuer-uri} property is still configured and
+   * fails fast with clear instructions, preventing cryptic validation failures during lockstep
+   * upgrades.
    *
    * <p>This bean is only created if no other {@code JwtDecoder} bean exists. In tests, import
    * {@link org.budgetanalyzer.service.security.test.TestSecurityConfig} which provides a
@@ -175,19 +188,29 @@ public class OAuth2ResourceServerSecurityConfig {
   @Bean
   @ConditionalOnMissingBean(JwtDecoder.class)
   public JwtDecoder jwtDecoder() {
+    // Migration guard: fail fast if legacy issuer-uri is still configured
+    if (legacyIssuerUri != null && !legacyIssuerUri.isBlank()) {
+      logger.error(
+          "=== MIGRATION REQUIRED === "
+              + "Property 'spring.security.oauth2.resourceserver.jwt.issuer-uri' is still set. "
+              + "This property is no longer used. Replace with: "
+              + "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=<gateway-jwks-url> "
+              + "(e.g., http://session-gateway:8081/.well-known/jwks.json)");
+      throw new IllegalStateException(
+          "Legacy property 'spring.security.oauth2.resourceserver.jwt.issuer-uri' is still "
+              + "configured. Replace with 'spring.security.oauth2.resourceserver.jwt.jwk-set-uri' "
+              + "pointing to the session-gateway JWKS endpoint.");
+    }
+
     logger.info("=== JWT Decoder Configuration ===");
-    logger.info("Issuer URI: {}", issuerUri);
-    logger.info("Expected audience: {}", audience);
+    logger.info("JWK Set URI: {}", jwkSetUri);
+    logger.info("Expected issuer: {}", expectedIssuer);
 
     try {
-      logger.info(
-          "Attempting to fetch OIDC configuration from: {}/.well-known/openid-configuration",
-          issuerUri);
-
-      // Create decoder using issuer URI (fetches JWKS from .well-known/openid-configuration)
+      // Create decoder using JWK Set URI (gateway has no OIDC discovery endpoint)
       // Configure to accept both "JWT" and "at+jwt" token types (OAuth 2.0 RFC 9068)
       var decoder =
-          NimbusJwtDecoder.withIssuerLocation(issuerUri)
+          NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
               .jwtProcessorCustomizer(
                   jwtProcessor ->
                       jwtProcessor.setJWSTypeVerifier(
@@ -198,37 +221,28 @@ public class OAuth2ResourceServerSecurityConfig {
       logger.info("JWT decoder created successfully (JWKS will be fetched on first use)");
       logger.info("JWT decoder configured to accept token types: JWT, at+jwt");
 
-      // Add audience validation
+      // Add issuer validation
       decoder.setJwtValidator(
           token -> {
             logger.debug("=== JWT Validation ===");
-            logger.debug("Token issuer: {}", token.getIssuer());
-            logger.debug("Token audience: {}", token.getAudience());
+            logger.debug("Token issuer (iss claim): {}", token.getClaimAsString("iss"));
             logger.debug("Token subject: {}", token.getSubject());
             logger.debug("Token algorithm: {}", token.getHeaders().get("alg"));
             logger.debug("Token kid: {}", token.getHeaders().get("kid"));
             logger.debug("Token expiration: {}", token.getExpiresAt());
             logger.debug("Token issued at: {}", token.getIssuedAt());
-            logger.debug("All token headers: {}", token.getHeaders());
-            logger.debug("All token claims: {}", token.getClaims());
 
-            // Validate audience
-            if (token.getAudience() == null || token.getAudience().isEmpty()) {
-              logger.error("JWT validation failed: Token has no audience claim");
-
-              var error = new OAuth2Error("invalid_token", "Token must have an audience", null);
-
-              return OAuth2TokenValidatorResult.failure(error);
-            }
-
-            var audienceMatches = token.getAudience().contains(audience);
-            if (!audienceMatches) {
+            // Validate issuer — use getClaimAsString("iss") because gateway issuer
+            // "session-gateway" is not a valid URL, and getIssuer() calls getClaimAsURL()
+            var issuer = token.getClaimAsString("iss");
+            if (issuer == null || !issuer.equals(expectedIssuer)) {
               logger.error(
-                  "JWT validation failed: Token audience {} does not match expected audience {}",
-                  token.getAudience(),
-                  audience);
+                  "JWT validation failed: Token issuer '{}' does not match expected '{}'",
+                  issuer,
+                  expectedIssuer);
 
-              var error = new OAuth2Error("invalid_token", "Token audience does not match", null);
+              var error =
+                  new OAuth2Error("invalid_token", "Token issuer does not match expected", null);
 
               return OAuth2TokenValidatorResult.failure(error);
             }
@@ -238,16 +252,14 @@ public class OAuth2ResourceServerSecurityConfig {
           });
 
       logger.info("JWT decoder configured successfully");
-      logger.info("Decoder will accept tokens with algorithms: PS256, RS256, ES256");
-      logger.info("JWKS endpoint: {}/.well-known/jwks.json", issuerUri);
-      logger.info("OIDC configuration endpoint: {}/.well-known/openid-configuration", issuerUri);
+      logger.info("JWKS endpoint: {}", jwkSetUri);
 
       return decoder;
 
     } catch (Exception e) {
       logger.error("=== JWT Decoder Configuration Failed ===");
       logger.error("Failed to configure JWT decoder", e);
-      logger.error("Issuer URI was: {}", issuerUri);
+      logger.error("JWK Set URI was: {}", jwkSetUri);
       logger.error("Exception type: {}", e.getClass().getName());
 
       if (e.getCause() != null) {
@@ -262,27 +274,49 @@ public class OAuth2ResourceServerSecurityConfig {
   /**
    * Converts JWT claims to Spring Security authorities.
    *
-   * <p>Extracts roles/scopes from the JWT and maps them to Spring Security authorities:
+   * <p>Extracts authorities from gateway JWT claims:
    *
    * <ul>
-   *   <li>Scopes from 'scope' claim (space-delimited string, e.g., "openid profile email")
-   *   <li>Each scope prefixed with "SCOPE_" (e.g., "openid" → "SCOPE_openid")
+   *   <li>{@code permissions} claim (list) mapped to direct authorities (e.g., "transactions:read"
+   *       becomes {@code SimpleGrantedAuthority("transactions:read")})
+   *   <li>{@code roles} claim (list) mapped to ROLE_-prefixed authorities (e.g., "ADMIN" becomes
+   *       {@code SimpleGrantedAuthority("ROLE_ADMIN")})
    * </ul>
+   *
+   * <p>This enables {@code @PreAuthorize("hasAuthority('transactions:read')")} and
+   * {@code @PreAuthorize("hasRole('ADMIN')")} in consuming services.
    *
    * @return configured JwtAuthenticationConverter
    */
   @Bean
   public JwtAuthenticationConverter jwtAuthenticationConverter() {
-    var grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-
-    // Extract authorities from 'scope' claim (default: space-delimited string)
-    grantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
-    grantedAuthoritiesConverter.setAuthorityPrefix("SCOPE_");
-
     var jwtAuthenticationConverter = new JwtAuthenticationConverter();
-    jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
 
-    logger.debug("JWT authentication converter configured with scope-based authorities");
+    jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(
+        jwt -> {
+          List<GrantedAuthority> authorities = new ArrayList<>();
+
+          // Extract permissions → direct authorities
+          var permissions = jwt.getClaimAsStringList("permissions");
+          if (permissions != null) {
+            for (var permission : permissions) {
+              authorities.add(new SimpleGrantedAuthority(permission));
+            }
+          }
+
+          // Extract roles → ROLE_-prefixed authorities
+          var roles = jwt.getClaimAsStringList("roles");
+          if (roles != null) {
+            for (var role : roles) {
+              authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+            }
+          }
+
+          return authorities;
+        });
+
+    logger.debug(
+        "JWT authentication converter configured with permission and role-based authorities");
 
     return jwtAuthenticationConverter;
   }

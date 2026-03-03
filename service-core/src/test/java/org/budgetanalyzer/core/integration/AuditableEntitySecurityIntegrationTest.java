@@ -31,8 +31,8 @@ import org.budgetanalyzer.service.integration.TestApplication;
 @DisplayName("AuditableEntity Security Integration Tests")
 class AuditableEntitySecurityIntegrationTest {
 
-  private static final String USER_ID_1 = "auth0|507f1f77bcf86cd799439011";
-  private static final String USER_ID_2 = "auth0|507f1f77bcf86cd799439022";
+  private static final String USER_ID_1 = "usr_507f1f77bcf86cd799439011";
+  private static final String USER_ID_2 = "usr_507f1f77bcf86cd799439022";
 
   @Autowired private TestAuditableRepository auditableRepository;
 

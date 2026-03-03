@@ -33,9 +33,8 @@ class SecurityContextAuditorAwareTest {
   @Test
   void shouldReturnUserIdWhenAuthenticated() {
     // Arrange
-    String userId = "auth0|123456789";
-    Authentication auth =
-        new UsernamePasswordAuthenticationToken(userId, "password", Collections.emptyList());
+    var userId = "usr_123456789";
+    var auth = new UsernamePasswordAuthenticationToken(userId, "password", Collections.emptyList());
     SecurityContextHolder.getContext().setAuthentication(auth);
 
     // Act
@@ -60,7 +59,7 @@ class SecurityContextAuditorAwareTest {
   @Test
   void shouldReturnEmptyWhenNotAuthenticated() {
     // Arrange
-    Authentication auth =
+    var auth =
         new UsernamePasswordAuthenticationToken("user", "password") {
           @Override
           public boolean isAuthenticated() {
@@ -79,7 +78,7 @@ class SecurityContextAuditorAwareTest {
   @Test
   void shouldReturnEmptyForAnonymousUser() {
     // Arrange
-    Authentication auth =
+    var auth =
         new UsernamePasswordAuthenticationToken(
             "anonymousUser", "password", Collections.emptyList());
     SecurityContextHolder.getContext().setAuthentication(auth);
@@ -94,8 +93,8 @@ class SecurityContextAuditorAwareTest {
   @Test
   void shouldHandleCustomAuthentication() {
     // Arrange
-    String userId = "user-123";
-    Authentication auth =
+    var userId = "user-123";
+    var auth =
         new Authentication() {
           @Override
           public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -141,12 +140,11 @@ class SecurityContextAuditorAwareTest {
   }
 
   @Test
-  void shouldHandleJwtStyleUserId() {
-    // Arrange - Auth0 style user ID
-    String auth0UserId = "auth0|507f1f77bcf86cd799439011";
-    Authentication auth =
-        new UsernamePasswordAuthenticationToken(
-            auth0UserId, "credentials", Collections.emptyList());
+  void shouldHandleIdpStyleUserId() {
+    // Arrange - IdP style user ID
+    var idpUserId = "idp|507f1f77bcf86cd799439011";
+    var auth =
+        new UsernamePasswordAuthenticationToken(idpUserId, "credentials", Collections.emptyList());
     SecurityContextHolder.getContext().setAuthentication(auth);
 
     // Act
@@ -154,15 +152,14 @@ class SecurityContextAuditorAwareTest {
 
     // Assert
     assertTrue(result.isPresent(), "Should return auditor for JWT-style user ID");
-    assertEquals(auth0UserId, result.get(), "Should preserve full Auth0 user ID format");
+    assertEquals(idpUserId, result.get(), "Should preserve full IdP user ID format");
   }
 
   @Test
   void shouldHandleEmailAsUserId() {
     // Arrange - Some systems use email as user ID
-    String email = "user@example.com";
-    Authentication auth =
-        new UsernamePasswordAuthenticationToken(email, "password", Collections.emptyList());
+    var email = "user@example.com";
+    var auth = new UsernamePasswordAuthenticationToken(email, "password", Collections.emptyList());
     SecurityContextHolder.getContext().setAuthentication(auth);
 
     // Act
