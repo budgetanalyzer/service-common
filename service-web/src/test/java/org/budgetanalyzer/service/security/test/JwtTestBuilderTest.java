@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.GrantedAuthority;
 
 /**
  * Unit tests for {@link JwtTestBuilder}.
@@ -174,5 +175,100 @@ class JwtTestBuilderTest {
 
     assertThat(jwt.getHeaders()).containsEntry("alg", "RS256");
     assertThat(jwt.getHeaders()).containsEntry("typ", "JWT");
+  }
+
+  @Test
+  void extractAuthorities_shouldExtractPermissionsAsDirectAuthorities() {
+    var jwt =
+        JwtTestBuilder.user("usr_test123")
+            .withPermissions("transactions:read", "accounts:write")
+            .withRoles()
+            .build();
+
+    var authorities = JwtTestBuilder.extractAuthorities(jwt);
+
+    assertThat(authorities)
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactly("transactions:read", "accounts:write");
+  }
+
+  @Test
+  void extractAuthorities_shouldExtractRolesWithRolePrefix() {
+    var jwt =
+        JwtTestBuilder.user("usr_test123").withPermissions().withRoles("ADMIN", "USER").build();
+
+    var authorities = JwtTestBuilder.extractAuthorities(jwt);
+
+    assertThat(authorities)
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactly("ROLE_ADMIN", "ROLE_USER");
+  }
+
+  @Test
+  void extractAuthorities_shouldCombinePermissionsAndRoles() {
+    var jwt =
+        JwtTestBuilder.user("usr_test123")
+            .withPermissions("transactions:read", "accounts:write")
+            .withRoles("USER")
+            .build();
+
+    var authorities = JwtTestBuilder.extractAuthorities(jwt);
+
+    assertThat(authorities)
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactly("transactions:read", "accounts:write", "ROLE_USER");
+  }
+
+  @Test
+  void extractAuthorities_shouldReturnEmptyWhenNoClaimsPresent() {
+    var jwt = JwtTestBuilder.user("usr_test123").withPermissions().withRoles().build();
+
+    var authorities = JwtTestBuilder.extractAuthorities(jwt);
+
+    assertThat(authorities).isEmpty();
+  }
+
+  @Test
+  void extractAuthorities_shouldMatchDefaultJwtExpectedAuthorities() {
+    var jwt = JwtTestBuilder.defaultJwt();
+
+    var authorities = JwtTestBuilder.extractAuthorities(jwt);
+
+    assertThat(authorities)
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactly("transactions:read", "accounts:read", "budgets:read", "ROLE_USER");
+  }
+
+  @Test
+  void extractAuthorities_shouldMatchAdminJwtExpectedAuthorities() {
+    var jwt = JwtTestBuilder.admin().build();
+
+    var authorities = JwtTestBuilder.extractAuthorities(jwt);
+
+    assertThat(authorities).hasSize(21);
+    assertThat(authorities)
+        .extracting(GrantedAuthority::getAuthority)
+        .contains(
+            "transactions:read",
+            "transactions:write",
+            "transactions:delete",
+            "accounts:read",
+            "accounts:write",
+            "accounts:delete",
+            "budgets:read",
+            "budgets:write",
+            "budgets:delete",
+            "users:read",
+            "users:write",
+            "users:delete",
+            "roles:read",
+            "roles:write",
+            "audit:read",
+            "currencies:read",
+            "currencies:write",
+            "statementformats:read",
+            "statementformats:write",
+            "statementformats:delete",
+            "ROLE_ADMIN");
   }
 }

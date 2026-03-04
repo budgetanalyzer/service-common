@@ -1,12 +1,16 @@
 package org.budgetanalyzer.service.security.test;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
@@ -276,6 +280,52 @@ public class JwtTestBuilder {
   public JwtTestBuilder withClaim(String name, Object value) {
     this.customClaims.put(name, value);
     return this;
+  }
+
+  /**
+   * Extracts Spring Security authorities from a JWT, mirroring production behavior.
+   *
+   * <p>This replicates the authority extraction logic from {@link
+   * org.budgetanalyzer.service.security.OAuth2ResourceServerSecurityConfig#jwtAuthenticationConverter()}
+   * for use in {@code @WebMvcTest} tests where the production converter bean is not loaded.
+   *
+   * <p>Extraction rules:
+   *
+   * <ul>
+   *   <li>{@code permissions} claim → direct {@link SimpleGrantedAuthority} (e.g.,
+   *       "transactions:read")
+   *   <li>{@code roles} claim → ROLE_-prefixed {@link SimpleGrantedAuthority} (e.g., "ROLE_ADMIN")
+   * </ul>
+   *
+   * <p><b>Usage with MockMvc:</b>
+   *
+   * <pre>{@code
+   * var jwt = JwtTestBuilder.admin().build();
+   * mockMvc.perform(get("/api/resource")
+   *     .with(jwt().jwt(jwt).authorities(JwtTestBuilder.extractAuthorities(jwt))));
+   * }</pre>
+   *
+   * @param jwt the JWT to extract authorities from
+   * @return collection of granted authorities
+   */
+  public static Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
+    List<GrantedAuthority> authorities = new ArrayList<>();
+
+    var permissions = jwt.getClaimAsStringList("permissions");
+    if (permissions != null) {
+      for (var permission : permissions) {
+        authorities.add(new SimpleGrantedAuthority(permission));
+      }
+    }
+
+    var roles = jwt.getClaimAsStringList("roles");
+    if (roles != null) {
+      for (var role : roles) {
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+      }
+    }
+
+    return authorities;
   }
 
   /**
