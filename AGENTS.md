@@ -656,4 +656,8 @@ Do not over-validate ideas. The user wants honest pushback, not agreement.
 
 - [Orchestration Repository](https://github.com/budgetanalyzer/orchestration)
 - [Orchestration AGENTS.md](https://github.com/budgetanalyzer/orchestration/blob/main/AGENTS.md)
+- [Session Gateway Repository](https://github.com/budgetanalyzer/session-gateway)
+- [Session Gateway AGENTS.md](https://github.com/budgetanalyzer/session-gateway/blob/main/AGENTS.md)
+- [Permission Service Repository](https://github.com/budgetanalyzer/permission-service)
+- [Token Validation Service Repository](https://github.com/budgetanalyzer/token-validation-service)
 

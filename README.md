@@ -240,6 +240,9 @@ service-common/
 ## Related Repositories
 
 - **Orchestration**: https://github.com/budgetanalyzer/orchestration
+- **Session Gateway**: https://github.com/budgetanalyzer/session-gateway
+- **Token Validation Service**: https://github.com/budgetanalyzer/token-validation-service
+- **Permission Service**: https://github.com/budgetanalyzer/permission-service
 - **Transaction Service**: https://github.com/budgetanalyzer/transaction-service
 - **Currency Service**: https://github.com/budgetanalyzer/currency-service
 - **Web Frontend**: https://github.com/budgetanalyzer/budget-analyzer-web
