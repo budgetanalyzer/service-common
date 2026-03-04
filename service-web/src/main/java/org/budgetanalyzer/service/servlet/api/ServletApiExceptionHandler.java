@@ -263,7 +263,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
    * Handles {@link AccessDeniedException} and returns HTTP 403 Forbidden.
    *
    * @param exception the access denied exception from {@code @PreAuthorize} or Spring Security
-   * @return standardized error response with PERMISSION_DENIED type
+   * @return standardized error response with FORBIDDEN type
    */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.FORBIDDEN)
@@ -279,7 +279,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
    * Handles {@link AuthorizationDeniedException} and returns HTTP 403 Forbidden.
    *
    * @param exception the authorization denied exception from Spring Security
-   * @return standardized error response with PERMISSION_DENIED type
+   * @return standardized error response with FORBIDDEN type
    */
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.FORBIDDEN)

@@ -169,7 +169,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
    * Handles {@link AccessDeniedException} and returns HTTP 403 Forbidden.
    *
    * @param exception the access denied exception from Spring Security
-   * @return Mono with standardized error response with PERMISSION_DENIED type
+   * @return Mono with standardized error response with FORBIDDEN type
    */
   @ExceptionHandler(AccessDeniedException.class)
   public Mono<ResponseEntity<ApiErrorResponse>> handleAccessDenied(
@@ -186,7 +186,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
    * Handles {@link AuthorizationDeniedException} and returns HTTP 403 Forbidden.
    *
    * @param exception the authorization denied exception from Spring Security
-   * @return Mono with standardized error response with PERMISSION_DENIED type
+   * @return Mono with standardized error response with FORBIDDEN type
    */
   @ExceptionHandler(AuthorizationDeniedException.class)
   public Mono<ResponseEntity<ApiErrorResponse>> handleAuthorizationDenied(

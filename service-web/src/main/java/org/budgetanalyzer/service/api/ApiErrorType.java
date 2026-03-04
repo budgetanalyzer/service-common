@@ -16,7 +16,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *   <li>{@link #VALIDATION_ERROR} - 400 Bad Request (field validation failed, includes fieldErrors
  *       array)
  *   <li>{@link #UNAUTHORIZED} - 401 Unauthorized (authentication required)
- *   <li>{@link #PERMISSION_DENIED} - 403 Forbidden (insufficient permissions)
+ *   <li>{@link #FORBIDDEN} - 403 Forbidden (insufficient permissions)
  *   <li>{@link #NOT_FOUND} - 404 Not Found (resource doesn't exist)
  *   <li>{@link #APPLICATION_ERROR} - 422 Unprocessable Entity (business rule violation, includes
  *       code field)
@@ -60,5 +60,5 @@ public enum ApiErrorType {
 
   /** Permission denied - user lacks required permission (HTTP 403). */
   @Schema(description = "Permission denied - user lacks required permission")
-  PERMISSION_DENIED
+  FORBIDDEN
 }

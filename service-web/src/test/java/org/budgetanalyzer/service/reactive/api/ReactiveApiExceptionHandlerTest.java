@@ -231,7 +231,7 @@ class ReactiveApiExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("Should handle AccessDeniedException with PERMISSION_DENIED type and 403")
+  @DisplayName("Should handle AccessDeniedException with FORBIDDEN type and 403")
   void shouldHandleAccessDeniedExceptionWith403() {
     var exception = new AccessDeniedException("Forbidden");
 
@@ -244,7 +244,7 @@ class ReactiveApiExceptionHandlerTest {
               assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
               var body = response.getBody();
               assertNotNull(body);
-              assertEquals(ApiErrorType.PERMISSION_DENIED, body.getType());
+              assertEquals(ApiErrorType.FORBIDDEN, body.getType());
               assertEquals("You do not have permission to perform this action", body.getMessage());
               assertNull(body.getCode());
               assertNull(body.getFieldErrors());
@@ -253,7 +253,7 @@ class ReactiveApiExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("Should handle AuthorizationDeniedException with PERMISSION_DENIED type and 403")
+  @DisplayName("Should handle AuthorizationDeniedException with FORBIDDEN type and 403")
   void shouldHandleAuthorizationDeniedExceptionWith403() {
     var exception = new AuthorizationDeniedException("Access Denied");
 
@@ -266,7 +266,7 @@ class ReactiveApiExceptionHandlerTest {
               assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
               var body = response.getBody();
               assertNotNull(body);
-              assertEquals(ApiErrorType.PERMISSION_DENIED, body.getType());
+              assertEquals(ApiErrorType.FORBIDDEN, body.getType());
               assertEquals("You do not have permission to perform this action", body.getMessage());
               assertNull(body.getCode());
               assertNull(body.getFieldErrors());

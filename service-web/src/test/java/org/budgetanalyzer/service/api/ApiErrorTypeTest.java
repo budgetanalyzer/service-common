@@ -74,12 +74,12 @@ class ApiErrorTypeTest {
   }
 
   @Test
-  @DisplayName("Should have PERMISSION_DENIED type")
+  @DisplayName("Should have FORBIDDEN type")
   void shouldHavePermissionDeniedType() {
-    var type = ApiErrorType.PERMISSION_DENIED;
+    var type = ApiErrorType.FORBIDDEN;
 
     assertNotNull(type);
-    assertEquals("PERMISSION_DENIED", type.name());
+    assertEquals("FORBIDDEN", type.name());
   }
 
   @Test

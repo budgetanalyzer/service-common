@@ -219,28 +219,28 @@ class ServletApiExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("Should handle AccessDeniedException with PERMISSION_DENIED type and 403")
+  @DisplayName("Should handle AccessDeniedException with FORBIDDEN type and 403")
   void shouldHandleAccessDeniedExceptionWith403() {
     var exception = new AccessDeniedException("Forbidden");
 
     var response = servletApiExceptionHandler.handle(exception);
 
     assertNotNull(response);
-    assertEquals(ApiErrorType.PERMISSION_DENIED, response.getType());
+    assertEquals(ApiErrorType.FORBIDDEN, response.getType());
     assertEquals("You do not have permission to perform this action", response.getMessage());
     assertNull(response.getCode());
     assertNull(response.getFieldErrors());
   }
 
   @Test
-  @DisplayName("Should handle AuthorizationDeniedException with PERMISSION_DENIED type and 403")
+  @DisplayName("Should handle AuthorizationDeniedException with FORBIDDEN type and 403")
   void shouldHandleAuthorizationDeniedExceptionWith403() {
     var exception = new AuthorizationDeniedException("Access Denied");
 
     var response = servletApiExceptionHandler.handle(exception);
 
     assertNotNull(response);
-    assertEquals(ApiErrorType.PERMISSION_DENIED, response.getType());
+    assertEquals(ApiErrorType.FORBIDDEN, response.getType());
     assertEquals("You do not have permission to perform this action", response.getMessage());
     assertNull(response.getCode());
     assertNull(response.getFieldErrors());

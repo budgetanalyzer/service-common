@@ -119,11 +119,11 @@ public interface ApiExceptionHandler {
   /**
    * Builds a permission denied error response for authorization failures.
    *
-   * @return API error response with PERMISSION_DENIED type
+   * @return API error response with FORBIDDEN type
    */
   default ApiErrorResponse buildPermissionDeniedError() {
     return ApiErrorResponse.builder()
-        .type(ApiErrorType.PERMISSION_DENIED)
+        .type(ApiErrorType.FORBIDDEN)
         .message("You do not have permission to perform this action")
         .build();
   }
