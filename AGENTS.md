@@ -591,7 +591,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 
 **Comprehensive Javadoc** - All public APIs must be documented
 
-## Notes for Claude Code
+## NOTES FOR AI AGENTS
 
 **CRITICAL - Prerequisites First**: Before implementing any plan or feature:
 1. Check for prerequisites in documentation (e.g., "Prerequisites: service-common Enhancement")
