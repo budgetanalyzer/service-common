@@ -122,6 +122,15 @@ public interface SoftDeleteOperations<T extends SoftDeletableEntity>
   }
 
   /**
+   * Counts all active (non-deleted) entities.
+   *
+   * @return the total number of active entities
+   */
+  default long countActive() {
+    return count(notDeleted());
+  }
+
+  /**
    * Counts active entities matching the given specification.
    *
    * @param spec the search criteria specification
