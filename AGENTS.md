@@ -1,5 +1,9 @@
 # Service-Common - Shared Spring Boot Libraries
 
+## Code Exploration
+
+NEVER use Agent/subagent tools for code exploration. Use Grep, Glob, and Read directly.
+
 ## Critical Conventions (Always Apply)
 
 **These rules apply to ALL code changes. No judgment call needed.**
