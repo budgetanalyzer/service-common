@@ -10,7 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
-import org.budgetanalyzer.service.security.test.TestSecurityConfig;
+import org.budgetanalyzer.service.security.test.TestClaimsSecurityConfig;
 import org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler;
 import org.budgetanalyzer.service.servlet.http.CorrelationIdFilter;
 import org.budgetanalyzer.service.servlet.http.HttpLoggingConfig;
@@ -24,14 +24,11 @@ import org.budgetanalyzer.service.servlet.http.HttpLoggingFilter;
  */
 @SpringBootTest(
     classes = ServletTestApplication.class,
-    properties = {
-      "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test-issuer.example.com/",
-      "spring.main.web-application-type=servlet"
-    })
+    properties = {"spring.main.web-application-type=servlet"})
 @ImportAutoConfiguration({
   HttpLoggingConfig.class,
   ServletApiExceptionHandler.class,
-  TestSecurityConfig.class
+  TestClaimsSecurityConfig.class
 })
 @DisplayName("Component Scanning Integration Tests")
 class ComponentScanningIntegrationTest {

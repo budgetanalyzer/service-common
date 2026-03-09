@@ -108,21 +108,14 @@ When service-core is on your classpath, you automatically get:
 When service-web is on your classpath, you automatically get:
 - **Global Exception Handler** - All exceptions converted to standardized ApiErrorResponse format
   - Maps: 400 (Bad Request), 404 (Not Found), 422 (Business Logic), 500 (Server Error)
-- **OAuth2 JWT Security** - Automatic JWT validation with gateway-minted JWTs
-  - Requires: `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` configuration
+- **Claims Header Security** - Automatic authentication from pre-validated headers injected by Envoy ext_authz
+  - Reads `X-User-Id`, `X-Permissions`, `X-Roles` headers — no configuration properties needed
 - **Correlation ID Filter** - Automatically adds correlation IDs to all requests
 - **HTTP Logging Filter** - Optional (enable with `budgetanalyzer.service.http-logging.enabled=true`)
 - **OpenAPI Base Config** - Standard error response schemas (extend BaseOpenApiConfig in your service)
 
 **Example configuration** (application.yml):
 ```yaml
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${GATEWAY_JWKS_URI}
-
 budgetanalyzer:
   service:
     http-logging:
@@ -146,7 +139,7 @@ cat service-web/src/main/java/org/budgetanalyzer/service/config/ServiceWebAutoCo
 cat service-web/src/main/java/org/budgetanalyzer/service/servlet/api/ServletApiExceptionHandler.java
 
 # View security configuration
-cat service-web/src/main/java/org/budgetanalyzer/service/security/OAuth2ResourceServerSecurityConfig.java
+cat service-web/src/main/java/org/budgetanalyzer/service/security/ClaimsHeaderSecurityConfig.java
 
 # Find all @Configuration classes
 grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/

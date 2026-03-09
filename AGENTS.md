@@ -329,7 +329,7 @@ grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
   - Provides `createdAt`, `updatedAt` (timestamps) and `createdBy`, `updatedBy` (user tracking)
 - **SecurityContextAuditorAware Bean** - Provides current user ID for JPA auditing
   - Extracts user ID from `Authentication.getName()` in Spring Security context
-  - Contains internal user ID (e.g., `usr_507f1f77bcf86cd799439011`) from gateway JWT
+  - Contains internal user ID (e.g., `usr_507f1f77bcf86cd799439011`) from `X-User-Id` header
   - Returns empty for anonymous users or system operations (fields remain null)
 - **OpenCsvParser Bean** - CSV parser component automatically available for injection
 
@@ -380,13 +380,13 @@ grep -r "@Component" service-core/src/main/java/
 
 **Shared Configuration**:
 - **HttpLoggingProperties** - Shared between servlet and reactive
-- **OAuth2ResourceServerSecurityConfig** - JWT security validating gateway-minted JWTs
-  - Validates JWTs against session-gateway JWKS endpoint
-  - Extracts `permissions` claim as direct authorities (e.g., `transactions:read`)
-  - Extracts `roles` claim as ROLE_-prefixed authorities (e.g., `ROLE_ADMIN`)
-  - Public endpoints: `/actuator/health/**`
-  - Protected: All other endpoints (requires valid JWT)
-  - `JwtDecoder` bean (conditional - only if not already defined)
+- **ClaimsHeaderSecurityConfig** - Header-based security using Envoy ext_authz pre-validated claims
+  - Reads `X-User-Id`, `X-Permissions`, `X-Roles` headers injected by Envoy ext_authz
+  - Extracts permissions as direct authorities (e.g., `transactions:read`)
+  - Extracts roles as ROLE_-prefixed authorities (e.g., `ROLE_ADMIN`)
+  - Public endpoints: `/actuator/health/**`, OpenAPI docs
+  - Protected: All other endpoints (requires `X-User-Id` header)
+  - No external properties needed (no JWKS URI, no issuer config)
 
 **Enable HTTP logging** (optional, works for both stacks):
 ```yaml
@@ -399,19 +399,6 @@ budgetanalyzer:
       include-headers: true
       include-payload: true
       max-payload-length: 10000
-```
-
-**OAuth2 configuration** (required for secured endpoints):
-```yaml
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${GATEWAY_JWKS_URI}  # e.g., http://session-gateway:8081/.well-known/jwks.json
-
-# Optional: override expected issuer (default: "session-gateway")
-# budgetanalyzer.security.gateway.expected-issuer: session-gateway
 ```
 
 **OpenAPI Base Configuration** (`BaseOpenApiConfig`):
@@ -429,17 +416,17 @@ spring:
 #### What Requires Manual Use
 
 These are utilities (not Spring beans) or exception classes for throwing:
-- **SecurityContextUtil** - Static utility for extracting JWT user info
+- **SecurityContextUtil** - Static utility for extracting user info from Security context
 - **ContentLoggingUtil** - Utility for HTTP content logging
 - **Exception classes** - Throw these in your code: `ResourceNotFoundException`, `InvalidRequestException`, `BusinessException`, `ServiceException`, `ClientException`, `ServiceUnavailableException`
 - **API response models** - DTOs for error responses: `ApiErrorResponse`, `ApiErrorType`, `FieldError`
-- **Test utilities** - `TestSecurityConfig`, `JwtTestBuilder` (for tests)
+- **Test utilities** - `TestClaimsSecurityConfig`, `ClaimsHeaderTestBuilder` (for tests)
 
 **Discovery**:
 ```bash
 # View all autoconfiguration classes
 cat service-web/src/main/java/org/budgetanalyzer/service/config/ServiceWebAutoConfiguration.java
-cat service-web/src/main/java/org/budgetanalyzer/service/security/OAuth2ResourceServerSecurityConfig.java
+cat service-web/src/main/java/org/budgetanalyzer/service/security/ClaimsHeaderSecurityConfig.java
 
 # View global exception handler
 cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiExceptionHandler.java
@@ -459,7 +446,7 @@ grep -r "@Configuration" service-web/src/main/java/
 
 **service-web** (mostly automatic):
 - ✅ Exception handling - automatic
-- ✅ Security - automatic (requires `jwk-set-uri` property pointing to gateway JWKS)
+- ✅ Security - automatic (no properties needed; trusts pre-validated headers from Envoy ext_authz)
 - ✅ Correlation ID filter - automatic
 - ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`
 - ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`

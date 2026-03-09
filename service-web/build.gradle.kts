@@ -23,19 +23,20 @@ dependencies {
     compileOnly(libs.spring.boot.starter.web)
     compileOnly(libs.spring.boot.starter.webflux)
     compileOnly(libs.spring.boot.starter.data.jpa)
-    compileOnly(libs.spring.boot.starter.oauth2.resource.server)
+    compileOnly(libs.spring.boot.starter.security)
 
     // SpringDoc - compile-only (services choose servlet or reactive version)
     compileOnly(libs.springdoc.openapi)
 
-    // Test support (published for consuming services' tests)
-    api(libs.mockito.core) // Used by security.test package
+    // Test support utilities (published for consuming services' tests)
+    // ClaimsHeaderTestBuilder implements RequestPostProcessor from spring-test
+    compileOnly(libs.spring.security.test)
 
     // Test - need both stacks for testing
     testImplementation(libs.spring.boot.starter.web)
     testImplementation(libs.spring.boot.starter.webflux)
     testImplementation(libs.spring.boot.starter.data.jpa)
-    testImplementation(libs.spring.boot.starter.oauth2.resource.server)
+    testImplementation(libs.spring.boot.starter.security)
     testImplementation(libs.springdoc.openapi)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.security.test)
