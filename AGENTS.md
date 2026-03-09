@@ -37,6 +37,10 @@
 grep -l "service-common" /workspace/*/build.gradle.kts 2>/dev/null
 ```
 
+## Code Exploration
+
+NEVER use Agent/subagent tools for code exploration. Use Grep, Glob, and Read directly.
+
 ## Purpose
 
 Multi-module Gradle project providing shared libraries for all Budget Analyzer Spring Boot microservices. Consists of two modules:
