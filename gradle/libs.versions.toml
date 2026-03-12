@@ -43,4 +43,5 @@ springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-u
 # Test dependencies
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatform" }
 mockito-core = { module = "org.mockito:mockito-core" }
+reactor-test = { module = "io.projectreactor:reactor-test" }
 h2 = { module = "com.h2database:h2" }

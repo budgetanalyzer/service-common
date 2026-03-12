@@ -40,7 +40,7 @@ dependencies {
     testImplementation(libs.springdoc.openapi)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.security.test)
-    testImplementation("io.projectreactor:reactor-test") // For reactive testing
+    testImplementation(libs.reactor.test) // For reactive testing
     testRuntimeOnly(libs.junit.platform.launcher)
     testRuntimeOnly(libs.h2)
 }
