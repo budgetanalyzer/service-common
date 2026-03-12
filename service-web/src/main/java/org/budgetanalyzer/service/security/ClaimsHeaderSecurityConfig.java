@@ -2,6 +2,9 @@ package org.budgetanalyzer.service.security;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -37,6 +40,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@ConditionalOnWebApplication(type = Type.SERVLET)
+@ConditionalOnClass(name = "jakarta.servlet.Filter")
 public class ClaimsHeaderSecurityConfig {
 
   private static final Logger logger = LoggerFactory.getLogger(ClaimsHeaderSecurityConfig.class);
@@ -48,6 +53,8 @@ public class ClaimsHeaderSecurityConfig {
    *
    * <ul>
    *   <li>Actuator health endpoints: Permit all (for load balancer health checks)
+   *   <li>Internal service-to-service endpoints ({@code /internal/**}): Permit all (secured at
+   *       network level, not exposed through the gateway)
    *   <li>OpenAPI documentation endpoints: Permit all (for API docs generation)
    *   <li>All other endpoints: Require authentication
    * </ul>
@@ -65,6 +72,8 @@ public class ClaimsHeaderSecurityConfig {
             authorize ->
                 authorize
                     .requestMatchers("/actuator/health", "/actuator/health/**")
+                    .permitAll()
+                    .requestMatchers("/internal/**")
                     .permitAll()
                     .requestMatchers(
                         "/v3/api-docs",
