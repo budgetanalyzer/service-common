@@ -41,6 +41,17 @@ grep -l "service-common" /workspace/*/build.gradle.kts 2>/dev/null
 
 NEVER use Agent/subagent tools for code exploration. Use Grep, Glob, and Read directly.
 
+## Documentation Discipline
+
+Always keep documentation up to date after any configuration or code change.
+
+Update the nearest affected documentation in the same work:
+- `AGENTS.md` when instructions, guardrails, discovery commands, or repository-specific workflow changes
+- `README.md` when setup, usage, or repository purpose changes
+- `docs/` when architecture, configuration, APIs, behaviors, or operational workflows change
+
+Do not leave documentation updates as follow-up work.
+
 ## Purpose
 
 Multi-module Gradle project providing shared libraries for all Budget Analyzer Spring Boot microservices. Consists of two modules:
@@ -651,4 +662,3 @@ Do not over-validate ideas. The user wants honest pushback, not agreement.
 - [Session Gateway AGENTS.md](https://github.com/budgetanalyzer/session-gateway/blob/main/AGENTS.md)
 - [Permission Service Repository](https://github.com/budgetanalyzer/permission-service)
 - [Token Validation Service Repository](https://github.com/budgetanalyzer/token-validation-service)
-
