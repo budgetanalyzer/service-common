@@ -1,14 +1,16 @@
 package org.budgetanalyzer.service.reactive.http;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
@@ -17,6 +19,7 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 import org.budgetanalyzer.core.logging.HttpLogFormatter;
+import org.budgetanalyzer.core.logging.SensitiveHeaderMasker;
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
 /**
@@ -76,37 +79,48 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
     }
 
     var startTime = System.currentTimeMillis();
+    var requestToLog = exchange.getRequest();
+    var responseToLog = exchange.getResponse();
+    var exchangeBuilder = exchange.mutate();
 
-    // Decorate request/response to cache bodies
-    var decoratedRequest = new CachedBodyServerHttpRequestDecorator(exchange.getRequest());
-    var decoratedResponse =
-        new CachedBodyServerHttpResponseDecorator(
-            exchange.getResponse(), httpLoggingProperties.getMaxBodySize());
+    if (httpLoggingProperties.isIncludeRequestBody()) {
+      requestToLog =
+          new CachedBodyServerHttpRequestDecorator(
+              exchange.getRequest(), httpLoggingProperties.getMaxBodySize());
+      exchangeBuilder.request(requestToLog);
+    }
 
-    var decoratedExchange =
-        exchange.mutate().request(decoratedRequest).response(decoratedResponse).build();
+    if (httpLoggingProperties.isIncludeResponseBody()) {
+      responseToLog =
+          new CachedBodyServerHttpResponseDecorator(
+              exchange.getResponse(), httpLoggingProperties.getMaxBodySize());
+      exchangeBuilder.response(responseToLog);
+    }
 
-    // Log request
-    return logRequest(decoratedRequest)
-        .then(chain.filter(decoratedExchange))
+    var decoratedExchange = exchangeBuilder.build();
+    var requestForLogging = requestToLog;
+    var responseForLogging = responseToLog;
+
+    return chain
+        .filter(decoratedExchange)
         .doFinally(
             signalType -> {
               var duration = System.currentTimeMillis() - startTime;
-              logResponse(decoratedResponse, duration);
+              logRequest(requestForLogging);
+              logResponse(responseForLogging, duration);
             });
   }
 
   /**
    * Logs request details.
    *
-   * @param request the cached request decorator
-   * @return Mono that completes after logging
+   * @param request the request to log
    */
-  private Mono<Void> logRequest(CachedBodyServerHttpRequestDecorator request) {
+  private void logRequest(ServerHttpRequest request) {
     try {
-      Map<String, Object> details = new HashMap<>();
+      var details = new LinkedHashMap<String, Object>();
       details.put("method", request.getMethod().name());
-      details.put("uri", request.getURI().toString());
+      details.put("uri", request.getURI().getPath());
 
       if (httpLoggingProperties.isIncludeQueryParams() && request.getURI().getQuery() != null) {
         details.put("queryString", request.getURI().getQuery());
@@ -120,38 +134,31 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       }
 
       if (httpLoggingProperties.isIncludeRequestHeaders()) {
-        details.put("headers", request.getHeaders());
+        details.put(
+            "headers",
+            extractHeaders(request.getHeaders(), httpLoggingProperties.getSensitiveHeaders()));
       }
 
-      // Log request body if enabled
+      String requestBody = null;
       if (httpLoggingProperties.isIncludeRequestBody()) {
-        return request
-            .getCachedBodyAsString(httpLoggingProperties.getMaxBodySize())
-            .doOnNext(
-                body -> {
-                  var message = HttpLogFormatter.formatLogMessage("HTTP Request", details, body);
-                  logAtConfiguredLevel(message);
-                })
-            .then();
-      } else {
-        var message = HttpLogFormatter.formatLogMessage("HTTP Request", details, null);
-        logAtConfiguredLevel(message);
-        return Mono.empty();
+        requestBody = ((CachedBodyServerHttpRequestDecorator) request).getCachedBodyAsString();
       }
+
+      var message = HttpLogFormatter.formatLogMessage("HTTP Request", details, requestBody);
+      logAtConfiguredLevel(message);
 
     } catch (Exception e) {
       log.warn("Failed to log HTTP request: {}", e.getMessage(), e);
-      return Mono.empty();
     }
   }
 
   /**
    * Logs response details.
    *
-   * @param response the cached response decorator
+   * @param response the response to log
    * @param duration request processing duration in milliseconds
    */
-  private void logResponse(CachedBodyServerHttpResponseDecorator response, long duration) {
+  private void logResponse(ServerHttpResponse response, long duration) {
     try {
       var statusCode = response.getStatusCode();
       if (statusCode == null) {
@@ -163,23 +170,28 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
         return;
       }
 
-      Map<String, Object> details = new HashMap<>();
+      var details = new LinkedHashMap<String, Object>();
       details.put("status", statusCode.value());
       details.put("durationMs", duration);
 
       if (httpLoggingProperties.isIncludeResponseHeaders()) {
-        details.put("headers", response.getHeaders());
+        details.put(
+            "headers",
+            extractHeaders(response.getHeaders(), httpLoggingProperties.getSensitiveHeaders()));
       }
 
       String responseBody = null;
       if (httpLoggingProperties.isIncludeResponseBody()) {
-        // Check if response is compressed
         var contentEncoding = response.getHeaders().getFirst("Content-Encoding");
         if (isCompressed(contentEncoding)) {
           responseBody =
-              "[compressed: " + contentEncoding + ", " + response.getCachedBodySize() + " bytes]";
+              "[compressed: "
+                  + contentEncoding
+                  + ", "
+                  + ((CachedBodyServerHttpResponseDecorator) response).getCachedBodySize()
+                  + " bytes]";
         } else {
-          responseBody = response.getCachedBody();
+          responseBody = ((CachedBodyServerHttpResponseDecorator) response).getCachedBody();
         }
       }
 
@@ -197,6 +209,23 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
     } catch (Exception e) {
       log.warn("Failed to log HTTP response: {}", e.getMessage(), e);
     }
+  }
+
+  private LinkedHashMap<String, String> extractHeaders(
+      HttpHeaders headers, List<String> sensitiveHeaders) {
+    var sanitizedHeaders = new LinkedHashMap<String, String>();
+
+    headers.forEach(
+        (headerName, headerValues) -> {
+          var headerValue = String.join(",", headerValues);
+          if (SensitiveHeaderMasker.isSensitive(headerName, sensitiveHeaders)) {
+            sanitizedHeaders.put(headerName, SensitiveHeaderMasker.mask(headerValue));
+          } else {
+            sanitizedHeaders.put(headerName, headerValue);
+          }
+        });
+
+    return sanitizedHeaders;
   }
 
   /**

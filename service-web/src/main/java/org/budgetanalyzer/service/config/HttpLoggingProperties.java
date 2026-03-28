@@ -17,9 +17,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *   service:
  *     http-logging:
  *       enabled: true
+ *       include-query-params: false
  *       log-level: DEBUG
- *       include-request-body: true
- *       include-response-body: true
+ *       include-request-body: false
+ *       include-response-body: false
  *       max-body-size: 10000
  *       # Default exclude-patterns: /actuator/**, /swagger-ui/**, /v3/api-docs/**
  *       # Override defaults by specifying your own list:
@@ -36,11 +37,11 @@ public class HttpLoggingProperties {
   /** Log level for HTTP logging (DEBUG, INFO, WARN, ERROR). */
   private String logLevel = "DEBUG";
 
-  /** Include request body in logs. */
-  private boolean includeRequestBody = true;
+  /** Include request body in logs. Defaults to false for safer opt-in behavior. */
+  private boolean includeRequestBody = false;
 
-  /** Include response body in logs. */
-  private boolean includeResponseBody = true;
+  /** Include response body in logs. Defaults to false for safer opt-in behavior. */
+  private boolean includeResponseBody = false;
 
   /** Include request headers in logs. */
   private boolean includeRequestHeaders = true;
@@ -48,8 +49,8 @@ public class HttpLoggingProperties {
   /** Include response headers in logs. */
   private boolean includeResponseHeaders = true;
 
-  /** Include query parameters in logs. */
-  private boolean includeQueryParams = true;
+  /** Include query parameters in logs. Defaults to false for safer opt-in behavior. */
+  private boolean includeQueryParams = false;
 
   /** Include client IP address in logs. */
   private boolean includeClientIp = true;

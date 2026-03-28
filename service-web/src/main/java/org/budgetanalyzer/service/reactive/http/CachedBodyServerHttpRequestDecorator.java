@@ -1,36 +1,43 @@
 package org.budgetanalyzer.service.reactive.http;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
- * Decorator that caches the request body for logging while allowing downstream handlers to still
- * read it.
+ * Decorator that captures a bounded request-body prefix for logging while allowing downstream
+ * handlers to still read the full stream.
  *
- * <p>In reactive streams, request bodies are Flux&lt;DataBuffer&gt; that can only be consumed once.
- * This decorator caches the body so it can be read for logging AND still passed to the handler.
+ * <p>Reactive request bodies are single-consumption streams. This decorator avoids eagerly joining
+ * the full body in memory; instead it observes the bytes as downstream code consumes them and
+ * stores only a bounded prefix for later logging.
  */
 public class CachedBodyServerHttpRequestDecorator extends ServerHttpRequestDecorator {
 
   private final Flux<DataBuffer> cachedBody;
+  private final ByteArrayOutputStream cachedPrefix;
+  private final AtomicInteger totalBytesRead = new AtomicInteger();
+  private final int maxBodySize;
 
   /**
-   * Constructs a decorator that caches the request body.
+   * Constructs a decorator that captures up to {@code maxBodySize} bytes of the request body for
+   * logging.
    *
    * @param delegate the original request
+   * @param maxBodySize maximum number of bytes to cache for logging
    */
-  public CachedBodyServerHttpRequestDecorator(ServerHttpRequest delegate) {
+  public CachedBodyServerHttpRequestDecorator(ServerHttpRequest delegate, int maxBodySize) {
     super(delegate);
-    this.cachedBody =
-        DataBufferUtils.join(delegate.getBody()).flux().cache(); // Cache for multiple subscribers
+    this.maxBodySize = Math.max(maxBodySize, 0);
+    this.cachedPrefix = new ByteArrayOutputStream(this.maxBodySize);
+    this.cachedBody = super.getBody().doOnNext(this::cacheChunk);
   }
 
   @Override
@@ -39,46 +46,50 @@ public class CachedBodyServerHttpRequestDecorator extends ServerHttpRequestDecor
   }
 
   /**
-   * Reads the cached body as a string without consuming the buffer.
+   * Reads the captured request-body prefix as a string.
    *
-   * <p>Uses a ByteBuffer view to read bytes without advancing the DataBuffer's position, ensuring
-   * downstream handlers can still read the full body.
+   * <p>The returned content only includes bytes observed while the downstream handler consumed the
+   * request body. When the body exceeds the configured limit, the output is truncated with a suffix
+   * describing the omitted byte count.
    *
-   * @param maxBytes maximum bytes to read
-   * @return Mono with body string
+   * @return cached body string
    */
-  public Mono<String> getCachedBodyAsString(int maxBytes) {
-    return cachedBody
-        .next()
-        .map(
-            dataBuffer -> {
-              int totalBytes = dataBuffer.readableByteCount();
-              int readableBytes = Math.min(totalBytes, maxBytes);
-              byte[] bytes = new byte[readableBytes];
+  public String getCachedBodyAsString() {
+    var body = new String(cachedPrefix.toByteArray(), getCharset());
 
-              // Use readableByteBuffers() - recommended replacement for deprecated asByteBuffer()
-              // This provides read access without consuming the DataBuffer
-              try (var buffers = dataBuffer.readableByteBuffers()) {
-                int offset = 0;
-                while (buffers.hasNext() && offset < readableBytes) {
-                  var buffer = buffers.next();
-                  int toRead = Math.min(buffer.remaining(), readableBytes - offset);
-                  buffer.get(bytes, offset, toRead);
-                  offset += toRead;
-                }
-              }
+    if (totalBytesRead.get() > maxBodySize) {
+      var truncated = totalBytesRead.get() - maxBodySize;
+      return body + "... [TRUNCATED - " + truncated + " bytes omitted]";
+    }
 
-              var charset = getCharset();
-              var body = new String(bytes, charset);
+    return body;
+  }
 
-              if (totalBytes > maxBytes) {
-                var truncated = totalBytes - maxBytes;
-                return body + "... [TRUNCATED - " + truncated + " bytes omitted]";
-              }
+  private void cacheChunk(DataBuffer dataBuffer) {
+    var readableBytes = dataBuffer.readableByteCount();
+    totalBytesRead.addAndGet(readableBytes);
 
-              return body;
-            })
-        .defaultIfEmpty("");
+    if (maxBodySize == 0 || cachedPrefix.size() >= maxBodySize) {
+      return;
+    }
+
+    var bytesToCache = Math.min(readableBytes, maxBodySize - cachedPrefix.size());
+    if (bytesToCache <= 0) {
+      return;
+    }
+
+    var bytes = new byte[bytesToCache];
+    try (var buffers = dataBuffer.readableByteBuffers()) {
+      var offset = 0;
+      while (buffers.hasNext() && offset < bytesToCache) {
+        var buffer = buffers.next();
+        var bytesFromBuffer = Math.min(buffer.remaining(), bytesToCache - offset);
+        buffer.get(bytes, offset, bytesFromBuffer);
+        offset += bytesFromBuffer;
+      }
+    }
+
+    cachedPrefix.write(bytes, 0, bytes.length);
   }
 
   /**

@@ -1,5 +1,7 @@
 package org.budgetanalyzer.service.reactive.http;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -8,21 +10,28 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilterChain;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -36,6 +45,8 @@ class ReactiveHttpLoggingFilterTest {
 
   private HttpLoggingProperties httpLoggingProperties;
   private ReactiveHttpLoggingFilter reactiveHttpLoggingFilter;
+  private Logger logger;
+  private ListAppender<ILoggingEvent> listAppender;
 
   @BeforeEach
   void setUp() {
@@ -47,6 +58,16 @@ class ReactiveHttpLoggingFilterTest {
     httpLoggingProperties.setMaxBodySize(10000);
 
     reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
+    logger = (Logger) LoggerFactory.getLogger(ReactiveHttpLoggingFilter.class);
+    listAppender = new ListAppender<>();
+    listAppender.start();
+    logger.addAppender(listAppender);
+  }
+
+  @AfterEach
+  void tearDown() {
+    logger.detachAppender(listAppender);
+    listAppender.stop();
   }
 
   @Test
@@ -112,7 +133,8 @@ class ReactiveHttpLoggingFilterTest {
               var request = decoratedExchange.getRequest();
               var response = decoratedExchange.getResponse();
 
-              // Verify decoration by checking instance types
+              assertTrue(request instanceof CachedBodyServerHttpRequestDecorator);
+              assertTrue(response instanceof CachedBodyServerHttpResponseDecorator);
               return Mono.empty();
             });
 
@@ -121,6 +143,87 @@ class ReactiveHttpLoggingFilterTest {
 
     // Assert
     StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldNotDecorateBodiesWhenBodyLoggingDisabled() {
+    httpLoggingProperties.setIncludeRequestBody(false);
+    httpLoggingProperties.setIncludeResponseBody(false);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
+
+    var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/api/users"));
+
+    when(filterChain.filter(any()))
+        .thenAnswer(
+            invocation -> {
+              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
+              assertFalse(
+                  decoratedExchange.getRequest() instanceof CachedBodyServerHttpRequestDecorator);
+              assertFalse(
+                  decoratedExchange.getResponse() instanceof CachedBodyServerHttpResponseDecorator);
+              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+              return decoratedExchange.getResponse().setComplete();
+            });
+
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+
+    StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldMaskSensitiveHeadersInReactiveLogs() {
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/api/users")
+                .header("Authorization", "Bearer secret-token")
+                .header("X-Custom-Header", "custom-value"));
+
+    when(filterChain.filter(any()))
+        .thenAnswer(
+            invocation -> {
+              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
+              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+              decoratedExchange.getResponse().getHeaders().add("Set-Cookie", "session=top-secret");
+              return decoratedExchange.getResponse().setComplete();
+            });
+
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+
+    StepVerifier.create(result).verifyComplete();
+
+    var logOutput = loggedMessages();
+    assertTrue(logOutput.contains("***MASKED***"));
+    assertTrue(logOutput.contains("custom-value"));
+    assertFalse(logOutput.contains("Bearer secret-token"));
+    assertFalse(logOutput.contains("session=top-secret"));
+  }
+
+  @Test
+  void shouldNotLeakQueryStringWhenDisabled() {
+    httpLoggingProperties.setIncludeQueryParams(false);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
+
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/api/users?token=secret&page=1&search=john"));
+
+    when(filterChain.filter(any()))
+        .thenAnswer(
+            invocation -> {
+              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
+              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+              return decoratedExchange.getResponse().setComplete();
+            });
+
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+
+    StepVerifier.create(result).verifyComplete();
+
+    var logOutput = loggedMessages();
+    assertTrue(logOutput.contains("/api/users"));
+    assertFalse(logOutput.contains("token=secret"));
+    assertFalse(logOutput.contains("page=1"));
+    assertFalse(logOutput.contains("search=john"));
   }
 
   @Test
@@ -580,5 +683,11 @@ class ReactiveHttpLoggingFilterTest {
 
     // Assert - Should complete with logging (no user agent is not a health check)
     StepVerifier.create(result).verifyComplete();
+  }
+
+  private String loggedMessages() {
+    return listAppender.list.stream()
+        .map(ILoggingEvent::getFormattedMessage)
+        .collect(Collectors.joining("\n"));
   }
 }

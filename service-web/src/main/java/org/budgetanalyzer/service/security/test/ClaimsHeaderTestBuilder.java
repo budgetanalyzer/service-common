@@ -14,7 +14,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.budgetanalyzer.service.security.ClaimsHeaderAuthenticationFilter;
 
 /**
- * Fluent builder for creating test claims headers matching the Envoy ext_authz header shape.
+ * Fluent builder for creating test claims headers matching the shared ingress-auth header shape.
  *
  * <p><b>WARNING: FOR TESTING ONLY</b> - This builder creates mock claims headers for integration
  * tests. Do NOT use in production code.

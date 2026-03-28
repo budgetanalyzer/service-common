@@ -395,12 +395,15 @@ grep -r "@Component" service-core/src/main/java/
 
 **Shared Configuration**:
 - **HttpLoggingProperties** - Shared between servlet and reactive
-- **ClaimsHeaderSecurityConfig** - Header-based security using Envoy ext_authz pre-validated claims
-  - Reads `X-User-Id`, `X-Permissions`, `X-Roles` headers injected by Envoy ext_authz
+- **ClaimsHeaderSecurityConfig** / **ReactiveClaimsHeaderSecurityConfig** - Header-based security using trusted ingress external-auth claims
+  - Reads `X-User-Id`, `X-Permissions`, `X-Roles` headers injected by the trusted ingress auth path
   - Extracts permissions as direct authorities (e.g., `transactions:read`)
   - Extracts roles as ROLE_-prefixed authorities (e.g., `ROLE_ADMIN`)
+  - Enables method security for both stacks, including reactive `@PreAuthorize` enforcement in WebFlux services
   - Public endpoints: `/actuator/health/**`, OpenAPI docs
   - Protected: All other endpoints (requires `X-User-Id` header)
+  - Stateless by default; `/internal/**` is not globally anonymous
+  - Reactive auto-configuration backs off when a service defines its own `SecurityWebFilterChain`
   - No external properties needed (no JWKS URI, no issuer config)
 
 **Enable HTTP logging** (optional, works for both stacks):
@@ -409,11 +412,13 @@ budgetanalyzer:
   service:
     http-logging:
       enabled: true
-      include-query-string: true
-      include-client-info: true
-      include-headers: true
-      include-payload: true
-      max-payload-length: 10000
+      include-query-params: false  # Safer default; opt in only when query strings are known-safe
+      include-client-ip: true
+      include-request-headers: true
+      include-response-headers: true
+      include-request-body: true   # Optional: defaults to false
+      include-response-body: true  # Optional: defaults to false
+      max-body-size: 10000
 ```
 
 **OpenAPI Base Configuration** (`BaseOpenApiConfig`):
@@ -461,7 +466,7 @@ grep -r "@Configuration" service-web/src/main/java/
 
 **service-web** (mostly automatic):
 - ✅ Exception handling - automatic
-- ✅ Security - automatic (no properties needed; trusts pre-validated headers from Envoy ext_authz)
+- ✅ Security - automatic (no properties needed; trusts claims headers from the ingress external-auth path)
 - ✅ Correlation ID filter - automatic
 - ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`
 - ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`

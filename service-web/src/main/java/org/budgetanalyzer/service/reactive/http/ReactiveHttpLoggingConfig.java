@@ -26,6 +26,11 @@ import org.budgetanalyzer.service.config.HttpLoggingProperties;
  *   service:
  *     http-logging:
  *       enabled: true
+ *       include-request-headers: true
+ *       include-response-headers: true
+ *       # Body logging is disabled by default and must be enabled explicitly:
+ *       # include-request-body: true
+ *       # include-response-body: true
  * </pre>
  */
 @Configuration

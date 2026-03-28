@@ -2,6 +2,7 @@ package org.budgetanalyzer.service.integration;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.DisplayName;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 
 import org.budgetanalyzer.service.security.test.ClaimsHeaderTestBuilder;
@@ -34,21 +36,39 @@ class SecurityRulesIntegrationTest {
   class InternalEndpointTests {
 
     @Test
-    @DisplayName("should permit access without authentication")
-    void shouldPermitInternalEndpointsWithoutAuthentication() throws Exception {
+    @DisplayName("should require authentication")
+    void shouldRequireAuthenticationForInternalEndpoints() throws Exception {
       mockMvc
           .perform(get("/internal/test"))
+          .andExpect(status().isUnauthorized())
+          .andExpect(jsonPath("$.type").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    @DisplayName("should allow authenticated access")
+    void shouldAllowAuthenticatedAccessToInternalEndpoints() throws Exception {
+      mockMvc
+          .perform(get("/internal/test").with(ClaimsHeaderTestBuilder.defaultUser()))
           .andExpect(status().isOk())
           .andExpect(content().string("internal-ok"));
     }
 
     @Test
-    @DisplayName("should permit access with authentication")
-    void shouldPermitInternalEndpointsWithAuthentication() throws Exception {
+    @DisplayName("should not persist authentication across requests")
+    void shouldNotPersistAuthenticationAcrossRequests() throws Exception {
+      var mockHttpSession = new MockHttpSession();
+
       mockMvc
-          .perform(get("/internal/test").with(ClaimsHeaderTestBuilder.defaultUser()))
-          .andExpect(status().isOk())
-          .andExpect(content().string("internal-ok"));
+          .perform(
+              get("/internal/test")
+                  .session(mockHttpSession)
+                  .with(ClaimsHeaderTestBuilder.defaultUser()))
+          .andExpect(status().isOk());
+
+      mockMvc
+          .perform(get("/internal/test").session(mockHttpSession))
+          .andExpect(status().isUnauthorized())
+          .andExpect(jsonPath("$.type").value("UNAUTHORIZED"));
     }
   }
 
@@ -59,7 +79,10 @@ class SecurityRulesIntegrationTest {
     @Test
     @DisplayName("should require authentication for non-internal endpoints")
     void shouldRequireAuthenticationForNonInternalEndpoints() throws Exception {
-      mockMvc.perform(get("/api/test/not-found")).andExpect(status().isUnauthorized());
+      mockMvc
+          .perform(get("/api/test/not-found"))
+          .andExpect(status().isUnauthorized())
+          .andExpect(jsonPath("$.type").value("UNAUTHORIZED"));
     }
 
     @Test
@@ -68,6 +91,15 @@ class SecurityRulesIntegrationTest {
       mockMvc
           .perform(get("/api/test/not-found").with(ClaimsHeaderTestBuilder.defaultUser()))
           .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("should reject malformed claims headers")
+    void shouldRejectMalformedClaimsHeaders() throws Exception {
+      mockMvc
+          .perform(get("/api/test/not-found").header("X-Permissions", "transactions:read"))
+          .andExpect(status().isUnauthorized())
+          .andExpect(jsonPath("$.type").value("UNAUTHORIZED"));
     }
   }
 

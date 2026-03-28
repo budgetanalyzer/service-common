@@ -8,12 +8,11 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
 /**
- * Authentication token populated from pre-validated claims headers injected by Envoy ext_authz.
+ * Authentication token populated from pre-validated claims headers.
  *
- * <p>After Phase 1 of the auth migration, Envoy validates sessions via ext_authz and injects claims
- * headers ({@code X-User-Id}, {@code X-Permissions}, {@code X-Roles}) into requests before they
- * reach backend services. This token represents the authenticated user identity extracted from
- * those headers.
+ * <p>Trusted ingress external auth injects canonical claims headers ({@code X-User-Id}, {@code
+ * X-Permissions}, {@code X-Roles}) into requests before they reach backend services. This token
+ * represents the authenticated user identity extracted from those headers.
  *
  * <p>Extends {@link AbstractAuthenticationToken} (same base class as {@code
  * JwtAuthenticationToken}) to ensure seamless integration with {@code @PreAuthorize}, {@code
@@ -55,7 +54,7 @@ public class ClaimsHeaderAuthenticationToken extends AbstractAuthenticationToken
   }
 
   /**
-   * Returns empty string since authentication is performed by ext_authz, not this service.
+   * Returns empty string since authentication is performed before the request reaches this service.
    *
    * @return empty string
    */

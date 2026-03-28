@@ -28,13 +28,13 @@ class HttpLoggingPropertiesTest {
     // Assert
     assertFalse(properties.isEnabled(), "Default enabled should be false");
     assertEquals("DEBUG", properties.getLogLevel(), "Default log level should be DEBUG");
-    assertTrue(properties.isIncludeRequestBody(), "Default includeRequestBody should be true");
-    assertTrue(properties.isIncludeResponseBody(), "Default includeResponseBody should be true");
+    assertFalse(properties.isIncludeRequestBody(), "Default includeRequestBody should be false");
+    assertFalse(properties.isIncludeResponseBody(), "Default includeResponseBody should be false");
     assertTrue(
         properties.isIncludeRequestHeaders(), "Default includeRequestHeaders should be true");
     assertTrue(
         properties.isIncludeResponseHeaders(), "Default includeResponseHeaders should be true");
-    assertTrue(properties.isIncludeQueryParams(), "Default includeQueryParams should be true");
+    assertFalse(properties.isIncludeQueryParams(), "Default includeQueryParams should be false");
     assertTrue(properties.isIncludeClientIp(), "Default includeClientIp should be true");
     assertEquals(10000, properties.getMaxBodySize(), "Default maxBodySize should be 10000");
     assertNotNull(properties.getExcludePatterns(), "Default excludePatterns should not be null");

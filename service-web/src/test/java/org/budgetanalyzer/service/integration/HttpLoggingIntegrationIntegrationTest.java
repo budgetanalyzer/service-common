@@ -171,6 +171,20 @@ class HttpLoggingIntegrationIntegrationTest {
   }
 
   @Test
+  @DisplayName("Should regenerate malformed correlation ID header when provided")
+  void shouldRegenerateMalformedCorrelationIdWhenProvided() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/test/not-found")
+                .header("X-Correlation-ID", "bad value")
+                .with(ClaimsHeaderTestBuilder.defaultUser()))
+        .andExpect(status().isNotFound())
+        .andExpect(header().exists("X-Correlation-ID"))
+        .andExpect(header().string("X-Correlation-ID", org.hamcrest.Matchers.startsWith("req_")))
+        .andExpect(header().string("X-Correlation-ID", org.hamcrest.Matchers.not("bad value")));
+  }
+
+  @Test
   @DisplayName("Should add correlation ID to successful responses")
   void shouldAddCorrelationIdToSuccessfulResponses() throws Exception {
     var correlationId = "success-response-test";

@@ -36,7 +36,7 @@ public class SecurityContextUtil {
    * Extracts the user ID from the current security context.
    *
    * <p>The user ID is extracted from {@code Authentication.getName()}, which returns the value from
-   * the {@code X-User-Id} header set by Envoy ext_authz.
+   * the {@code X-User-Id} header injected by trusted ingress external auth.
    *
    * @return Optional containing the user ID if authenticated, empty otherwise
    */

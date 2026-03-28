@@ -8,9 +8,9 @@ import org.springframework.context.annotation.Configuration;
  * <p><b>FOR TESTING ONLY</b> - Import this configuration in integration tests via {@code @Import}.
  *
  * <p>Since {@link org.budgetanalyzer.service.security.ClaimsHeaderSecurityConfig} has no external
- * properties (unlike the old OAuth2 config needing {@code jwk-set-uri}), this config simply ensures
- * the production security config loads cleanly in test contexts. Test identity is set per-request
- * via claims headers using {@link ClaimsHeaderTestBuilder}.
+ * properties, this config simply ensures the production security config loads cleanly in test
+ * contexts. Test identity is set per-request via claims headers using {@link
+ * ClaimsHeaderTestBuilder}.
  *
  * <p><b>Usage:</b>
  *
