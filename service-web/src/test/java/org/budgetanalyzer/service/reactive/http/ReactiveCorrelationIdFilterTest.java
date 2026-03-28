@@ -98,6 +98,33 @@ class ReactiveCorrelationIdFilterTest {
   }
 
   @Test
+  void shouldTrimExistingCorrelationIdFromRequest() {
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/test")
+                .header(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER, "  req_trimmed-123  "));
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
+
+    StepVerifier.create(result)
+        .expectAccessibleContext()
+        .assertThat(
+            context -> {
+              assertTrue(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY));
+              String correlationId =
+                  context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
+              assertEquals("req_trimmed-123", correlationId);
+            })
+        .then()
+        .verifyComplete();
+
+    var responseHeaders = exchange.getResponse().getHeaders();
+    var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
+    assertEquals("req_trimmed-123", correlationId);
+  }
+
+  @Test
   void shouldStoreCorrelationIdInReactorContext() {
     // Arrange
     var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/test"));
@@ -268,6 +295,51 @@ class ReactiveCorrelationIdFilterTest {
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
     assertTrue(correlationId.startsWith("req_"));
+  }
+
+  @Test
+  void shouldGenerateCorrelationIdWhenHeaderContainsUnsafeCharacters() {
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/test")
+                .header(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER, "bad value"));
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    var result = reactiveCorrelationIdFilter.filter(exchange, filterChain);
+
+    StepVerifier.create(result)
+        .expectAccessibleContext()
+        .assertThat(
+            context -> {
+              String correlationId =
+                  context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
+              assertNotNull(correlationId);
+              assertTrue(correlationId.startsWith("req_"));
+              assertEquals(36, correlationId.length());
+            })
+        .then()
+        .verifyComplete();
+
+    var responseHeaders = exchange.getResponse().getHeaders();
+    var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
+    assertTrue(correlationId.startsWith("req_"));
+  }
+
+  @Test
+  void shouldGenerateCorrelationIdWhenHeaderExceedsMaxLength() {
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/test")
+                .header(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER, "a".repeat(129)));
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    reactiveCorrelationIdFilter.filter(exchange, filterChain).block();
+
+    var responseHeaders = exchange.getResponse().getHeaders();
+    var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
+    assertNotNull(correlationId);
+    assertTrue(correlationId.startsWith("req_"));
+    assertEquals(36, correlationId.length());
   }
 
   @Test

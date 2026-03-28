@@ -2,6 +2,9 @@ package org.budgetanalyzer.service.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Set;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
@@ -10,6 +13,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Unit tests for {@link ClaimsHeaderAuthenticationFilter}.
  *
@@ -17,7 +22,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
  */
 class ClaimsHeaderAuthenticationFilterTest {
 
-  private final ClaimsHeaderAuthenticationFilter filter = new ClaimsHeaderAuthenticationFilter();
+  private final ClaimsHeaderAuthenticationFilter filter =
+      new ClaimsHeaderAuthenticationFilter(new ObjectMapper());
 
   @AfterEach
   void cleanup() {
@@ -56,23 +62,31 @@ class ClaimsHeaderAuthenticationFilterTest {
   }
 
   @Test
-  void shouldSkipAuthWhenUserIdMissing() throws Exception {
+  void shouldRejectAuthWhenUserIdMissingButOtherClaimsArePresent() throws Exception {
     var request = new MockHttpServletRequest();
     request.addHeader("X-Permissions", "transactions:read");
+    var response = new MockHttpServletResponse();
+    var chain = new MockFilterChain();
 
-    filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+    filter.doFilterInternal(request, response, chain);
 
+    assertThat(response.getStatus()).isEqualTo(401);
     assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    assertThat(chain.getRequest()).isNull();
   }
 
   @Test
   void shouldSkipAuthWhenUserIdBlank() throws Exception {
     var request = new MockHttpServletRequest();
     request.addHeader("X-User-Id", "   ");
+    var response = new MockHttpServletResponse();
+    var chain = new MockFilterChain();
 
-    filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+    filter.doFilterInternal(request, response, chain);
 
+    assertThat(response.getStatus()).isEqualTo(401);
     assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    assertThat(chain.getRequest()).isNull();
   }
 
   @Test
@@ -167,5 +181,61 @@ class ClaimsHeaderAuthenticationFilterTest {
     assertThat(authentication).isInstanceOf(ClaimsHeaderAuthenticationToken.class);
     var token = (ClaimsHeaderAuthenticationToken) authentication;
     assertThat(token.getRoles()).containsExactlyInAnyOrder("ADMIN", "USER");
+  }
+
+  @Test
+  void shouldClearExistingAuthenticationWhenHeadersAreAbsent() throws Exception {
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new ClaimsHeaderAuthenticationToken("usr_existing", Set.of(), List.of()));
+
+    var request = new MockHttpServletRequest();
+
+    filter.doFilterInternal(request, new MockHttpServletResponse(), new MockFilterChain());
+
+    assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+  }
+
+  @Test
+  void shouldRejectClaimsHeadersWithoutUserId() throws Exception {
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new ClaimsHeaderAuthenticationToken("usr_existing", Set.of(), List.of()));
+
+    var request = new MockHttpServletRequest();
+    request.addHeader("X-Permissions", "transactions:read");
+    var response = new MockHttpServletResponse();
+    var chain = new MockFilterChain();
+
+    filter.doFilterInternal(request, response, chain);
+
+    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    assertThat(chain.getRequest()).isNull();
+  }
+
+  @Test
+  void shouldRejectMalformedCommaSeparatedClaims() throws Exception {
+    var request = new MockHttpServletRequest();
+    request.addHeader("X-User-Id", "usr_abc123");
+    request.addHeader("X-Permissions", "transactions:read,,accounts:read");
+    var response = new MockHttpServletResponse();
+
+    filter.doFilterInternal(request, response, new MockFilterChain());
+
+    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+  }
+
+  @Test
+  void shouldRejectOversizedUserId() throws Exception {
+    var request = new MockHttpServletRequest();
+    request.addHeader("X-User-Id", "u".repeat(129));
+    var response = new MockHttpServletResponse();
+
+    filter.doFilterInternal(request, response, new MockFilterChain());
+
+    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
   }
 }

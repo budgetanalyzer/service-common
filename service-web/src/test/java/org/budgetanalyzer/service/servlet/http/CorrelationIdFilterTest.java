@@ -76,6 +76,17 @@ class CorrelationIdFilterTest {
   }
 
   @Test
+  void shouldTrimExistingCorrelationIdFromRequest() throws Exception {
+    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER))
+        .thenReturn("  req_trimmed-123  ");
+
+    correlationIdFilter.doFilterInternal(request, response, filterChain);
+
+    verify(response).setHeader(CorrelationIdFilter.CORRELATION_ID_HEADER, "req_trimmed-123");
+    verify(filterChain).doFilter(request, response);
+  }
+
+  @Test
   void shouldStoreCorrelationIdInMdc() throws Exception {
     // Arrange
     when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn(null);
@@ -152,6 +163,32 @@ class CorrelationIdFilterTest {
     correlationIdFilter.doFilterInternal(request, response, filterChain);
 
     // Assert - Should generate new ID when header is empty/whitespace
+    verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
+  }
+
+  @Test
+  void shouldGenerateCorrelationIdWhenHeaderContainsUnsafeCharacters() throws Exception {
+    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn("bad value");
+
+    correlationIdFilter.doFilterInternal(
+        request,
+        response,
+        (req, res) -> {
+          var correlationId = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
+          assertNotNull(correlationId);
+          assertTrue(correlationId.startsWith("req_"));
+          assertEquals(36, correlationId.length());
+        });
+
+    verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
+  }
+
+  @Test
+  void shouldGenerateCorrelationIdWhenHeaderExceedsMaxLength() throws Exception {
+    when(request.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)).thenReturn("a".repeat(129));
+
+    correlationIdFilter.doFilterInternal(request, response, filterChain);
+
     verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
   }
 

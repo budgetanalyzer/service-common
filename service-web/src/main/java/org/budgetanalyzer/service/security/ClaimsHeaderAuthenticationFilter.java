@@ -2,7 +2,6 @@ package org.budgetanalyzer.service.security;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -18,13 +17,15 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Servlet filter that reads pre-validated claims headers and populates the SecurityContext.
  *
- * <p>After Envoy ext_authz validates the session, it injects claims headers into the request. This
- * filter extracts those headers and creates a {@link ClaimsHeaderAuthenticationToken} in the
- * SecurityContext, enabling standard Spring Security authorization ({@code @PreAuthorize}, {@code
- * hasRole()}, {@code hasAuthority()}).
+ * <p>Trusted ingress external auth injects claims headers into the request. This filter validates
+ * those headers and creates a {@link ClaimsHeaderAuthenticationToken} in the SecurityContext,
+ * enabling standard Spring Security authorization ({@code @PreAuthorize}, {@code hasRole()}, {@code
+ * hasAuthority()}).
  *
  * <p>This filter is <b>not</b> a {@code @Component} — it is registered inside the {@link
  * ClaimsHeaderSecurityConfig} SecurityFilterChain via {@code addFilterBefore()}.
@@ -46,50 +47,65 @@ public class ClaimsHeaderAuthenticationFilter extends OncePerRequestFilter {
   private static final Logger logger =
       LoggerFactory.getLogger(ClaimsHeaderAuthenticationFilter.class);
 
+  private final ObjectMapper objectMapper;
+
+  /**
+   * Creates a new claims-header authentication filter.
+   *
+   * @param objectMapper the ObjectMapper used for JSON error responses
+   */
+  public ClaimsHeaderAuthenticationFilter(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
   @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
+    SecurityContextHolder.clearContext();
 
     var userId = request.getHeader(X_USER_ID_HEADER);
+    var permissionsHeader = request.getHeader(X_PERMISSIONS_HEADER);
+    var rolesHeader = request.getHeader(X_ROLES_HEADER);
 
-    if (userId == null || userId.isBlank()) {
+    if (!ClaimsHeaderValidator.hasAnyClaimsHeaders(userId, permissionsHeader, rolesHeader)) {
       logger.trace("No {} header present, skipping authentication", X_USER_ID_HEADER);
       filterChain.doFilter(request, response);
       return;
     }
 
-    var permissions = parseCommaSeparated(request.getHeader(X_PERMISSIONS_HEADER));
-    var roles = parseCommaSeparated(request.getHeader(X_ROLES_HEADER));
+    ValidatedClaimsHeaders validatedClaimsHeaders;
+    try {
+      validatedClaimsHeaders =
+          ClaimsHeaderValidator.validate(userId, permissionsHeader, rolesHeader);
+    } catch (ClaimsHeaderValidationException exception) {
+      logger.debug(
+          "Rejecting malformed claims headers for {}: {}",
+          request.getRequestURI(),
+          exception.getMessage());
+      ClaimsHeaderSecurityErrorResponseWriter.writeUnauthorized(response, objectMapper);
+      return;
+    }
 
     List<GrantedAuthority> authorities = new ArrayList<>();
-    for (var permission : permissions) {
+    for (var permission : validatedClaimsHeaders.permissions()) {
       authorities.add(new SimpleGrantedAuthority(permission));
     }
-    for (var role : roles) {
+    for (var role : validatedClaimsHeaders.roles()) {
       authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
-    var roleSet = new LinkedHashSet<>(roles);
-    var authentication = new ClaimsHeaderAuthenticationToken(userId, roleSet, authorities);
+    var roleSet = new LinkedHashSet<>(validatedClaimsHeaders.roles());
+    var authentication =
+        new ClaimsHeaderAuthenticationToken(validatedClaimsHeaders.userId(), roleSet, authorities);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
     logger.trace(
         "Authenticated user {} with {} permissions and {} roles",
-        userId,
-        permissions.size(),
-        roles.size());
+        validatedClaimsHeaders.userId(),
+        validatedClaimsHeaders.permissions().size(),
+        validatedClaimsHeaders.roles().size());
 
     filterChain.doFilter(request, response);
-  }
-
-  private static List<String> parseCommaSeparated(String headerValue) {
-    if (headerValue == null || headerValue.isBlank()) {
-      return List.of();
-    }
-    return Arrays.stream(headerValue.split(","))
-        .map(String::trim)
-        .filter(s -> !s.isEmpty())
-        .toList();
   }
 }

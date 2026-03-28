@@ -364,7 +364,7 @@ spring:
 
 Correlation ID flows through entire pipeline:
 ```
-HTTP → CorrelationIdFilter sets MDC
+HTTP → CorrelationIdFilter validates or regenerates correlation ID, then sets MDC
   → Service includes in domain event
     → Event listener sets MDC from event
       → External message includes correlationId

@@ -14,14 +14,15 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import org.budgetanalyzer.core.logging.CorrelationIdGenerator;
+import org.budgetanalyzer.core.logging.CorrelationIdResolver;
 
 /**
- * Filter that generates or extracts a correlation ID for each HTTP request.
+ * Filter that generates or extracts a safe correlation ID for each HTTP request.
  *
  * <p>The correlation ID is used for distributed tracing and request tracking across microservices.
  * It is stored in MDC (Mapped Diagnostic Context) so all subsequent log entries for this request
- * will include the correlation ID.
+ * will include the correlation ID. Malformed inbound values are discarded and replaced with a new
+ * generated ID.
  *
  * <p>Order: -100 (runs early in filter chain, before logging filter)
  */
@@ -36,12 +37,12 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
   public static final String CORRELATION_ID_MDC_KEY = "correlationId";
 
   /**
-   * Processes the request by extracting or generating a correlation ID and storing it in MDC.
+   * Processes the request by resolving a safe correlation ID and storing it in MDC.
    *
    * <p>This method performs the following operations:
    *
    * <ul>
-   *   <li>Extracts correlation ID from request header or generates a new one
+   *   <li>Normalizes a valid request correlation ID or generates a new one
    *   <li>Stores the correlation ID in MDC for use in log statements
    *   <li>Adds the correlation ID to the response header
    *   <li>Processes the request through the filter chain
@@ -60,7 +61,8 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
       @NonNull HttpServletResponse response,
       @NonNull FilterChain filterChain)
       throws ServletException, IOException {
-    var correlationId = extractOrGenerateCorrelationId(request);
+    var correlationId =
+        CorrelationIdResolver.resolveOrGenerate(request.getHeader(CORRELATION_ID_HEADER));
 
     // Store in MDC for logging
     MDC.put(CORRELATION_ID_MDC_KEY, correlationId);
@@ -74,21 +76,5 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
       // Clean up MDC to prevent memory leaks
       MDC.remove(CORRELATION_ID_MDC_KEY);
     }
-  }
-
-  /**
-   * Extracts correlation ID from request header, or generates a new one if not present.
-   *
-   * @param request The HTTP request
-   * @return Correlation ID
-   */
-  private String extractOrGenerateCorrelationId(HttpServletRequest request) {
-    var correlationId = request.getHeader(CORRELATION_ID_HEADER);
-
-    if (correlationId == null || correlationId.trim().isEmpty()) {
-      correlationId = CorrelationIdGenerator.generate();
-    }
-
-    return correlationId;
   }
 }

@@ -1,2 +1,3 @@
 org.budgetanalyzer.service.config.ServiceWebAutoConfiguration
 org.budgetanalyzer.service.security.ClaimsHeaderSecurityConfig
+org.budgetanalyzer.service.security.ReactiveClaimsHeaderSecurityConfig

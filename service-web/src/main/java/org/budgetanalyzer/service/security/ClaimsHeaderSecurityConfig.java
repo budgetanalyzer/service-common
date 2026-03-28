@@ -10,15 +10,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.NullSecurityContextRepository;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Security configuration for claims-header-based authentication via Envoy ext_authz.
+ * Security configuration for claims-header-based authentication.
  *
- * <p>Replaces the previous OAuth2 Resource Server configuration. Backend services no longer
- * validate JWTs — they trust pre-validated headers from the infrastructure (spoofing prevented by
- * Envoy stripping incoming headers + mTLS).
+ * <p>Backend services do not validate JWTs locally. They trust canonical claims headers injected by
+ * the trusted ingress external-auth path.
  *
  * <p>This auto-configuration provides:
  *
@@ -30,8 +33,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * </ul>
  *
  * <p><b>Usage:</b> All services consuming service-web automatically inherit this configuration. No
- * properties are required — authentication is performed by Envoy ext_authz before requests reach
- * the service.
+ * properties are required — authentication is performed before requests reach the service.
  *
  * @see ClaimsHeaderAuthenticationFilter
  * @see ClaimsHeaderAuthenticationToken
@@ -53,27 +55,30 @@ public class ClaimsHeaderSecurityConfig {
    *
    * <ul>
    *   <li>Actuator health endpoints: Permit all (for load balancer health checks)
-   *   <li>Internal service-to-service endpoints ({@code /internal/**}): Permit all (secured at
-   *       network level, not exposed through the gateway)
    *   <li>OpenAPI documentation endpoints: Permit all (for API docs generation)
    *   <li>All other endpoints: Require authentication
    * </ul>
    *
    * @param http the HttpSecurity to configure
+   * @param objectMapper the ObjectMapper used for JSON security responses
    * @return the configured SecurityFilterChain
    * @throws Exception if configuration fails
    */
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    logger.info("Configuring claims-header-based security (Envoy ext_authz)");
+  public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper)
+      throws Exception {
+    logger.info("Configuring stateless claims-header security");
 
     http.csrf(csrf -> csrf.disable())
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .securityContext(
+            securityContext ->
+                securityContext.securityContextRepository(new NullSecurityContextRepository()))
         .authorizeHttpRequests(
             authorize ->
                 authorize
                     .requestMatchers("/actuator/health", "/actuator/health/**")
-                    .permitAll()
-                    .requestMatchers("/internal/**")
                     .permitAll()
                     .requestMatchers(
                         "/v3/api-docs",
@@ -88,19 +93,29 @@ public class ClaimsHeaderSecurityConfig {
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(
-            new ClaimsHeaderAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+            new ClaimsHeaderAuthenticationFilter(objectMapper),
+            UsernamePasswordAuthenticationFilter.class)
         .exceptionHandling(
             exceptions ->
-                exceptions.authenticationEntryPoint(
-                    (request, response, authException) -> {
-                      logger.debug(
-                          "Authentication failed for {}: {}",
-                          request.getRequestURI(),
-                          authException.getMessage());
-                      response.setStatus(401);
-                      response.setContentType("application/json");
-                      response.getWriter().write("{\"error\":\"Unauthorized\"}");
-                    }));
+                exceptions
+                    .authenticationEntryPoint(
+                        (request, response, authException) -> {
+                          logger.debug(
+                              "Authentication failed for {}: {}",
+                              request.getRequestURI(),
+                              authException.getMessage());
+                          ClaimsHeaderSecurityErrorResponseWriter.writeUnauthorized(
+                              response, objectMapper);
+                        })
+                    .accessDeniedHandler(
+                        (request, response, accessDeniedException) -> {
+                          logger.debug(
+                              "Authorization failed for {}: {}",
+                              request.getRequestURI(),
+                              accessDeniedException.getMessage());
+                          ClaimsHeaderSecurityErrorResponseWriter.writeForbidden(
+                              response, objectMapper);
+                        }));
 
     return http.build();
   }

@@ -271,8 +271,8 @@ class CachedBodyServerHttpResponseDecoratorTest {
     decorator.writeWith(Flux.just(bodyBuffer)).block();
     var cachedBody = decorator.getCachedBody();
 
-    // Assert - Should NOT be truncated since it's exactly max size
-    assertEquals(responseBody + "... [TRUNCATED]", cachedBody);
+    // Assert - Should NOT be truncated since it's exactly max size in bytes
+    assertEquals(responseBody, cachedBody);
   }
 
   @Test
@@ -315,6 +315,35 @@ class CachedBodyServerHttpResponseDecoratorTest {
 
     // Assert
     assertEquals(responseBody.length(), decorator.getCachedBodySize());
+  }
+
+  @Test
+  void shouldCountUtf8ResponseSizeInBytesAtExactBoundary() {
+    var originalResponse = new MockServerHttpResponse();
+    var responseBody = "éé";
+    var maxSize = responseBody.getBytes(StandardCharsets.UTF_8).length;
+    var decorator = new CachedBodyServerHttpResponseDecorator(originalResponse, maxSize);
+    var bodyBuffer = bufferFactory.wrap(responseBody.getBytes(StandardCharsets.UTF_8));
+
+    decorator.writeWith(Flux.just(bodyBuffer)).block();
+
+    assertEquals(responseBody, decorator.getCachedBody());
+    assertEquals(maxSize, decorator.getCachedBodySize());
+  }
+
+  @Test
+  void shouldTruncateUtf8ResponseUsingByteLimit() {
+    var originalResponse = new MockServerHttpResponse();
+    var responseBody = "ééé";
+    var decorator = new CachedBodyServerHttpResponseDecorator(originalResponse, 5);
+    var bodyBuffer = bufferFactory.wrap(responseBody.getBytes(StandardCharsets.UTF_8));
+
+    decorator.writeWith(Flux.just(bodyBuffer)).block();
+
+    var cachedBody = decorator.getCachedBody();
+    assertTrue(cachedBody.startsWith("éé"));
+    assertTrue(cachedBody.contains("TRUNCATED"));
+    assertEquals(5, decorator.getCachedBodySize());
   }
 
   @Test

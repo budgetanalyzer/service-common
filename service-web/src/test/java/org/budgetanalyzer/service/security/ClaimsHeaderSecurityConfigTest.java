@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
@@ -25,6 +26,7 @@ class ClaimsHeaderSecurityConfigTest {
               AutoConfigurations.of(
                   DispatcherServletAutoConfiguration.class,
                   WebMvcAutoConfiguration.class,
+                  JacksonAutoConfiguration.class,
                   SecurityAutoConfiguration.class,
                   ClaimsHeaderSecurityConfig.class));
 
