@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -29,6 +30,7 @@ import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilterChain;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -47,6 +49,7 @@ class ReactiveHttpLoggingFilterTest {
   private ReactiveHttpLoggingFilter reactiveHttpLoggingFilter;
   private Logger logger;
   private ListAppender<ILoggingEvent> listAppender;
+  private Level originalLogLevel;
 
   @BeforeEach
   void setUp() {
@@ -59,6 +62,8 @@ class ReactiveHttpLoggingFilterTest {
 
     reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
     logger = (Logger) LoggerFactory.getLogger(ReactiveHttpLoggingFilter.class);
+    originalLogLevel = logger.getLevel();
+    logger.setLevel(Level.DEBUG);
     listAppender = new ListAppender<>();
     listAppender.start();
     logger.addAppender(listAppender);
@@ -68,6 +73,7 @@ class ReactiveHttpLoggingFilterTest {
   void tearDown() {
     logger.detachAppender(listAppender);
     listAppender.stop();
+    logger.setLevel(originalLogLevel);
   }
 
   @Test
@@ -117,6 +123,92 @@ class ReactiveHttpLoggingFilterTest {
 
     // Assert - Should complete successfully
     StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldRedactSensitiveJsonRequestBodiesInLogs() {
+    var requestBody = "{\"username\":\"john\",\"password\":\"secret\"}";
+    var bodyBuffer =
+        DefaultDataBufferFactory.sharedInstance.wrap(requestBody.getBytes(StandardCharsets.UTF_8));
+
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.post("/api/users")
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .body(Flux.just(bodyBuffer)));
+
+    when(filterChain.filter(any()))
+        .thenAnswer(
+            invocation -> {
+              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
+              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+              return DataBufferUtils.join(decoratedExchange.getRequest().getBody())
+                  .then(decoratedExchange.getResponse().setComplete());
+            });
+
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+
+    StepVerifier.create(result).verifyComplete();
+
+    var logOutput = loggedMessages();
+    assertTrue(logOutput.contains("\"password\":\"***MASKED***\""));
+    assertFalse(logOutput.contains("\"password\":\"secret\""));
+  }
+
+  @Test
+  void shouldOmitMultipartRequestBodiesFromLogs() {
+    var requestBody = "--boundary\r\ncontent";
+    var bodyBuffer =
+        DefaultDataBufferFactory.sharedInstance.wrap(requestBody.getBytes(StandardCharsets.UTF_8));
+
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.post("/api/upload")
+                .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data; boundary=boundary")
+                .body(Flux.just(bodyBuffer)));
+
+    when(filterChain.filter(any()))
+        .thenAnswer(
+            invocation -> {
+              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
+              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+              return DataBufferUtils.join(decoratedExchange.getRequest().getBody())
+                  .then(decoratedExchange.getResponse().setComplete());
+            });
+
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+
+    StepVerifier.create(result).verifyComplete();
+
+    var logOutput = loggedMessages();
+    assertTrue(logOutput.contains("[multipart content omitted: multipart/form-data, 19 bytes]"));
+    assertFalse(logOutput.contains(requestBody));
+  }
+
+  @Test
+  void shouldOmitBinaryResponseBodiesFromLogs() {
+    var responseBody = new byte[] {0x01, 0x02, 0x03};
+    var bodyBuffer = DefaultDataBufferFactory.sharedInstance.wrap(responseBody);
+    var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/export"));
+
+    when(filterChain.filter(any()))
+        .thenAnswer(
+            invocation -> {
+              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
+              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+              decoratedExchange
+                  .getResponse()
+                  .getHeaders()
+                  .set(HttpHeaders.CONTENT_TYPE, "application/octet-stream");
+              return decoratedExchange.getResponse().writeWith(Mono.just(bodyBuffer));
+            });
+
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+
+    StepVerifier.create(result).verifyComplete();
+
+    var logOutput = loggedMessages();
+    assertTrue(logOutput.contains("[binary content omitted: application/octet-stream, 3 bytes]"));
   }
 
   @Test

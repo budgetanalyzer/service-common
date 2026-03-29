@@ -65,6 +65,24 @@ public class CachedBodyServerHttpRequestDecorator extends ServerHttpRequestDecor
     return body;
   }
 
+  /**
+   * Gets the cached request-body prefix bytes.
+   *
+   * @return cached request-body prefix bytes
+   */
+  public byte[] getCachedBodyPrefix() {
+    return cachedPrefix.toByteArray();
+  }
+
+  /**
+   * Gets the total number of request-body bytes observed.
+   *
+   * @return total number of observed request-body bytes
+   */
+  public int getObservedBodySize() {
+    return totalBytesRead.get();
+  }
+
   private void cacheChunk(DataBuffer dataBuffer) {
     var readableBytes = dataBuffer.readableByteCount();
     totalBytesRead.addAndGet(readableBytes);

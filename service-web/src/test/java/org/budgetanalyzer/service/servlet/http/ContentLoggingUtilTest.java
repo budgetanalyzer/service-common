@@ -147,12 +147,13 @@ class ContentLoggingUtilTest {
 
     when(requestWrapper.getContentAsByteArray()).thenReturn(contentBytes);
     when(requestWrapper.getCharacterEncoding()).thenReturn("UTF-8");
+    when(requestWrapper.getContentType()).thenReturn("application/json");
 
     // Act
     var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
 
     // Assert
-    assertEquals(requestBody, extractedBody);
+    assertEquals("{\"username\":\"john\",\"password\":\"***MASKED***\"}", extractedBody);
   }
 
   @Test
@@ -193,6 +194,7 @@ class ContentLoggingUtilTest {
 
     when(responseWrapper.getContentAsByteArray()).thenReturn(contentBytes);
     when(responseWrapper.getCharacterEncoding()).thenReturn("UTF-8");
+    when(responseWrapper.getContentType()).thenReturn("application/json");
 
     // Act
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
@@ -307,7 +309,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[compressed: gzip, 4 bytes]", extractedBody);
+    assertEquals("[compressed content omitted: gzip, 4 bytes]", extractedBody);
   }
 
   @Test
@@ -322,7 +324,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[compressed: deflate, 100 bytes]", extractedBody);
+    assertEquals("[compressed content omitted: deflate, 100 bytes]", extractedBody);
   }
 
   @Test
@@ -337,7 +339,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[compressed: br, 250 bytes]", extractedBody);
+    assertEquals("[compressed content omitted: br, 250 bytes]", extractedBody);
   }
 
   @Test
@@ -352,7 +354,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[compressed: gzip, deflate, 500 bytes]", extractedBody);
+    assertEquals("[compressed content omitted: gzip, deflate, 500 bytes]", extractedBody);
   }
 
   @Test
@@ -363,6 +365,7 @@ class ContentLoggingUtilTest {
 
     when(responseWrapper.getContentAsByteArray()).thenReturn(contentBytes);
     when(responseWrapper.getCharacterEncoding()).thenReturn("UTF-8");
+    when(responseWrapper.getContentType()).thenReturn("application/json");
     when(responseWrapper.getHeader("Content-Encoding")).thenReturn(null);
 
     // Act
@@ -380,6 +383,7 @@ class ContentLoggingUtilTest {
 
     when(responseWrapper.getContentAsByteArray()).thenReturn(contentBytes);
     when(responseWrapper.getCharacterEncoding()).thenReturn("UTF-8");
+    when(responseWrapper.getContentType()).thenReturn("application/json");
     when(responseWrapper.getHeader("Content-Encoding")).thenReturn("identity");
 
     // Act
@@ -387,5 +391,38 @@ class ContentLoggingUtilTest {
 
     // Assert
     assertEquals(responseBody, extractedBody);
+  }
+
+  @Test
+  void shouldReturnPlaceholderForMultipartRequestBody() {
+    // Arrange
+    var requestBody = "--boundary\r\ncontent";
+    var contentBytes = requestBody.getBytes();
+
+    when(requestWrapper.getContentAsByteArray()).thenReturn(contentBytes);
+    when(requestWrapper.getCharacterEncoding()).thenReturn("UTF-8");
+    when(requestWrapper.getContentType()).thenReturn("multipart/form-data; boundary=boundary");
+
+    // Act
+    var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
+
+    // Assert
+    assertEquals("[multipart content omitted: multipart/form-data, 19 bytes]", extractedBody);
+  }
+
+  @Test
+  void shouldReturnPlaceholderForBinaryResponseBody() {
+    // Arrange
+    var contentBytes = new byte[] {0x01, 0x02, 0x03};
+
+    when(responseWrapper.getContentAsByteArray()).thenReturn(contentBytes);
+    when(responseWrapper.getContentType()).thenReturn("application/octet-stream");
+    when(responseWrapper.getHeader("Content-Encoding")).thenReturn(null);
+
+    // Act
+    var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
+
+    // Assert
+    assertEquals("[binary content omitted: application/octet-stream, 3 bytes]", extractedBody);
   }
 }

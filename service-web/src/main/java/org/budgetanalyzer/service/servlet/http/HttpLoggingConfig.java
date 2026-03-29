@@ -25,6 +25,8 @@ import org.budgetanalyzer.service.config.HttpLoggingProperties;
  *   service:
  *     http-logging:
  *       enabled: true
+ *       # Body logging only emits text payloads.
+ *       # JSON and form secrets are redacted; multipart, binary, and compressed bodies are omitted.
  * </pre>
  */
 @Configuration

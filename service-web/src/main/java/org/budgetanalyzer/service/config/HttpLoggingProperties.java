@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *       include-request-body: false
  *       include-response-body: false
  *       max-body-size: 10000
+ *       # JSON and form secret fields are redacted when body logging is enabled
+ *       # Multipart, binary, and compressed bodies are omitted from logs
  *       # Default exclude-patterns: /actuator/**, /swagger-ui/**, /v3/api-docs/**
  *       # Override defaults by specifying your own list:
  *       # exclude-patterns:

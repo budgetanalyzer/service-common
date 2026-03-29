@@ -381,6 +381,8 @@ grep -r "@Component" service-core/src/main/java/
   - Priority: `@Order(LOWEST_PRECEDENCE)` - services can override
 - **CorrelationIdFilter** - Always enabled - Adds correlation ID (MDC + response header)
 - **HttpLoggingFilter** - Opt-in via configuration
+  - Redacts common secret fields in JSON and form bodies
+  - Omits multipart, binary, and compressed bodies with placeholders
 - **HttpLoggingConfig** - Configuration for servlet filters
 
 **For Reactive Applications** (Spring WebFlux):
@@ -391,6 +393,8 @@ grep -r "@Component" service-core/src/main/java/
   - Returns `Mono<ResponseEntity<ApiErrorResponse>>`
 - **ReactiveCorrelationIdFilter** - Always enabled - Adds correlation ID (Reactor Context + response header)
 - **ReactiveHttpLoggingFilter** - Opt-in via configuration
+  - Redacts common secret fields in JSON and form bodies
+  - Omits multipart, binary, and compressed bodies with placeholders
 - **ReactiveHttpLoggingConfig** - Configuration for reactive filters
 
 **Shared Configuration**:
@@ -416,8 +420,8 @@ budgetanalyzer:
       include-client-ip: true
       include-request-headers: true
       include-response-headers: true
-      include-request-body: true   # Optional: defaults to false
-      include-response-body: true  # Optional: defaults to false
+      include-request-body: true   # Optional: defaults to false; JSON/form secrets are redacted
+      include-response-body: true  # Optional: defaults to false; binary/multipart/compressed bodies are omitted
       max-body-size: 10000
 ```
 
@@ -468,7 +472,7 @@ grep -r "@Configuration" service-web/src/main/java/
 - ✅ Exception handling - automatic
 - ✅ Security - automatic (no properties needed; trusts claims headers from the ingress external-auth path)
 - ✅ Correlation ID filter - automatic
-- ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`
+- ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`; structured text bodies are redacted and unsafe body types are omitted
 - ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`
 
 **IMPORTANT**: Component scanning of `org.budgetanalyzer.service` is **NOT required** for autoconfiguration. The Spring Boot autoconfiguration mechanism handles everything automatically via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.

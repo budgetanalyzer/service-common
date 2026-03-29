@@ -2,7 +2,6 @@ package org.budgetanalyzer.service.reactive.http;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +17,7 @@ import org.springframework.web.server.WebFilterChain;
 
 import reactor.core.publisher.Mono;
 
+import org.budgetanalyzer.core.logging.HttpBodyLogSanitizer;
 import org.budgetanalyzer.core.logging.HttpLogFormatter;
 import org.budgetanalyzer.core.logging.SensitiveHeaderMasker;
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
@@ -30,7 +30,8 @@ import org.budgetanalyzer.service.config.HttpLoggingProperties;
  * <ul>
  *   <li>Logs request method, URI, headers, query parameters, and body
  *   <li>Logs response status, headers, and body
- *   <li>Automatic sensitive data masking
+ *   <li>Redacts common secret fields in structured text bodies and masks sensitive headers
+ *   <li>Suppresses multipart, binary, and compressed bodies
  *   <li>Configurable body size limits
  *   <li>Path-based filtering (include/exclude patterns)
  * </ul>
@@ -43,10 +44,6 @@ import org.budgetanalyzer.service.config.HttpLoggingProperties;
 public class ReactiveHttpLoggingFilter implements WebFilter {
 
   private static final Logger log = LoggerFactory.getLogger(ReactiveHttpLoggingFilter.class);
-
-  /** Content-Encoding values that indicate compressed content. */
-  private static final Set<String> COMPRESSED_ENCODINGS =
-      Set.of("gzip", "deflate", "br", "compress");
 
   private final HttpLoggingProperties httpLoggingProperties;
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -61,7 +58,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
   }
 
   /**
-   * Logs HTTP request and response details with sensitive data masking.
+   * Logs HTTP request and response details with header masking and body sanitization.
    *
    * @param exchange the server web exchange
    * @param chain the filter chain to continue processing
@@ -140,8 +137,15 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       }
 
       String requestBody = null;
-      if (httpLoggingProperties.isIncludeRequestBody()) {
-        requestBody = ((CachedBodyServerHttpRequestDecorator) request).getCachedBodyAsString();
+      if (httpLoggingProperties.isIncludeRequestBody()
+          && request instanceof CachedBodyServerHttpRequestDecorator requestDecorator) {
+        requestBody =
+            HttpBodyLogSanitizer.prepareBodyForLogging(
+                requestDecorator.getCachedBodyPrefix(),
+                requestDecorator.getObservedBodySize(),
+                request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE),
+                request.getHeaders().getFirst(HttpHeaders.CONTENT_ENCODING),
+                getCharacterEncoding(request.getHeaders()));
       }
 
       var message = HttpLogFormatter.formatLogMessage("HTTP Request", details, requestBody);
@@ -181,18 +185,15 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       }
 
       String responseBody = null;
-      if (httpLoggingProperties.isIncludeResponseBody()) {
-        var contentEncoding = response.getHeaders().getFirst("Content-Encoding");
-        if (isCompressed(contentEncoding)) {
-          responseBody =
-              "[compressed: "
-                  + contentEncoding
-                  + ", "
-                  + ((CachedBodyServerHttpResponseDecorator) response).getCachedBodySize()
-                  + " bytes]";
-        } else {
-          responseBody = ((CachedBodyServerHttpResponseDecorator) response).getCachedBody();
-        }
+      if (httpLoggingProperties.isIncludeResponseBody()
+          && response instanceof CachedBodyServerHttpResponseDecorator responseDecorator) {
+        responseBody =
+            HttpBodyLogSanitizer.prepareBodyForLogging(
+                responseDecorator.getCachedBodyPrefix(),
+                responseDecorator.getObservedBodySize(),
+                response.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE),
+                response.getHeaders().getFirst(HttpHeaders.CONTENT_ENCODING),
+                getCharacterEncoding(response.getHeaders()));
       }
 
       var message = HttpLogFormatter.formatLogMessage("HTTP Response", details, responseBody);
@@ -258,24 +259,17 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
   }
 
   /**
-   * Checks if the Content-Encoding indicates compressed content.
+   * Resolves the configured charset from headers or defaults to UTF-8.
    *
-   * @param contentEncoding the Content-Encoding header value
-   * @return true if the content is compressed
+   * @param headers request or response headers
+   * @return charset name for body decoding
    */
-  private boolean isCompressed(String contentEncoding) {
-    if (contentEncoding == null || contentEncoding.isEmpty()) {
-      return false;
+  private String getCharacterEncoding(HttpHeaders headers) {
+    var contentType = headers.getContentType();
+    if (contentType != null && contentType.getCharset() != null) {
+      return contentType.getCharset().name();
     }
-
-    // Handle multiple encodings (e.g., "gzip, deflate") by checking each
-    var encodings = contentEncoding.toLowerCase().split(",");
-    for (String encoding : encodings) {
-      if (COMPRESSED_ENCODINGS.contains(encoding.trim())) {
-        return true;
-      }
-    }
-    return false;
+    return null;
   }
 
   /**

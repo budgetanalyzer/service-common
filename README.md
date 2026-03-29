@@ -113,6 +113,8 @@ When service-web is on your classpath, you automatically get:
   - Public endpoints stay limited to health and OpenAPI routes; all other endpoints, including `/internal/**`, require service-owned rules or authenticated claims headers
 - **Correlation ID Filter** - Automatically adds correlation IDs to all requests and regenerates malformed inbound values before they reach logs or response headers
 - **HTTP Logging Filter** - Optional (enable with `budgetanalyzer.service.http-logging.enabled=true`)
+  - Text bodies only: common secret fields in JSON and form payloads are redacted
+  - Multipart, binary, and compressed bodies are omitted with placeholders instead of raw content
 - **OpenAPI Base Config** - Standard error response schemas (extend BaseOpenApiConfig in your service)
 
 **Example configuration** (application.yml):
@@ -122,8 +124,8 @@ budgetanalyzer:
     http-logging:
       enabled: true
       include-query-params: false # Optional: defaults to false
-      include-request-body: true   # Optional: defaults to false
-      include-response-body: true  # Optional: defaults to false
+      include-request-body: true   # Optional: defaults to false; JSON/form secrets are redacted
+      include-response-body: true  # Optional: defaults to false; binary/multipart/compressed bodies are omitted
 ```
 
 **No component scanning needed** - Spring Boot autoconfiguration handles everything via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.

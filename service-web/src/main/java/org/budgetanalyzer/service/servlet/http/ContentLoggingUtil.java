@@ -1,11 +1,8 @@
 package org.budgetanalyzer.service.servlet.http;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,16 +10,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
+import org.budgetanalyzer.core.logging.HttpBodyLogSanitizer;
 import org.budgetanalyzer.core.logging.SafeLogger;
 import org.budgetanalyzer.core.logging.SensitiveHeaderMasker;
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
 /** Utility class for formatting and sanitizing HTTP request/response content for logging. */
 public class ContentLoggingUtil {
-
-  /** Content-Encoding values that indicate compressed content. */
-  private static final Set<String> COMPRESSED_ENCODINGS =
-      Set.of("gzip", "deflate", "br", "compress");
 
   /**
    * Extracts request details for logging.
@@ -88,14 +82,17 @@ public class ContentLoggingUtil {
       return null;
     }
 
-    return extractBody(content, requestWrapper.getCharacterEncoding(), maxSize);
+    var boundedContent = getBoundedContent(content, maxSize);
+    return HttpBodyLogSanitizer.prepareBodyForLogging(
+        boundedContent,
+        content.length,
+        requestWrapper.getContentType(),
+        requestWrapper.getHeader("Content-Encoding"),
+        requestWrapper.getCharacterEncoding());
   }
 
   /**
    * Extracts response body from ContentCachingResponseWrapper.
-   *
-   * <p>If the response is compressed (gzip, deflate, br, compress), returns a placeholder message
-   * instead of the raw compressed bytes.
    *
    * @param responseWrapper The wrapped response
    * @param maxSize Maximum body size to extract
@@ -109,61 +106,13 @@ public class ContentLoggingUtil {
       return null;
     }
 
-    // Check if response is compressed
-    var contentEncoding = responseWrapper.getHeader("Content-Encoding");
-    if (isCompressed(contentEncoding)) {
-      return "[compressed: " + contentEncoding + ", " + content.length + " bytes]";
-    }
-
-    return extractBody(content, responseWrapper.getCharacterEncoding(), maxSize);
-  }
-
-  /**
-   * Checks if the Content-Encoding indicates compressed content.
-   *
-   * @param contentEncoding The Content-Encoding header value
-   * @return True if the content is compressed
-   */
-  private static boolean isCompressed(String contentEncoding) {
-    if (contentEncoding == null || contentEncoding.isEmpty()) {
-      return false;
-    }
-
-    // Handle multiple encodings (e.g., "gzip, deflate") by checking each
-    var encodings = contentEncoding.toLowerCase().split(",");
-    for (String encoding : encodings) {
-      if (COMPRESSED_ENCODINGS.contains(encoding.trim())) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Extracts body content from byte array with size limits.
-   *
-   * @param content The content bytes
-   * @param encoding Character encoding
-   * @param maxSize Maximum size to extract
-   * @return Body as string
-   */
-  private static String extractBody(byte[] content, String encoding, int maxSize) {
-    var length = Math.min(content.length, maxSize);
-    var truncated = content.length > maxSize;
-
-    try {
-      var body =
-          new String(
-              content, 0, length, encoding != null ? encoding : StandardCharsets.UTF_8.name());
-
-      if (truncated) {
-        return body + "... [TRUNCATED - " + (content.length - maxSize) + " bytes omitted]";
-      }
-
-      return body;
-    } catch (UnsupportedEncodingException e) {
-      return "[Unable to read body: " + e.getMessage() + "]";
-    }
+    var boundedContent = getBoundedContent(content, maxSize);
+    return HttpBodyLogSanitizer.prepareBodyForLogging(
+        boundedContent,
+        content.length,
+        responseWrapper.getContentType(),
+        responseWrapper.getHeader("Content-Encoding"),
+        responseWrapper.getCharacterEncoding());
   }
 
   /**
@@ -279,26 +228,17 @@ public class ContentLoggingUtil {
 
     if (body != null && !body.trim().isEmpty()) {
       sb.append("\nBody: ");
-      // Try to parse as JSON and sanitize, otherwise log as-is
-      if (isJsonContent(body)) {
-        sb.append(body); // Already sanitized by SafeLogger if needed
-      } else {
-        sb.append(body);
-      }
+      sb.append(body);
     }
 
     return sb.toString();
   }
 
-  /**
-   * Checks if content appears to be JSON.
-   *
-   * @param content The content
-   * @return True if likely JSON
-   */
-  private static boolean isJsonContent(String content) {
-    var trimmed = content.trim();
-    return (trimmed.startsWith("{") && trimmed.endsWith("}"))
-        || (trimmed.startsWith("[") && trimmed.endsWith("]"));
+  private static byte[] getBoundedContent(byte[] content, int maxSize) {
+    var safeMaxSize = Math.max(maxSize, 0);
+    var length = Math.min(content.length, safeMaxSize);
+    var boundedContent = new byte[length];
+    System.arraycopy(content, 0, boundedContent, 0, length);
+    return boundedContent;
   }
 }

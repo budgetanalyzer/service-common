@@ -28,7 +28,8 @@ import org.budgetanalyzer.service.config.HttpLoggingProperties;
  *       enabled: true
  *       include-request-headers: true
  *       include-response-headers: true
- *       # Body logging is disabled by default and must be enabled explicitly:
+ *       # Body logging is disabled by default and must be enabled explicitly.
+ *       # JSON and form secrets are redacted; multipart, binary, and compressed bodies are omitted:
  *       # include-request-body: true
  *       # include-response-body: true
  * </pre>

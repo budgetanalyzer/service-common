@@ -15,11 +15,11 @@ public final class HttpLogFormatter {
   }
 
   /**
-   * Formats a log message with prefix, details map, and optional body.
+   * Formats a log message with prefix, details map, and optional pre-sanitized body.
    *
    * @param prefix message prefix (e.g., "HTTP Request")
    * @param details structured details as key-value pairs
-   * @param body optional body content
+   * @param body optional body content that has already been sanitized for logging
    * @return formatted log message
    */
   public static String formatLogMessage(String prefix, Map<String, Object> details, String body) {

@@ -27,7 +27,8 @@ import org.budgetanalyzer.service.config.HttpLoggingProperties;
  * <ul>
  *   <li>Logs request method, URI, headers, query parameters, and body
  *   <li>Logs response status, headers, and body
- *   <li>Automatic sensitive data masking (headers like Authorization, Cookie)
+ *   <li>Redacts common secret fields in structured text bodies and masks sensitive headers
+ *   <li>Suppresses multipart, binary, and compressed bodies
  *   <li>Configurable body size limits to avoid logging huge payloads
  *   <li>Path-based filtering (include/exclude patterns)
  *   <li>Integration with correlation ID from MDC
@@ -55,7 +56,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
   }
 
   /**
-   * Logs HTTP request and response details with sensitive data masking.
+   * Logs HTTP request and response details with header masking and body sanitization.
    *
    * <p>This method performs the following operations:
    *
