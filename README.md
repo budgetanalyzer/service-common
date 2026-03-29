@@ -126,6 +126,7 @@ budgetanalyzer:
       include-query-params: false # Optional: defaults to false
       include-request-body: true   # Optional: defaults to false; JSON/form secrets are redacted
       include-response-body: true  # Optional: defaults to false; binary/multipart/compressed bodies are omitted
+      max-body-size: 10000         # Optional: values <= 0 disable body capture
 ```
 
 **No component scanning needed** - Spring Boot autoconfiguration handles everything via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.

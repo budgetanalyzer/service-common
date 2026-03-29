@@ -422,7 +422,7 @@ budgetanalyzer:
       include-response-headers: true
       include-request-body: true   # Optional: defaults to false; JSON/form secrets are redacted
       include-response-body: true  # Optional: defaults to false; binary/multipart/compressed bodies are omitted
-      max-body-size: 10000
+      max-body-size: 10000         # Optional: values <= 0 disable body capture
 ```
 
 **OpenAPI Base Configuration** (`BaseOpenApiConfig`):

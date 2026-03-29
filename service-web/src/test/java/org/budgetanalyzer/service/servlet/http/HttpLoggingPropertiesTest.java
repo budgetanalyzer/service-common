@@ -237,7 +237,7 @@ class HttpLoggingPropertiesTest {
   }
 
   @Test
-  void shouldHandleNegativeMaxBodySize() {
+  void shouldClampNegativeMaxBodySizeToZero() {
     // Arrange & Act
     contextRunner
         .withPropertyValues(
@@ -247,11 +247,11 @@ class HttpLoggingPropertiesTest {
             context -> {
               var properties = context.getBean(HttpLoggingProperties.class);
 
-              // Assert - Spring Boot will bind the value, but it's invalid
+              // Assert
               assertEquals(
-                  -1,
+                  0,
                   properties.getMaxBodySize(),
-                  "Should bind negative value (validation should be done in filter)");
+                  "Should clamp negative max-body-size values to zero");
             });
   }
 
@@ -270,6 +270,18 @@ class HttpLoggingPropertiesTest {
               assertEquals(
                   0, properties.getMaxBodySize(), "Should bind zero value (means no body logging)");
             });
+  }
+
+  @Test
+  void shouldClampNegativeMaxBodySizeViaSetter() {
+    // Arrange
+    var properties = new HttpLoggingProperties();
+
+    // Act
+    properties.setMaxBodySize(-25);
+
+    // Assert
+    assertEquals(0, properties.getMaxBodySize(), "Setter should clamp negative values to zero");
   }
 
   @Test

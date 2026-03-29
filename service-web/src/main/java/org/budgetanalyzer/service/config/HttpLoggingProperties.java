@@ -57,7 +57,10 @@ public class HttpLoggingProperties {
   /** Include client IP address in logs. */
   private boolean includeClientIp = true;
 
-  /** Maximum request/response body size to log (bytes). Bodies larger than this are truncated. */
+  /**
+   * Maximum request/response body size to log (bytes). Bodies larger than this are truncated.
+   * Non-positive values disable body capture.
+   */
   private int maxBodySize = 10000; // 10KB default
 
   /**
@@ -255,10 +258,10 @@ public class HttpLoggingProperties {
   /**
    * Sets the maximum body size to log in bytes.
    *
-   * @param maxBodySize the maximum body size
+   * @param maxBodySize the maximum body size; negative values are clamped to zero
    */
   public void setMaxBodySize(int maxBodySize) {
-    this.maxBodySize = maxBodySize;
+    this.maxBodySize = Math.max(maxBodySize, 0);
   }
 
   /**

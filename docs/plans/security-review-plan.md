@@ -145,6 +145,8 @@ Negative values bind successfully into configuration. The reactive path clamps t
 1. Stop trusting forwarded IP headers by default, or gate that behavior behind an explicit
    `trust-forwarded-headers` style property.
 2. Validate or clamp `max-body-size` consistently across both stacks.
+   Current implementation choice: clamp negative configured values to `0` at property binding,
+   which disables body capture without reviving the forwarded-header work.
 3. Add regression tests for negative, zero, and oversized body-size settings in real filter paths.
 
 ### Phase 5: Shared API correctness
