@@ -3,6 +3,7 @@ package org.budgetanalyzer.service.security;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.context.annotation.Bean;
@@ -33,7 +34,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </ul>
  *
  * <p><b>Usage:</b> All services consuming service-web automatically inherit this configuration. No
- * properties are required — authentication is performed before requests reach the service.
+ * properties are required unless a consuming service defines its own {@link SecurityFilterChain},
+ * which overrides the shared default chain. Authentication is performed before requests reach the
+ * service.
  *
  * @see ClaimsHeaderAuthenticationFilter
  * @see ClaimsHeaderAuthenticationToken
@@ -65,6 +68,7 @@ public class ClaimsHeaderSecurityConfig {
    * @throws Exception if configuration fails
    */
   @Bean
+  @ConditionalOnMissingBean(SecurityFilterChain.class)
   public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper)
       throws Exception {
     logger.info("Configuring stateless claims-header security");

@@ -19,7 +19,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 
 /**
  * Tests that {@link ReactiveClaimsHeaderSecurityConfig} activates only for reactive applications
- * and backs off when a custom chain exists.
+ * and backs off its default chain when a custom chain exists.
  */
 @DisplayName("ReactiveClaimsHeaderSecurityConfig Conditional Auto-Configuration Tests")
 class ReactiveClaimsHeaderSecurityConfigTest {

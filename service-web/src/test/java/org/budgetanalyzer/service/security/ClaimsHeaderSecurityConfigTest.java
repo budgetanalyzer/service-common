@@ -13,6 +13,10 @@ import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguratio
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Tests that {@link ClaimsHeaderSecurityConfig} conditionally activates only in servlet contexts.
@@ -50,6 +54,22 @@ class ClaimsHeaderSecurityConfigTest {
   }
 
   @Test
+  @DisplayName("Should back off when the application defines a custom SecurityFilterChain")
+  void shouldBackOffWhenCustomSecurityFilterChainExists() {
+    servletContextRunner
+        .withUserConfiguration(CustomServletSecurityConfig.class)
+        .run(
+            context -> {
+              assertTrue(
+                  context.containsBean("customSecurityFilterChain"),
+                  "Should keep the application-defined SecurityFilterChain");
+              assertFalse(
+                  context.containsBean("securityFilterChain"),
+                  "Should back off shared servlet claims security when a custom chain exists");
+            });
+  }
+
+  @Test
   @DisplayName("Should not activate in reactive web application")
   void shouldNotActivateInReactiveWebApplication() {
     reactiveContextRunner.run(
@@ -69,5 +89,14 @@ class ClaimsHeaderSecurityConfigTest {
               context.containsBean("securityFilterChain"),
               "Should NOT register securityFilterChain bean in non-web context");
         });
+  }
+
+  @Configuration
+  static class CustomServletSecurityConfig {
+
+    @Bean
+    SecurityFilterChain customSecurityFilterChain(HttpSecurity http) throws Exception {
+      return http.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll()).build();
+    }
   }
 }

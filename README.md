@@ -130,6 +130,10 @@ budgetanalyzer:
 
 **No component scanning needed** - Spring Boot autoconfiguration handles everything via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
+The shared claims-header security configuration provides the default Spring Security filter chain.
+If a consuming service defines its own `SecurityFilterChain` or `SecurityWebFilterChain`, the
+shared default chain backs off so the service's custom rules win deterministically.
+
 #### Discovering What's Autoconfigured
 
 ```bash

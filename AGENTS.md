@@ -407,7 +407,7 @@ grep -r "@Component" service-core/src/main/java/
   - Public endpoints: `/actuator/health/**`, OpenAPI docs
   - Protected: All other endpoints (requires `X-User-Id` header)
   - Stateless by default; `/internal/**` is not globally anonymous
-  - Reactive auto-configuration backs off when a service defines its own `SecurityWebFilterChain`
+  - The shared default filter chain backs off when a service defines its own `SecurityFilterChain` or `SecurityWebFilterChain`
   - No external properties needed (no JWKS URI, no issuer config)
 
 **Enable HTTP logging** (optional, works for both stacks):
@@ -470,7 +470,8 @@ grep -r "@Configuration" service-web/src/main/java/
 
 **service-web** (mostly automatic):
 - ✅ Exception handling - automatic
-- ✅ Security - automatic (no properties needed; trusts claims headers from the ingress external-auth path)
+- ✅ Security - automatic by default (no properties needed; trusts claims headers from the ingress external-auth path)
+- ✅ Consumer-defined Spring Security chains override the shared default chain on both servlet and reactive stacks
 - ✅ Correlation ID filter - automatic
 - ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`; structured text bodies are redacted and unsafe body types are omitted
 - ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`

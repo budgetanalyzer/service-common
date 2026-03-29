@@ -40,7 +40,6 @@ import reactor.core.publisher.Mono;
 @EnableReactiveMethodSecurity(useAuthorizationManager = true)
 @ConditionalOnWebApplication(type = Type.REACTIVE)
 @ConditionalOnClass(name = "org.springframework.web.server.WebFilter")
-@ConditionalOnMissingBean(SecurityWebFilterChain.class)
 public class ReactiveClaimsHeaderSecurityConfig {
 
   private static final Logger logger =
@@ -54,6 +53,7 @@ public class ReactiveClaimsHeaderSecurityConfig {
    * @return the configured SecurityWebFilterChain
    */
   @Bean
+  @ConditionalOnMissingBean(SecurityWebFilterChain.class)
   public SecurityWebFilterChain securityWebFilterChain(
       ServerHttpSecurity http, ObjectMapper objectMapper) {
     logger.info("Configuring stateless reactive claims-header security");
