@@ -498,11 +498,18 @@ server:
 ### 1. Use Pagination for List Endpoints
 
 ```java
-@GetMapping
-public Page<TransactionResponse> getAll(Pageable pageable) {
-    return service.findAll(pageable).map(TransactionResponse::from);
+@GetMapping("/search")
+public PagedResponse<TransactionResponse> search(
+    TransactionFilter filter,
+    Pageable pageable
+) {
+    var page = transactionService.search(filter, pageable);
+    return PagedResponse.from(page, TransactionResponse::from);
 }
 ```
+
+Use Spring-native request binding with `Pageable` and return `PagedResponse<T>` as the public API
+contract. Avoid exposing raw `Page` or `PageImpl` JSON directly.
 
 ### 2. Implement Caching Where Appropriate
 
