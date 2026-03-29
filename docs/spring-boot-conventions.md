@@ -376,8 +376,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class TransactionController {
 
     @Operation(
-        summary = "Get all transactions",
-        description = "Retrieves all transactions with optional filtering and pagination"
+        summary = "Search transactions",
+        description = "Retrieves transactions with optional filtering and pagination"
     )
     @ApiResponses({
         @ApiResponse(
@@ -385,16 +385,18 @@ public class TransactionController {
             description = "Transactions retrieved successfully",
             content = @Content(
                 mediaType = "application/json",
-                array = @ArraySchema(schema = @Schema(implementation = TransactionResponse.class))
+                schema = @Schema(implementation = PagedResponse.class)
             )
         )
     })
-    @GetMapping
-    public List<TransactionResponse> getAll(
-        @Parameter(description = "Filter criteria", example = "coffee")
-        @RequestParam(required = false) String search
+    @GetMapping("/search")
+    public PagedResponse<TransactionResponse> search(
+        TransactionFilter filter,
+        @PageableDefault(size = 50, sort = {"date", "id"}, direction = Sort.Direction.DESC)
+        Pageable pageable
     ) {
-        // implementation
+        var page = transactionService.search(filter, pageable);
+        return PagedResponse.from(page, TransactionResponse::from);
     }
 
     @Operation(
@@ -469,6 +471,12 @@ public class TransactionController {
     }
 }
 ```
+
+**Paginated endpoint guidance**:
+- Accept Spring Data `Pageable` directly in controller methods.
+- Keep Spring Boot defaults for request parameters: `page`, `size`, `sort`.
+- Return `PagedResponse<T>` so services do not expose raw Spring page JSON as a public contract.
+- Define a deterministic default sort for every paged endpoint.
 
 #### Coordination with Validation
 
@@ -797,6 +805,30 @@ public class TransactionController {
 **Rationale**: Simple, explicit, compatible with API gateway routing
 
 ## HTTP Response Patterns
+
+### Paged List/Search Responses
+
+**Pattern**: List and search endpoints with potentially large result sets SHOULD accept
+`Pageable` and return `PagedResponse<T>`.
+
+**Implementation**:
+```java
+@GetMapping("/search")
+public PagedResponse<TransactionResponse> search(
+    TransactionFilter filter,
+    @PageableDefault(size = 50, sort = {"date", "id"}, direction = Sort.Direction.DESC)
+    Pageable pageable
+) {
+    var page = transactionService.search(filter, pageable);
+    return PagedResponse.from(page, TransactionResponse::from);
+}
+```
+
+**Key points**:
+- Keep request binding Spring-native with `Pageable`.
+- Return `PagedResponse<T>` instead of raw `Page<T>` JSON.
+- Keep page numbering zero-based unless a service explicitly opts into one-indexed parameters.
+- Set explicit default and maximum page sizes in service configuration.
 
 ### 201 Created with Location Header
 
