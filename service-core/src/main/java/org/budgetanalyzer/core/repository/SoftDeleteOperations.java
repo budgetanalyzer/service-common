@@ -43,8 +43,9 @@ import org.budgetanalyzer.core.domain.SoftDeletableEntity;
  * </pre>
  *
  * @param <T> the entity type extending {@link SoftDeletableEntity}
+ * @param <ID> the entity identifier type
  */
-public interface SoftDeleteOperations<T extends SoftDeletableEntity>
+public interface SoftDeleteOperations<T extends SoftDeletableEntity, ID>
     extends JpaSpecificationExecutor<T> {
 
   /**
@@ -107,7 +108,7 @@ public interface SoftDeleteOperations<T extends SoftDeletableEntity>
    * @param id the entity ID
    * @return an Optional containing the entity if found and active, or empty otherwise
    */
-  default Optional<T> findByIdActive(Long id) {
+  default Optional<T> findByIdActive(ID id) {
     return findOne(notDeleted().and((root, query, cb) -> cb.equal(root.get("id"), id)));
   }
 

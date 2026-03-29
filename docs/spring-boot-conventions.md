@@ -115,7 +115,7 @@ Budget Analyzer uses interfaces in exactly THREE patterns:
 #### 3. Repository Enhancement Pattern
 - **Rule**: Used to extend Spring Data JPA with reusable query patterns
 - **Pattern**: Interface with default methods extending `JpaSpecificationExecutor`
-- **Example**: `SoftDeleteOperations<T extends SoftDeletableEntity>`
+- **Example**: `SoftDeleteOperations<T extends SoftDeletableEntity, ID>`
 - **Purpose**: Add reusable query methods across all repositories (e.g., `findAllActive()`, `findByIdActive()`)
 
 #### Anti-Pattern: Internal Service Interfaces

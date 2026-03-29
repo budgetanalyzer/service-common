@@ -146,6 +146,35 @@ class JpaEntitiesIntegrationTest {
   }
 
   @Test
+  @DisplayName("Should find only non-deleted entities with soft delete operations")
+  void shouldFindOnlyNonDeletedEntitiesWithSoftDeleteOperations() {
+    var entity1 = new TestSoftDeletableEntity("Entity 1");
+    var entity2 = new TestSoftDeletableEntity("Entity 2");
+    var entity3 = new TestSoftDeletableEntity("Entity 3");
+
+    softDeletableRepository.save(entity1);
+    softDeletableRepository.save(entity2);
+    softDeletableRepository.save(entity3);
+
+    entity2.markDeleted("test-user");
+    softDeletableRepository.save(entity2);
+
+    var nonDeletedEntities = softDeletableRepository.findAllActive();
+    var activeEntity = softDeletableRepository.findByIdActive(entity1.getId());
+    var deletedEntity = softDeletableRepository.findByIdActive(entity2.getId());
+
+    assertThat(nonDeletedEntities)
+        .extracting(TestSoftDeletableEntity::getName)
+        .containsExactlyInAnyOrder("Entity 1", "Entity 3");
+    assertThat(activeEntity)
+        .isPresent()
+        .get()
+        .extracting(TestSoftDeletableEntity::getName)
+        .isEqualTo("Entity 1");
+    assertThat(deletedEntity).isEmpty();
+  }
+
+  @Test
   @DisplayName("Should find only deleted entities with custom query")
   void shouldFindOnlyDeletedEntities() {
     var entity1 = new TestSoftDeletableEntity("Entity 1");

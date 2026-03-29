@@ -4,8 +4,12 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import org.budgetanalyzer.core.repository.SoftDeleteOperations;
+
 /** Test repository for TestSoftDeletableEntity. */
-public interface TestSoftDeletableRepository extends JpaRepository<TestSoftDeletableEntity, Long> {
+public interface TestSoftDeletableRepository
+    extends JpaRepository<TestSoftDeletableEntity, Long>,
+        SoftDeleteOperations<TestSoftDeletableEntity, Long> {
 
   /**
    * Find all non-deleted entities.

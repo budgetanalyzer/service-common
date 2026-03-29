@@ -12,6 +12,7 @@
         <class>org.budgetanalyzer.core.domain.SoftDeletableEntityTest$TestSoftDeletableEntity</class>
         <class>org.budgetanalyzer.core.domain.SoftDeleteListenerTest$TestSoftDeletableEntity</class>
         <class>org.budgetanalyzer.core.repository.SoftDeleteOperationsTest$TestEntity</class>
+        <class>org.budgetanalyzer.core.repository.SoftDeleteOperationsTest$TestStringIdEntity</class>
 
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver"/>
