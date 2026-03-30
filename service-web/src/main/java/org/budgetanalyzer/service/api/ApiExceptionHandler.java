@@ -2,6 +2,8 @@ package org.budgetanalyzer.service.api;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatusCode;
+
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.InvalidRequestException;
 import org.budgetanalyzer.service.exception.ResourceNotFoundException;
@@ -107,6 +109,11 @@ public interface ApiExceptionHandler {
   /**
    * Builds an unauthorized error response for authentication failures.
    *
+   * <p>Security: uses a hardcoded generic message to prevent leaking authentication mechanism
+   * details (e.g., which header was missing, why a token was rejected). Do not replace with
+   * exception-specific messages. See also {@link #messageForStatus} which enforces the same policy
+   * for {@code ResponseStatusException} with 401 status.
+   *
    * @return API error response with UNAUTHORIZED type
    */
   default ApiErrorResponse buildUnauthorizedError() {
@@ -119,6 +126,11 @@ public interface ApiExceptionHandler {
   /**
    * Builds a permission denied error response for authorization failures.
    *
+   * <p>Security: uses a hardcoded generic message to prevent leaking authorization details (e.g.,
+   * which permission or role was required). Do not replace with exception-specific messages. See
+   * also {@link #messageForStatus} which enforces the same policy for {@code
+   * ResponseStatusException} with 403 status.
+   *
    * @return API error response with FORBIDDEN type
    */
   default ApiErrorResponse buildPermissionDeniedError() {
@@ -126,5 +138,47 @@ public interface ApiExceptionHandler {
         .type(ApiErrorType.FORBIDDEN)
         .message("You do not have permission to perform this action")
         .build();
+  }
+
+  /**
+   * Maps an HTTP status code to the corresponding {@link ApiErrorType}.
+   *
+   * @param statusCode the HTTP status code
+   * @return the matching error type
+   */
+  static ApiErrorType errorTypeForStatus(HttpStatusCode statusCode) {
+    return switch (statusCode.value()) {
+      case 401 -> ApiErrorType.UNAUTHORIZED;
+      case 403 -> ApiErrorType.FORBIDDEN;
+      case 404 -> ApiErrorType.NOT_FOUND;
+      case 503 -> ApiErrorType.SERVICE_UNAVAILABLE;
+      default -> {
+        if (statusCode.is4xxClientError()) {
+          yield ApiErrorType.INVALID_REQUEST;
+        }
+        yield ApiErrorType.INTERNAL_ERROR;
+      }
+    };
+  }
+
+  /**
+   * Returns a safe client-facing message for a given HTTP status code and original reason.
+   *
+   * <p>Security: authentication (401) and authorization (403) errors use hardcoded generic messages
+   * to avoid leaking security-sensitive details (e.g., which credential failed, which permission
+   * was required). All other status codes pass through the original reason. This mirrors the policy
+   * in {@link #buildUnauthorizedError()} and {@link #buildPermissionDeniedError()} — keep the
+   * messages in sync if they ever change.
+   *
+   * @param statusCode the HTTP status code
+   * @param reason the original exception reason (may be {@code null})
+   * @return a safe message for the API response
+   */
+  static String messageForStatus(HttpStatusCode statusCode, String reason) {
+    return switch (statusCode.value()) {
+      case 401 -> "Authentication required";
+      case 403 -> "You do not have permission to perform this action";
+      default -> reason;
+    };
   }
 }

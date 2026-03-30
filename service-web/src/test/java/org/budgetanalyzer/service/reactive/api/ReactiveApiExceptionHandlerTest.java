@@ -17,6 +17,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ResponseStatusException;
 
 import reactor.test.StepVerifier;
 
@@ -612,6 +613,148 @@ class ReactiveApiExceptionHandlerTest {
               // Should only include field errors, not global errors
               assertNotNull(body.getFieldErrors());
               assertEquals(1, body.getFieldErrors().size());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle ResponseStatusException with 401 and use generic message")
+  void shouldHandleResponseStatusException401() {
+    var exception = new ResponseStatusException(HttpStatus.UNAUTHORIZED, "API key expired");
+
+    var result = reactiveApiExceptionHandler.handleResponseStatusException(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.UNAUTHORIZED, body.getType());
+              assertEquals("Authentication required", body.getMessage());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle ResponseStatusException with 400 and reason")
+  void shouldHandleResponseStatusException400WithReason() {
+    var exception = new ResponseStatusException(HttpStatus.BAD_REQUEST, "accessToken is required");
+
+    var result = reactiveApiExceptionHandler.handleResponseStatusException(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.INVALID_REQUEST, body.getType());
+              assertEquals("accessToken is required", body.getMessage());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle ResponseStatusException with 404")
+  void shouldHandleResponseStatusException404() {
+    var exception = new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found");
+
+    var result = reactiveApiExceptionHandler.handleResponseStatusException(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.NOT_FOUND, body.getType());
+              assertEquals("Resource not found", body.getMessage());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle ResponseStatusException with 500")
+  void shouldHandleResponseStatusException500() {
+    var exception =
+        new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong");
+
+    var result = reactiveApiExceptionHandler.handleResponseStatusException(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.INTERNAL_ERROR, body.getType());
+              assertEquals("Something went wrong", body.getMessage());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle ResponseStatusException with 503 and SERVICE_UNAVAILABLE type")
+  void shouldHandleResponseStatusException503() {
+    var exception =
+        new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Downstream service down");
+
+    var result = reactiveApiExceptionHandler.handleResponseStatusException(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.SERVICE_UNAVAILABLE, body.getType());
+              assertEquals("Downstream service down", body.getMessage());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle ResponseStatusException with generic 4xx as INVALID_REQUEST type")
+  void shouldHandleResponseStatusExceptionGeneric4xx() {
+    var exception = new ResponseStatusException(HttpStatus.CONFLICT, "Resource already exists");
+
+    var result = reactiveApiExceptionHandler.handleResponseStatusException(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.INVALID_REQUEST, body.getType());
+              assertEquals("Resource already exists", body.getMessage());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("Should handle ResponseStatusException with 403 and use generic message")
+  void shouldHandleResponseStatusException403() {
+    var exception = new ResponseStatusException(HttpStatus.FORBIDDEN, "User lacks admin scope");
+
+    var result = reactiveApiExceptionHandler.handleResponseStatusException(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertNotNull(response);
+              assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+              var body = response.getBody();
+              assertNotNull(body);
+              assertEquals(ApiErrorType.FORBIDDEN, body.getType());
+              assertEquals("You do not have permission to perform this action", body.getMessage());
             })
         .verifyComplete();
   }

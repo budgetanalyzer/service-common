@@ -178,8 +178,13 @@ The **service-web** module provides `ServletApiExceptionHandler` - a `@RestContr
 | `InvalidRequestException` | 400 | `INVALID_REQUEST` | None |
 | `BusinessException` | 422 | `APPLICATION_ERROR` | `code` |
 | `ServiceUnavailableException` | 503 | `SERVICE_UNAVAILABLE` | None |
+| `ClientException` | 503 | `SERVICE_UNAVAILABLE` | None |
 | `ServiceException` | 500 | `INTERNAL_ERROR` | None |
 | `MethodArgumentNotValidException` | 400 | `VALIDATION_ERROR` | `fieldErrors` array |
+| `AccessDeniedException` | 403 | `FORBIDDEN` | None |
+| `AuthorizationDeniedException` | 403 | `FORBIDDEN` | None |
+| `AuthenticationException` | 401 | `UNAUTHORIZED` | None |
+| `ResponseStatusException` | Preserved | Mapped from status | None |
 | Any other `Exception` | 500 | `INTERNAL_ERROR` | None |
 
 ### Bean Validation Integration
@@ -204,6 +209,25 @@ public TransactionResponse create(@Valid @RequestBody CreateTransactionRequest r
     // }
 }
 ```
+
+### ResponseStatusException Handling
+
+`ResponseStatusException` is handled specially: the original HTTP status code is preserved rather than being mapped to a fixed status. The error type is derived from the status code:
+
+| Status Code | Error Type |
+|-------------|------------|
+| 401 | `UNAUTHORIZED` |
+| 403 | `FORBIDDEN` |
+| 404 | `NOT_FOUND` |
+| 503 | `SERVICE_UNAVAILABLE` |
+| Other 4xx | `INVALID_REQUEST` |
+| Other 5xx | `INTERNAL_ERROR` |
+
+The exception's `reason` is passed as the response message (it is developer-controlled, not an internal detail leak).
+
+Without this handler, `ResponseStatusException` would fall through to the generic `Exception` catch-all and incorrectly return HTTP 500 for all status codes.
+
+Both `ServletApiExceptionHandler` and `ReactiveApiExceptionHandler` support this.
 
 ## Best Practices
 

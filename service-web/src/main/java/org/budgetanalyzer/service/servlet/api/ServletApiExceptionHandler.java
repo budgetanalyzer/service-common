@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import org.budgetanalyzer.service.api.ApiErrorResponse;
@@ -54,6 +56,7 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *   <li>{@link AccessDeniedException} → 403 Forbidden
  *   <li>{@link AuthorizationDeniedException} → 403 Forbidden
  *   <li>{@link AuthenticationException} → 401 Unauthorized
+ *   <li>{@link ResponseStatusException} → preserves the original HTTP status code
  *   <li>Generic {@link Exception} → 500 Internal Server Error
  * </ul>
  *
@@ -305,6 +308,31 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
         exception.getClass().getSimpleName(),
         exception.getMessage());
     return buildUnauthorizedError();
+  }
+
+  /**
+   * Handles {@link ResponseStatusException} and preserves the original HTTP status code.
+   *
+   * <p>Without this handler, {@code ResponseStatusException} falls through to the generic {@link
+   * Exception} handler, which incorrectly returns HTTP 500 for all status codes.
+   *
+   * @param exception the response status exception with an explicit HTTP status code
+   * @return response entity preserving the original status code
+   */
+  @ExceptionHandler
+  public ResponseEntity<ApiErrorResponse> handle(ResponseStatusException exception) {
+    var statusCode = exception.getStatusCode();
+    log.warn(
+        "Handled ResponseStatusException: status={} reason={}",
+        statusCode.value(),
+        exception.getReason());
+    var body =
+        ApiErrorResponse.builder()
+            .type(ApiExceptionHandler.errorTypeForStatus(statusCode))
+            .message(ApiExceptionHandler.messageForStatus(statusCode, exception.getReason()))
+            .build();
+
+    return ResponseEntity.status(statusCode).body(body);
   }
 
   /**

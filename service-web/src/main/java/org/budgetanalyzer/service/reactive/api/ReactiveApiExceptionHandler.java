@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ResponseStatusException;
 
 import reactor.core.publisher.Mono;
 
@@ -47,6 +48,7 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *   <li>{@link AccessDeniedException} → 403 Forbidden
  *   <li>{@link AuthorizationDeniedException} → 403 Forbidden
  *   <li>{@link AuthenticationException} → 401 Unauthorized
+ *   <li>{@link ResponseStatusException} → preserves the original HTTP status code
  *   <li>Generic {@link Exception} → 500 Internal Server Error
  * </ul>
  *
@@ -213,6 +215,32 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
         exception.getClass().getSimpleName(),
         exception.getMessage());
     return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(buildUnauthorizedError()));
+  }
+
+  /**
+   * Handles {@link ResponseStatusException} and preserves the original HTTP status code.
+   *
+   * <p>Without this handler, {@code ResponseStatusException} falls through to the generic {@link
+   * Exception} handler, which incorrectly returns HTTP 500 for all status codes.
+   *
+   * @param exception the response status exception with an explicit HTTP status code
+   * @return Mono with standardized error response preserving the original status code
+   */
+  @ExceptionHandler(ResponseStatusException.class)
+  public Mono<ResponseEntity<ApiErrorResponse>> handleResponseStatusException(
+      ResponseStatusException exception) {
+    var statusCode = exception.getStatusCode();
+    log.warn(
+        "Handled ResponseStatusException: status={} reason={}",
+        statusCode.value(),
+        exception.getReason());
+    var body =
+        ApiErrorResponse.builder()
+            .type(ApiExceptionHandler.errorTypeForStatus(statusCode))
+            .message(ApiExceptionHandler.messageForStatus(statusCode, exception.getReason()))
+            .build();
+
+    return Mono.just(ResponseEntity.status(statusCode).body(body));
   }
 
   /**
