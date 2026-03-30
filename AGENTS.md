@@ -650,6 +650,8 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 - System-wide architecture: [orchestration/AGENTS.md](../orchestration/AGENTS.md)
 - Individual service AGENTS.md files - Service-specific concerns
 
+**NO GIT WRITE OPERATIONS**: Never run git commands (commit, push, checkout, reset, etc.) without explicit user request. The user controls git workflow entirely. You may suggest what to commit, but don't do it.
+
 ## Honest Discourse
 
 Do not over-validate ideas. The user wants honest pushback, not agreement.
