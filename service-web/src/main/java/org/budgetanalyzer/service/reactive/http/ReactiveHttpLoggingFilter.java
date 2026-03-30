@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import org.budgetanalyzer.core.logging.HttpBodyLogSanitizer;
 import org.budgetanalyzer.core.logging.HttpLogFormatter;
+import org.budgetanalyzer.core.logging.QueryParamSanitizer;
 import org.budgetanalyzer.core.logging.SensitiveHeaderMasker;
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
@@ -46,6 +47,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
   private static final Logger log = LoggerFactory.getLogger(ReactiveHttpLoggingFilter.class);
 
   private final HttpLoggingProperties httpLoggingProperties;
+  private final QueryParamSanitizer queryParamSanitizer;
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
   /**
@@ -55,6 +57,8 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
    */
   public ReactiveHttpLoggingFilter(HttpLoggingProperties httpLoggingProperties) {
     this.httpLoggingProperties = httpLoggingProperties;
+    this.queryParamSanitizer =
+        new QueryParamSanitizer(httpLoggingProperties.getSensitiveQueryParams());
   }
 
   /**
@@ -120,7 +124,7 @@ public class ReactiveHttpLoggingFilter implements WebFilter {
       details.put("uri", request.getURI().getPath());
 
       if (httpLoggingProperties.isIncludeQueryParams() && request.getURI().getQuery() != null) {
-        details.put("queryString", request.getURI().getQuery());
+        details.put("queryString", queryParamSanitizer.sanitize(request.getURI().getQuery()));
       }
 
       if (httpLoggingProperties.isIncludeClientIp() && request.getRemoteAddress() != null) {

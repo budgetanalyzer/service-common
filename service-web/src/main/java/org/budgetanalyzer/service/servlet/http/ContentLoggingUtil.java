@@ -11,6 +11,7 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import org.budgetanalyzer.core.logging.HttpBodyLogSanitizer;
+import org.budgetanalyzer.core.logging.QueryParamSanitizer;
 import org.budgetanalyzer.core.logging.SafeLogger;
 import org.budgetanalyzer.core.logging.SensitiveHeaderMasker;
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
@@ -23,17 +24,20 @@ public class ContentLoggingUtil {
    *
    * @param request The HTTP request
    * @param properties Logging configuration
+   * @param queryParamSanitizer sanitizer for sensitive query parameters
    * @return Map of request details
    */
   public static Map<String, Object> extractRequestDetails(
-      HttpServletRequest request, HttpLoggingProperties properties) {
+      HttpServletRequest request,
+      HttpLoggingProperties properties,
+      QueryParamSanitizer queryParamSanitizer) {
     var details = new LinkedHashMap<String, Object>();
 
     details.put("method", request.getMethod().toUpperCase());
     details.put("uri", request.getRequestURI());
 
     if (properties.isIncludeQueryParams() && request.getQueryString() != null) {
-      details.put("queryString", request.getQueryString());
+      details.put("queryString", queryParamSanitizer.sanitize(request.getQueryString()));
     }
 
     if (properties.isIncludeClientIp()) {

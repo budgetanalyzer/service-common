@@ -28,6 +28,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *       # Override defaults by specifying your own list:
  *       # exclude-patterns:
  *       #   - /custom/**
+ *       # Additional query param names to mask (merged with hardcoded defaults):
+ *       # sensitive-query-params:
+ *       #   - my_custom_param
  * </pre>
  */
 @ConfigurationProperties(prefix = "budgetanalyzer.service.http-logging")
@@ -86,6 +89,13 @@ public class HttpLoggingProperties {
           "X-Auth-Token",
           "Proxy-Authorization",
           "WWW-Authenticate");
+
+  /**
+   * Additional query parameter names to treat as sensitive (merged with hardcoded defaults).
+   * Matching uses the same normalization as body field sanitization: strip non-alphanumeric
+   * characters and lowercase before comparison.
+   */
+  private List<String> sensitiveQueryParams = new ArrayList<>();
 
   /** Log only requests that result in errors (4xx, 5xx status codes). */
   private boolean logErrorsOnly = false;
@@ -316,6 +326,24 @@ public class HttpLoggingProperties {
    */
   public void setSensitiveHeaders(List<String> sensitiveHeaders) {
     this.sensitiveHeaders = sensitiveHeaders;
+  }
+
+  /**
+   * Gets the additional query parameter names to treat as sensitive.
+   *
+   * @return the sensitive query parameter names
+   */
+  public List<String> getSensitiveQueryParams() {
+    return sensitiveQueryParams;
+  }
+
+  /**
+   * Sets the additional query parameter names to treat as sensitive.
+   *
+   * @param sensitiveQueryParams the sensitive query parameter names
+   */
+  public void setSensitiveQueryParams(List<String> sensitiveQueryParams) {
+    this.sensitiveQueryParams = sensitiveQueryParams;
   }
 
   /**

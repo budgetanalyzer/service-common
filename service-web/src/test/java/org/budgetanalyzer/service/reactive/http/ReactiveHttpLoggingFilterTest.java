@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
@@ -775,6 +776,70 @@ class ReactiveHttpLoggingFilterTest {
 
     // Assert - Should complete with logging (no user agent is not a health check)
     StepVerifier.create(result).verifyComplete();
+  }
+
+  @Test
+  void shouldSanitizeSensitiveQueryParamsInLogs() {
+    // Arrange
+    httpLoggingProperties.setIncludeQueryParams(true);
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
+
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get(
+                "/login/oauth2/code/idp?code=authcode123&state=csrfstate456"));
+
+    when(filterChain.filter(any()))
+        .thenAnswer(
+            invocation -> {
+              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
+              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+              return decoratedExchange.getResponse().setComplete();
+            });
+
+    // Act
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+
+    // Assert
+    StepVerifier.create(result).verifyComplete();
+
+    var logOutput = loggedMessages();
+    assertTrue(logOutput.contains("code=***&state=***"));
+    assertFalse(logOutput.contains("authcode123"));
+    assertFalse(logOutput.contains("csrfstate456"));
+  }
+
+  @Test
+  void shouldSanitizeCustomSensitiveQueryParamsInLogs() {
+    // Arrange
+    httpLoggingProperties.setIncludeQueryParams(true);
+    httpLoggingProperties.setSensitiveQueryParams(List.of("custom_key"));
+    reactiveHttpLoggingFilter = new ReactiveHttpLoggingFilter(httpLoggingProperties);
+
+    var exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/api/test?custom_key=secret&page=1&code=auth123"));
+
+    when(filterChain.filter(any()))
+        .thenAnswer(
+            invocation -> {
+              var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
+              decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
+              return decoratedExchange.getResponse().setComplete();
+            });
+
+    // Act
+    var result = reactiveHttpLoggingFilter.filter(exchange, filterChain);
+
+    // Assert
+    StepVerifier.create(result).verifyComplete();
+
+    var logOutput = loggedMessages();
+    assertTrue(logOutput.contains("custom_key=***"));
+    assertTrue(logOutput.contains("code=***"));
+    assertTrue(logOutput.contains("page=1"));
+    assertFalse(logOutput.contains("secret"));
+    assertFalse(logOutput.contains("auth123"));
   }
 
   private String loggedMessages() {

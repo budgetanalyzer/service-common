@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
+import org.budgetanalyzer.core.logging.QueryParamSanitizer;
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
 /**
@@ -44,6 +45,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
   private static final Logger log = LoggerFactory.getLogger(HttpLoggingFilter.class);
 
   private final HttpLoggingProperties httpLoggingProperties;
+  private final QueryParamSanitizer queryParamSanitizer;
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
   /**
@@ -53,6 +55,8 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    */
   public HttpLoggingFilter(HttpLoggingProperties httpLoggingProperties) {
     this.httpLoggingProperties = httpLoggingProperties;
+    this.queryParamSanitizer =
+        new QueryParamSanitizer(httpLoggingProperties.getSensitiveQueryParams());
   }
 
   /**
@@ -133,7 +137,9 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
    */
   private void logRequest(ContentCachingRequestWrapper request) {
     try {
-      var requestDetails = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
+      var requestDetails =
+          ContentLoggingUtil.extractRequestDetails(
+              request, httpLoggingProperties, queryParamSanitizer);
 
       String requestBody = null;
       if (httpLoggingProperties.isIncludeRequestBody() && hasBody(request)) {

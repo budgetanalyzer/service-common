@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
+import org.budgetanalyzer.core.logging.QueryParamSanitizer;
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +38,7 @@ class ContentLoggingUtilTest {
   @Mock private ContentCachingResponseWrapper responseWrapper;
 
   private HttpLoggingProperties httpLoggingProperties;
+  private QueryParamSanitizer queryParamSanitizer;
 
   @BeforeEach
   void setUp() {
@@ -46,6 +48,7 @@ class ContentLoggingUtilTest {
     httpLoggingProperties.setIncludeResponseHeaders(true);
     httpLoggingProperties.setIncludeQueryParams(true);
     httpLoggingProperties.setIncludeClientIp(true);
+    queryParamSanitizer = new QueryParamSanitizer(httpLoggingProperties.getSensitiveQueryParams());
   }
 
   @Test
@@ -58,7 +61,9 @@ class ContentLoggingUtilTest {
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
+    var details =
+        ContentLoggingUtil.extractRequestDetails(
+            request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
     assertEquals("GET", details.get("method"));
@@ -82,7 +87,9 @@ class ContentLoggingUtilTest {
     when(request.getHeader("X-API-Key")).thenReturn("my-secret-key");
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
+    var details =
+        ContentLoggingUtil.extractRequestDetails(
+            request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
     @SuppressWarnings("unchecked")
@@ -102,7 +109,9 @@ class ContentLoggingUtilTest {
     lenient().when(request.getRemoteAddr()).thenReturn("192.168.1.1");
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
+    var details =
+        ContentLoggingUtil.extractRequestDetails(
+            request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert - Should use first IP from X-Forwarded-For
     assertEquals("203.0.113.1", details.get("clientIp"));
@@ -263,7 +272,9 @@ class ContentLoggingUtilTest {
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
+    var details =
+        ContentLoggingUtil.extractRequestDetails(
+            request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
     assertFalse(details.containsKey("queryString"));
@@ -277,7 +288,9 @@ class ContentLoggingUtilTest {
     when(request.getRequestURI()).thenReturn("/api/users");
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
+    var details =
+        ContentLoggingUtil.extractRequestDetails(
+            request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
     assertFalse(details.containsKey("clientIp"));
@@ -291,7 +304,9 @@ class ContentLoggingUtilTest {
     when(request.getRequestURI()).thenReturn("/api/users");
 
     // Act
-    var details = ContentLoggingUtil.extractRequestDetails(request, httpLoggingProperties);
+    var details =
+        ContentLoggingUtil.extractRequestDetails(
+            request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
     assertFalse(details.containsKey("headers"));

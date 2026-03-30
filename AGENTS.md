@@ -73,7 +73,7 @@ Changes here affect all services that depend on these libraries.
 - `domain/` - Base JPA entities (AuditableEntity, SoftDeletableEntity)
 - `repository/` - Repository utilities (SoftDeleteOperations)
 - `csv/` - CSV parsing (CsvParser, CsvData, OpenCsvParser)
-- `logging/` - Safe logging with sensitive data masking
+- `logging/` - Safe logging utilities (`SafeLogger`, `@Sensitive`, `QueryParamSanitizer`, `HttpBodyLogSanitizer`, `SensitiveHeaderMasker`)
 
 **Dependencies**: Spring Data JPA, Spring Boot Actuator, Jackson, SLF4J, OpenCSV
 
@@ -240,7 +240,7 @@ find service-web/src/test/java -name "*Test.java"
 **service-core**:
 - Base Entities: `AuditableEntity` (timestamps + user tracking), `SoftDeletableEntity` (soft delete)
 - CSV Parsing: `CsvParser`, `CsvData`, `OpenCsvParser`
-- Safe Logging: `SafeLogger`, `@Sensitive` annotation, `SensitiveDataModule`
+- Safe Logging: `SafeLogger` (opt-in: `toJson()`, `mask()`, `truncateId()`), `@Sensitive` annotation, `QueryParamSanitizer`, `HttpBodyLogSanitizer`, `SensitiveHeaderMasker`
 - Repository: `SoftDeleteOperations`
 - User Tracking: `SecurityContextAuditorAware` (auto-populates createdBy/updatedBy from Security context)
 
@@ -351,7 +351,10 @@ grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
 #### What Requires Manual Use
 
 These are utilities (not Spring beans) - instantiate manually when needed:
-- `SafeLogger` - Static utility for safe logging with sensitive data masking
+- `SafeLogger` - **Opt-in** static utility for safe logging (does NOT intercept log calls automatically):
+  - `SafeLogger.toJson(obj)` — serialize with `@Sensitive` field masking
+  - `SafeLogger.mask(value)` / `SafeLogger.mask(value, showLast)` — mask sensitive strings
+  - `SafeLogger.truncateId(id)` / `SafeLogger.truncateId(id, showChars)` — truncate identifiers for logs (e.g. `550e8400…`)
 - `SensitiveDataModule` - Jackson module for `@Sensitive` annotation
 - Base entity classes (`AuditableEntity`, `SoftDeletableEntity`) - Extend in your entities
 - `SoftDeleteOperations` - Repository utility interface

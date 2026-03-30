@@ -110,6 +110,54 @@ class SafeLoggerTest {
     assertThat(masked).isEqualTo("**");
   }
 
+  @Test
+  void testTruncateId_standardUuid() {
+    var result = SafeLogger.truncateId("550e8400-e29b-41d4-a716-446655440000");
+    assertThat(result).isEqualTo("550e8400…");
+  }
+
+  @Test
+  void testTruncateId_null() {
+    var result = SafeLogger.truncateId(null);
+    assertThat(result).isEqualTo("[null]");
+  }
+
+  @Test
+  void testTruncateId_empty() {
+    var result = SafeLogger.truncateId("");
+    assertThat(result).isEqualTo("***");
+  }
+
+  @Test
+  void testTruncateId_shortString() {
+    var result = SafeLogger.truncateId("abc");
+    assertThat(result).isEqualTo("***");
+  }
+
+  @Test
+  void testTruncateId_exactLengthString() {
+    var result = SafeLogger.truncateId("12345678");
+    assertThat(result).isEqualTo("***");
+  }
+
+  @Test
+  void testTruncateId_customShowChars() {
+    var result = SafeLogger.truncateId("550e8400-e29b-41d4-a716-446655440000", 4);
+    assertThat(result).isEqualTo("550e…");
+  }
+
+  @Test
+  void testTruncateId_negativeShowChars() {
+    var result = SafeLogger.truncateId("550e8400-e29b-41d4-a716-446655440000", -1);
+    assertThat(result).isEqualTo("***");
+  }
+
+  @Test
+  void testTruncateId_zeroShowChars() {
+    var result = SafeLogger.truncateId("550e8400-e29b-41d4-a716-446655440000", 0);
+    assertThat(result).isEqualTo("***");
+  }
+
   /**
    * Test class that simulates an "empty bean" like Spring's HttpMethod.
    *

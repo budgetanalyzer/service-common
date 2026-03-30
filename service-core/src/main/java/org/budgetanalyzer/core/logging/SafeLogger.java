@@ -81,4 +81,33 @@ public class SafeLogger {
   public static String mask(String value) {
     return mask(value, 0);
   }
+
+  /**
+   * Truncates an identifier for safe logging, showing only a prefix.
+   *
+   * @param id the identifier to truncate
+   * @param showChars number of leading characters to show
+   * @return truncated identifier (e.g. {@code 550e8400…}), {@code [null]} for null, or {@code ***}
+   *     for empty/short values
+   */
+  public static String truncateId(String id, int showChars) {
+    if (id == null) {
+      return "[null]";
+    }
+    if (showChars <= 0 || id.isEmpty() || id.length() <= showChars) {
+      return "***";
+    }
+    return id.substring(0, showChars) + "…";
+  }
+
+  /**
+   * Truncates an identifier for safe logging, showing the first 8 characters.
+   *
+   * @param id the identifier to truncate
+   * @return truncated identifier (e.g. {@code 550e8400…}), {@code [null]} for null, or {@code ***}
+   *     for empty/short values
+   */
+  public static String truncateId(String id) {
+    return truncateId(id, 8);
+  }
 }

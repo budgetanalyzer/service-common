@@ -2,6 +2,7 @@ package org.budgetanalyzer.service.servlet.http;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.FilterChain;
 
@@ -17,8 +19,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 
@@ -236,6 +244,91 @@ class HttpLoggingFilterTest {
     // Assert - Response should contain the body
     var actualResponseBody = response.getContentAsString();
     assertEquals(responseBody, actualResponseBody);
+  }
+
+  @Test
+  void shouldSanitizeSensitiveQueryParamsInLogs() throws Exception {
+    // Arrange
+    var logger = (Logger) LoggerFactory.getLogger(HttpLoggingFilter.class);
+    var originalLevel = logger.getLevel();
+    logger.setLevel(Level.DEBUG);
+    var listAppender = new ListAppender<ILoggingEvent>();
+    listAppender.start();
+    logger.addAppender(listAppender);
+
+    try {
+      httpLoggingProperties.setIncludeQueryParams(true);
+      httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
+
+      var request = new MockHttpServletRequest();
+      request.setMethod("GET");
+      request.setRequestURI("/login/oauth2/code/idp");
+      request.setServletPath("/login/oauth2/code/idp");
+      request.setQueryString("code=authcode123&state=csrfstate456");
+
+      var response = new MockHttpServletResponse();
+
+      // Act
+      httpLoggingFilter.doFilterInternal(request, response, filterChain);
+
+      // Assert
+      var logOutput =
+          listAppender.list.stream()
+              .map(ILoggingEvent::getFormattedMessage)
+              .collect(Collectors.joining("\n"));
+
+      assertTrue(logOutput.contains("code=***&state=***"));
+      assertFalse(logOutput.contains("authcode123"));
+      assertFalse(logOutput.contains("csrfstate456"));
+    } finally {
+      logger.detachAppender(listAppender);
+      listAppender.stop();
+      logger.setLevel(originalLevel);
+    }
+  }
+
+  @Test
+  void shouldSanitizeCustomSensitiveQueryParamsInLogs() throws Exception {
+    // Arrange
+    var logger = (Logger) LoggerFactory.getLogger(HttpLoggingFilter.class);
+    var originalLevel = logger.getLevel();
+    logger.setLevel(Level.DEBUG);
+    var listAppender = new ListAppender<ILoggingEvent>();
+    listAppender.start();
+    logger.addAppender(listAppender);
+
+    try {
+      httpLoggingProperties.setIncludeQueryParams(true);
+      httpLoggingProperties.setSensitiveQueryParams(List.of("custom_key"));
+      httpLoggingFilter = new HttpLoggingFilter(httpLoggingProperties);
+
+      var request = new MockHttpServletRequest();
+      request.setMethod("GET");
+      request.setRequestURI("/api/test");
+      request.setServletPath("/api/test");
+      request.setQueryString("custom_key=secret&page=1&code=auth123");
+
+      var response = new MockHttpServletResponse();
+
+      // Act
+      httpLoggingFilter.doFilterInternal(request, response, filterChain);
+
+      // Assert
+      var logOutput =
+          listAppender.list.stream()
+              .map(ILoggingEvent::getFormattedMessage)
+              .collect(Collectors.joining("\n"));
+
+      assertTrue(logOutput.contains("custom_key=***"));
+      assertTrue(logOutput.contains("code=***"));
+      assertTrue(logOutput.contains("page=1"));
+      assertFalse(logOutput.contains("secret"));
+      assertFalse(logOutput.contains("auth123"));
+    } finally {
+      logger.detachAppender(listAppender);
+      listAppender.stop();
+      logger.setLevel(originalLevel);
+    }
   }
 
   @Test

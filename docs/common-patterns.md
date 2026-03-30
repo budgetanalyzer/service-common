@@ -464,22 +464,50 @@ public record TransactionRequest(
 ) {}
 ```
 
-### 2. Sanitize User-Provided Data
+### 2. Safe Logging with SafeLogger
+
+`SafeLogger` is an **opt-in** utility — it does NOT wrap SLF4J and does NOT intercept log calls
+automatically. You must explicitly call its methods when logging sensitive data.
+
+**API reference:**
 
 ```java
-// Use SafeLogger to prevent logging sensitive data
-private static final SafeLogger logger = SafeLogger.getLogger(UserService.class);
-logger.info("User created: {}", user);  // Sensitive fields automatically redacted
+// Serialize an object to JSON with @Sensitive fields masked
+log.info("User created: {}", SafeLogger.toJson(user));
+
+// Mask a sensitive string (completely or showing last N chars)
+log.info("Token: {}", SafeLogger.mask(token));           // "********"
+log.info("Card: {}", SafeLogger.mask(cardNumber, 4));     // "************3456"
+
+// Truncate an identifier for safe logging (prefix only)
+log.info("Session: {}", SafeLogger.truncateId(sessionId));       // "550e8400…"
+log.info("State: {}", SafeLogger.truncateId(state, 6));          // "a1b2c3…"
+// null → "[null]", empty or too short → "***"
 ```
+
+**What IS automatic** (when HTTP logging is enabled via `budgetanalyzer.service.http-logging`):
+- **Header masking** — `Authorization`, `Cookie`, `Set-Cookie`, and other sensitive headers are
+  redacted automatically by the HTTP logging filters
+- **Body field sanitization** — JSON and form body fields matching sensitive names (`password`,
+  `secret`, `token`, `apikey`, etc.) are redacted automatically
+- **Query parameter sanitization** — OAuth2 and credential-related query params (`code`, `state`,
+  `token`, `password`, `secret`, etc.) are redacted automatically
+
+**What is NOT automatic** — you must handle explicitly:
+- Identifiers logged in application code (session IDs, user IDs, OAuth2 state values)
+- Objects logged via SLF4J `{}` placeholders — use `SafeLogger.toJson(obj)` for `@Sensitive` masking
+- Any sensitive string passed directly to a log statement
 
 ### 3. Never Log Sensitive Information
 
 ```java
 // ❌ WRONG
-logger.info("Processing payment for card: {}", creditCardNumber);
+log.info("Processing payment for card: {}", creditCardNumber);
+log.info("Session started: {}", sessionId);
 
 // ✅ CORRECT
-logger.info("Processing payment for card ending in: {}", last4Digits);
+log.info("Processing payment for card ending in: {}", SafeLogger.mask(creditCardNumber, 4));
+log.info("Session started: {}", SafeLogger.truncateId(sessionId));
 ```
 
 ### 4. Use HTTPS in Production
