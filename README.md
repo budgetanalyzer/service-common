@@ -25,7 +25,7 @@ Service Common is a **multi-module Gradle project** that provides common functio
 **Dependencies**: Spring Data JPA, Spring Boot Actuator, Jackson, SLF4J, OpenCSV
 
 ### service-web
-**Purpose**: Spring Boot web service components with auto-configuration
+**Purpose**: Spring Boot web service components with auto-configuration for servlet and reactive stacks
 
 **Features**:
 - Standardized exception handling (@RestControllerAdvice)
@@ -34,7 +34,7 @@ Service Common is a **multi-module Gradle project** that provides common functio
 - Correlation ID support
 - OpenAPI/Swagger base configuration
 
-**Dependencies**: service-core (transitive), Spring Boot Starter Web, SpringDoc OpenAPI
+**Dependencies**: service-core (transitive), Spring Boot Starter Web/WebFlux, SpringDoc OpenAPI
 
 **Note**: Actuator (health checks, metrics) comes from service-core and is available to all services (web and non-web).
 

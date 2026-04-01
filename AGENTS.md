@@ -119,7 +119,7 @@ dependencies {
 }
 ```
 
-**Reactive service (e.g., gateways):**
+**Reactive service (e.g., Session Gateway):**
 ```kotlin
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -134,7 +134,7 @@ dependencies {
 }
 ```
 
-**Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (gateways inheriting JPA).
+**Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (reactive services inheriting JPA).
 
 ## Spring Boot Conventions
 
