@@ -208,7 +208,7 @@ cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiException
 - Writing unit tests → Read [Unit Testing Patterns](docs/testing-patterns.md#unit-tests) (mocking, naming, structure)
 - Writing integration tests → Read [Integration Testing](docs/testing-patterns.md#integration-tests) (TestContainers, @SpringBootTest)
 - Setting up TestContainers → Read [TestContainers Setup](docs/testing-patterns.md#testcontainers) (PostgreSQL, Redis, RabbitMQ)
-- Understanding test philosophy → Read [Testing Philosophy](docs/testing-patterns.md#philosophy) (test correct behavior)
+- Understanding test philosophy → Read [Testing Philosophy](docs/testing-patterns.md#testing-philosophy) (test correct behavior)
 
 **Quick reference**:
 - Unit tests: `*Test.java` (no Spring context, fast, isolated)
@@ -636,6 +636,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 - Minimum 80% coverage
 - Test edge cases explicitly
 - Test correct behavior, not defective implementations (fix bugs, don't test around them)
+- **NEVER modify, weaken, or delete existing tests you did not write** to make new or changed tests pass — if existing tests break, fix your code or stop and ask the user
 
 ## Documentation References
 

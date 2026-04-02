@@ -42,6 +42,38 @@ void shouldHandleNewFeature() {
 }
 ```
 
+### NEVER Modify Unrelated Tests
+
+**CRITICAL**: Do not change, weaken, or delete existing tests you did not write to make new or changed tests pass.
+
+- **Do not modify shared test infrastructure** (base classes, fixtures, configuration) to fix failures in your new code
+- **If existing tests break after your changes**, your code is wrong — fix the implementation, not the tests
+- **If unrelated tests were already failing** before your changes, STOP and surface the issue to the user
+- **`./gradlew clean build` is a real verification step** — passing it by weakening the test suite is not passing it
+
+```java
+// ❌ NEVER DO THIS — gutting an existing test to make yours pass
+@Test
+void shouldValidateAmount() {
+    // Changed from assertThrows to just checking non-null
+    // because my new validation broke the old behavior
+    assertNotNull(service.validate(amount));
+}
+
+// ❌ NEVER DO THIS — modifying shared test config for your feature
+// Changed TestSecurityConfig to disable auth so my tests don't need tokens
+@TestConfiguration
+public class TestSecurityConfig {
+    // gutted to make new tests pass
+}
+```
+
+**What to do instead**:
+- **Your new tests fail?** → Fix your implementation to match existing behavior
+- **Existing tests fail after your changes?** → Your changes broke something — revert or fix your code
+- **Shared infrastructure incompatible with your needs?** → STOP and ask the user how to proceed
+- **Tests were already failing?** → STOP and notify the user before proceeding
+
 **Acceptable (rare) uses of `@Disabled`**:
 - Temporarily during active development within a single PR (must be removed before merge)
 - Platform-specific tests with `@DisabledOnOs` or `@EnabledOnOs` (not broken, just not applicable)
@@ -51,6 +83,65 @@ void shouldHandleNewFeature() {
 - **Can't fix it?** → STOP and notify the user
 - **Test for unimplemented feature?** → Don't write the test until the feature exists
 - **Flaky test?** → Fix the flakiness, don't disable it
+
+### Core Principle: Test Behavior, Not Implementation
+
+This codebase uses a layered testing strategy that prioritizes real integration over mocked abstractions. Tests should give us confidence to refactor and upgrade dependencies independently.
+
+### Testing Layers
+
+#### 1. API Contract Tests (Primary Confidence Layer)
+- Black-box tests against the actual HTTP API
+- Run in CI/CD against deployed services
+- Test the contract, not the framework
+- **Benefit**: Swap Spring Boot for anything else - if API tests pass, you're good
+
+#### 2. Infrastructure Integration Tests (Testcontainers)
+- Test each infrastructure boundary: database, messaging, caching, external APIs
+- Use real dependencies via testcontainers (Postgres, RabbitMQ, Redis, etc.)
+- Verify YOUR configuration works, not that Spring works
+- **Example**: Test that your retry logic + DLQ routing works, not that RabbitMQ has a DLQ
+
+#### 3. Unit Tests (Business Logic Only)
+- Pure functions and domain logic
+- No framework dependencies
+- If it's simple CRUD with no business rules, skip the test
+
+### What We Don't Test
+
+#### No Mocks of Internal Components
+**Hard rule**: No `@MockBean`, no Mockito on repositories/services/controllers.
+
+**Why**: Mocks drift from reality, create false confidence, and couple tests to implementation details. When you upgrade Spring Boot, you shouldn't have to rewrite test infrastructure.
+
+**Exception**: External system boundaries (third-party APIs via WireMock, time via `Clock` injection). Mock things you don't control, not things you wrote.
+
+#### No Framework Verification Tests
+Don't test that Spring does what Spring says it does:
+- Don't test that `@Scheduled` annotations work
+- Don't test that `@Transactional` creates transactions
+- Don't test that validation annotations validate
+
+**Test YOUR code**: Does your scheduler configuration use the right cron? Does your transaction boundary make sense for your use case?
+
+### Development Workflow
+
+1. Write API test for the contract
+2. Implement feature
+3. Add testcontainers integration test if touching infrastructure
+4. Add unit test if complex business logic exists
+5. Run tests - they should fail for the right reasons (your bug, not Spring's)
+
+### Upgrade Strategy
+
+When upgrading Spring Boot:
+- API tests remain unchanged (framework agnostic)
+- Integration tests may need configuration updates
+- Unit tests remain unchanged (no framework dependencies)
+
+This separation lets you validate the upgrade without rewriting the entire test suite.
+
+> Simple code doesn't need tests proving it's simple. Complex infrastructure needs real integration tests, not mocked fantasies. The API contract is the only promise that matters.
 
 ## Test Types
 
