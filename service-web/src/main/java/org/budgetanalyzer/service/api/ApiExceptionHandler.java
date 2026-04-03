@@ -2,12 +2,22 @@ package org.budgetanalyzer.service.api;
 
 import java.util.List;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.server.ResponseStatusException;
 
 import org.budgetanalyzer.service.exception.BusinessException;
+import org.budgetanalyzer.service.exception.ClientException;
 import org.budgetanalyzer.service.exception.InvalidRequestException;
 import org.budgetanalyzer.service.exception.ResourceNotFoundException;
 import org.budgetanalyzer.service.exception.ServiceException;
+import org.budgetanalyzer.service.exception.ServiceUnavailableException;
 
 /**
  * Interface for exception handlers with shared response building logic.
@@ -16,6 +26,56 @@ import org.budgetanalyzer.service.exception.ServiceException;
  * response construction.
  */
 public interface ApiExceptionHandler {
+
+  /**
+   * Resolved API error contract with HTTP status.
+   *
+   * @param statusCode HTTP status code
+   * @param response API error response
+   * @param headers HTTP headers that must be preserved on the response
+   */
+  record ResolvedError(HttpStatusCode statusCode, ApiErrorResponse response, HttpHeaders headers) {
+
+    /**
+     * Creates a resolved error with no additional HTTP headers.
+     *
+     * @param statusCode HTTP status code
+     * @param response API error response
+     */
+    public ResolvedError(HttpStatusCode statusCode, ApiErrorResponse response) {
+      this(statusCode, response, HttpHeaders.EMPTY);
+    }
+
+    /**
+     * Creates a resolved error and normalizes headers to an immutable copy.
+     *
+     * @param statusCode HTTP status code
+     * @param response API error response
+     * @param headers HTTP headers that must be preserved on the response
+     */
+    public ResolvedError {
+      headers = immutableHeaders(headers);
+    }
+
+    /**
+     * Converts the resolved error to a response entity.
+     *
+     * @return response entity containing the resolved error payload
+     */
+    public ResponseEntity<ApiErrorResponse> toResponseEntity() {
+      return ResponseEntity.status(statusCode).headers(headers).body(response);
+    }
+
+    private static HttpHeaders immutableHeaders(HttpHeaders headers) {
+      if (headers == null || headers.isEmpty()) {
+        return HttpHeaders.EMPTY;
+      }
+
+      var copiedHeaders = new HttpHeaders();
+      copiedHeaders.putAll(headers);
+      return HttpHeaders.readOnlyHttpHeaders(copiedHeaders);
+    }
+  }
 
   /**
    * Builds a validation error response.
@@ -138,6 +198,101 @@ public interface ApiExceptionHandler {
         .type(ApiErrorType.FORBIDDEN)
         .message("You do not have permission to perform this action")
         .build();
+  }
+
+  /**
+   * Converts a resolved error to a response entity.
+   *
+   * @param resolvedError resolved error
+   * @return response entity containing the resolved error payload
+   */
+  default ResponseEntity<ApiErrorResponse> toResponseEntity(ResolvedError resolvedError) {
+    return resolvedError.toResponseEntity();
+  }
+
+  /**
+   * Resolves common shared exceptions to HTTP status and API error response.
+   *
+   * @param throwable the exception to resolve
+   * @return resolved API error
+   */
+  default ResolvedError resolveCommonException(Throwable throwable) {
+    if (throwable instanceof ResourceNotFoundException exception) {
+      return new ResolvedError(HttpStatus.NOT_FOUND, buildNotFoundError(exception));
+    }
+    if (throwable instanceof InvalidRequestException exception) {
+      return new ResolvedError(HttpStatus.BAD_REQUEST, buildInvalidRequestError(exception));
+    }
+    if (throwable instanceof BusinessException exception) {
+      return new ResolvedError(HttpStatus.UNPROCESSABLE_ENTITY, buildBusinessError(exception));
+    }
+    if (throwable instanceof ClientException exception) {
+      return new ResolvedError(
+          HttpStatus.SERVICE_UNAVAILABLE, buildServiceUnavailableError(exception));
+    }
+    if (throwable instanceof ServiceUnavailableException exception) {
+      return new ResolvedError(
+          HttpStatus.SERVICE_UNAVAILABLE, buildServiceUnavailableError(exception));
+    }
+    if (throwable instanceof AccessDeniedException
+        || throwable instanceof AuthorizationDeniedException) {
+      return new ResolvedError(HttpStatus.FORBIDDEN, buildPermissionDeniedError());
+    }
+    if (throwable instanceof AuthenticationException) {
+      return new ResolvedError(HttpStatus.UNAUTHORIZED, buildUnauthorizedError());
+    }
+    if (throwable instanceof ResponseStatusException exception) {
+      return resolveResponseStatus(exception);
+    }
+    if (throwable instanceof Exception exception) {
+      return new ResolvedError(HttpStatus.INTERNAL_SERVER_ERROR, buildInternalError(exception));
+    }
+    return new ResolvedError(
+        HttpStatus.INTERNAL_SERVER_ERROR, buildInternalError(new Exception(throwable)));
+  }
+
+  /**
+   * Resolves validation failures to HTTP 400 with standardized field errors.
+   *
+   * @param bindingResult the binding result containing validation failures
+   * @return resolved validation error
+   */
+  default ResolvedError resolveValidationFailure(BindingResult bindingResult) {
+    return new ResolvedError(
+        HttpStatus.BAD_REQUEST, buildValidationError(extractFieldErrors(bindingResult)));
+  }
+
+  /**
+   * Extracts API field errors from a Spring binding result.
+   *
+   * @param bindingResult the binding result containing validation failures
+   * @return extracted API field errors
+   */
+  default List<FieldError> extractFieldErrors(BindingResult bindingResult) {
+    return bindingResult.getFieldErrors().stream()
+        .map(
+            springFieldError ->
+                FieldError.of(
+                    springFieldError.getField(),
+                    springFieldError.getDefaultMessage(),
+                    springFieldError.getRejectedValue()))
+        .toList();
+  }
+
+  /**
+   * Resolves a response status exception to the standardized API error contract.
+   *
+   * @param exception the response status exception
+   * @return resolved API error
+   */
+  default ResolvedError resolveResponseStatus(ResponseStatusException exception) {
+    var statusCode = exception.getStatusCode();
+    var response =
+        ApiErrorResponse.builder()
+            .type(errorTypeForStatus(statusCode))
+            .message(messageForStatus(statusCode, exception.getReason()))
+            .build();
+    return new ResolvedError(statusCode, response, exception.getHeaders());
   }
 
   /**

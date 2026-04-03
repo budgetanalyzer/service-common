@@ -10,6 +10,8 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.budgetanalyzer.service.config.HttpLoggingProperties;
 import org.budgetanalyzer.service.config.ServiceWebAutoConfiguration;
 
@@ -17,7 +19,8 @@ class ReactiveHttpLoggingConfigTest {
 
   private final ReactiveWebApplicationContextRunner reactiveContextRunner =
       new ReactiveWebApplicationContextRunner()
-          .withConfiguration(AutoConfigurations.of(ServiceWebAutoConfiguration.class));
+          .withConfiguration(AutoConfigurations.of(ServiceWebAutoConfiguration.class))
+          .withBean(ObjectMapper.class, ObjectMapper::new);
 
   private final ApplicationContextRunner nonWebContextRunner =
       new ApplicationContextRunner()

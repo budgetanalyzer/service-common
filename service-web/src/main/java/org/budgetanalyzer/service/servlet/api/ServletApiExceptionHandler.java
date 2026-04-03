@@ -25,7 +25,6 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.budgetanalyzer.service.api.ApiErrorResponse;
 import org.budgetanalyzer.service.api.ApiErrorType;
 import org.budgetanalyzer.service.api.ApiExceptionHandler;
-import org.budgetanalyzer.service.api.FieldError;
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
 import org.budgetanalyzer.service.exception.InvalidRequestException;
@@ -84,7 +83,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(InvalidRequestException exception, WebRequest request) {
     logException(ApiErrorType.INVALID_REQUEST, null, exception);
-    return buildInvalidRequestError(exception);
+    return resolveCommonException(exception).response();
   }
 
   /**
@@ -100,27 +99,17 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   @ExceptionHandler
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   public ApiErrorResponse handle(MethodArgumentNotValidException exception, WebRequest request) {
-    var fieldErrors =
-        exception.getBindingResult().getAllErrors().stream()
-            .filter(error -> error instanceof org.springframework.validation.FieldError)
-            .map(
-                error -> {
-                  var springFieldError = (org.springframework.validation.FieldError) error;
-                  return FieldError.of(
-                      springFieldError.getField(),
-                      error.getDefaultMessage(),
-                      springFieldError.getRejectedValue());
-                })
-            .toList();
+    var resolvedError = resolveValidationFailure(exception.getBindingResult());
+    var fieldErrors = resolvedError.response().getFieldErrors();
 
     log.warn(
         "Handled exception type: VALIDATION_ERROR exception: {} field count: {} message: {}",
         exception.getClass(),
         fieldErrors.size(),
-        "Validation failed for " + fieldErrors.size() + " field(s)",
+        resolvedError.response().getMessage(),
         exception);
 
-    return buildValidationError(fieldErrors);
+    return resolvedError.response();
   }
 
   /**
@@ -134,7 +123,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   public ApiErrorResponse handle(ResourceNotFoundException exception, WebRequest request) {
     logException(ApiErrorType.NOT_FOUND, null, exception);
-    return buildNotFoundError(exception);
+    return resolveCommonException(exception).response();
   }
 
   /**
@@ -172,7 +161,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
   public ApiErrorResponse handle(BusinessException exception, WebRequest request) {
     logException(ApiErrorType.APPLICATION_ERROR, exception.getCode(), exception);
-    return buildBusinessError(exception);
+    return resolveCommonException(exception).response();
   }
 
   /**
@@ -186,7 +175,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
   public ApiErrorResponse handle(ClientException exception, WebRequest request) {
     logException(ApiErrorType.SERVICE_UNAVAILABLE, null, exception);
-    return buildServiceUnavailableError(exception);
+    return resolveCommonException(exception).response();
   }
 
   /**
@@ -200,7 +189,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
   public ApiErrorResponse handle(ServiceUnavailableException exception, WebRequest request) {
     logException(ApiErrorType.SERVICE_UNAVAILABLE, null, exception);
-    return buildServiceUnavailableError(exception);
+    return resolveCommonException(exception).response();
   }
 
   /**
@@ -275,7 +264,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
         "Handled security exception: {} message: {}",
         exception.getClass().getSimpleName(),
         exception.getMessage());
-    return buildPermissionDeniedError();
+    return resolveCommonException(exception).response();
   }
 
   /**
@@ -291,7 +280,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
         "Handled security exception: {} message: {}",
         exception.getClass().getSimpleName(),
         exception.getMessage());
-    return buildPermissionDeniedError();
+    return resolveCommonException(exception).response();
   }
 
   /**
@@ -307,7 +296,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
         "Handled security exception: {} message: {}",
         exception.getClass().getSimpleName(),
         exception.getMessage());
-    return buildUnauthorizedError();
+    return resolveCommonException(exception).response();
   }
 
   /**
@@ -326,13 +315,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
         "Handled ResponseStatusException: status={} reason={}",
         statusCode.value(),
         exception.getReason());
-    var body =
-        ApiErrorResponse.builder()
-            .type(ApiExceptionHandler.errorTypeForStatus(statusCode))
-            .message(ApiExceptionHandler.messageForStatus(statusCode, exception.getReason()))
-            .build();
-
-    return ResponseEntity.status(statusCode).body(body);
+    return toResponseEntity(resolveCommonException(exception));
   }
 
   /**
@@ -350,7 +333,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
   public ApiErrorResponse handle(Exception exception, WebRequest request) {
     logException(ApiErrorType.INTERNAL_ERROR, null, exception);
-    return buildInternalError(exception);
+    return resolveCommonException(exception).response();
   }
 
   /**
