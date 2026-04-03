@@ -3,6 +3,7 @@ package org.budgetanalyzer.service.servlet.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -11,10 +12,14 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -22,7 +27,9 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import org.budgetanalyzer.service.api.ApiErrorResponse;
 import org.budgetanalyzer.service.api.ApiErrorType;
+import org.budgetanalyzer.service.api.ApiExceptionHandler;
 import org.budgetanalyzer.service.api.FieldError;
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
@@ -57,6 +64,30 @@ class ServletApiExceptionHandlerTest {
     assertEquals("Invalid request format", response.getMessage());
     assertNull(response.getCode());
     assertNull(response.getFieldErrors());
+  }
+
+  @Test
+  @DisplayName("Should handle MethodArgumentNotValidException with VALIDATION_ERROR type")
+  void shouldHandleMethodArgumentNotValidException() throws Exception {
+    var payload = new TestPayload("", 25);
+    var bindingResult = new BeanPropertyBindingResult(payload, "testPayload");
+    bindingResult.addError(
+        new org.springframework.validation.FieldError(
+            "testPayload", "name", "", false, null, null, "must not be blank"));
+    var method = TestPayload.class.getDeclaredMethod("updateName", String.class);
+    var methodParameter = new MethodParameter(method, 0);
+    var exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+    var response = servletApiExceptionHandler.handle(exception, webRequest);
+
+    assertNotNull(response);
+    assertEquals(ApiErrorType.VALIDATION_ERROR, response.getType());
+    assertEquals("Validation failed for 1 field(s)", response.getMessage());
+    assertNotNull(response.getFieldErrors());
+    assertEquals(1, response.getFieldErrors().size());
+    assertEquals("name", response.getFieldErrors().get(0).getField());
+    assertEquals("must not be blank", response.getFieldErrors().get(0).getMessage());
+    assertEquals("", response.getFieldErrors().get(0).getRejectedValue());
   }
 
   @Test
@@ -541,5 +572,135 @@ class ServletApiExceptionHandlerTest {
     assertNotNull(body);
     assertEquals(ApiErrorType.FORBIDDEN, body.getType());
     assertEquals("You do not have permission to perform this action", body.getMessage());
+  }
+
+  @Test
+  @DisplayName("Should delegate common exception handling to shared resolver")
+  void shouldDelegateCommonExceptionHandlingToSharedResolver() {
+    var resolvedError =
+        new ApiExceptionHandler.ResolvedError(
+            HttpStatus.NOT_FOUND,
+            ApiErrorResponse.builder()
+                .type(ApiErrorType.NOT_FOUND)
+                .message("shared not found")
+                .build());
+    var trackingHandler = new TrackingServletApiExceptionHandler(resolvedError, null);
+    var exception = new ResourceNotFoundException("controller-level message");
+
+    var response = trackingHandler.handle(exception, webRequest);
+
+    assertNotNull(response);
+    assertEquals(ApiErrorType.NOT_FOUND, response.getType());
+    assertEquals("shared not found", response.getMessage());
+    assertSame(exception, trackingHandler.commonResolvedThrowable);
+    assertEquals(1, trackingHandler.resolveCommonExceptionInvocationCount);
+  }
+
+  @Test
+  @DisplayName("Should delegate ResponseStatusException handling to shared resolver")
+  void shouldDelegateResponseStatusExceptionHandlingToSharedResolver() {
+    var resolvedError =
+        new ApiExceptionHandler.ResolvedError(
+            HttpStatus.BAD_REQUEST,
+            ApiErrorResponse.builder()
+                .type(ApiErrorType.INVALID_REQUEST)
+                .message("shared invalid request")
+                .build());
+    var trackingHandler = new TrackingServletApiExceptionHandler(resolvedError, null);
+    var exception = new ResponseStatusException(HttpStatus.BAD_REQUEST, "original reason");
+
+    var response = trackingHandler.handle(exception);
+
+    assertNotNull(response);
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("shared invalid request", response.getBody().getMessage());
+    assertSame(exception, trackingHandler.commonResolvedThrowable);
+    assertEquals(1, trackingHandler.resolveCommonExceptionInvocationCount);
+  }
+
+  @Test
+  @DisplayName("Should delegate validation handling to shared validation resolver")
+  void shouldDelegateValidationHandlingToSharedValidationResolver() throws Exception {
+    var bindingResult = new BeanPropertyBindingResult(new TestPayload("", 0), "testPayload");
+    var resolvedError =
+        new ApiExceptionHandler.ResolvedError(
+            HttpStatus.BAD_REQUEST,
+            ApiErrorResponse.builder()
+                .type(ApiErrorType.VALIDATION_ERROR)
+                .message("shared validation")
+                .fieldErrors(List.of(FieldError.of("name", "must not be blank", "")))
+                .build());
+    var trackingHandler = new TrackingServletApiExceptionHandler(null, resolvedError);
+    var method = TestPayload.class.getDeclaredMethod("updateName", String.class);
+    var exception =
+        new MethodArgumentNotValidException(new MethodParameter(method, 0), bindingResult);
+
+    var response = trackingHandler.handle(exception, webRequest);
+
+    assertNotNull(response);
+    assertEquals(ApiErrorType.VALIDATION_ERROR, response.getType());
+    assertEquals("shared validation", response.getMessage());
+    assertNotNull(response.getFieldErrors());
+    assertEquals(1, response.getFieldErrors().size());
+    assertSame(bindingResult, trackingHandler.validationResolvedBindingResult);
+    assertEquals(1, trackingHandler.resolveValidationFailureInvocationCount);
+  }
+
+  /** Test payload for validation tests. */
+  private static class TestPayload {
+    private final String name;
+    private final int age;
+
+    private TestPayload(String name, int age) {
+      this.name = name;
+      this.age = age;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public int getAge() {
+      return age;
+    }
+
+    @SuppressWarnings("unused")
+    public void updateName(String updatedName) {}
+  }
+
+  private static final class TrackingServletApiExceptionHandler extends ServletApiExceptionHandler {
+
+    private final ApiExceptionHandler.ResolvedError commonResolvedError;
+    private final ApiExceptionHandler.ResolvedError validationResolvedError;
+    private Throwable commonResolvedThrowable;
+    private BindingResult validationResolvedBindingResult;
+    private int resolveCommonExceptionInvocationCount;
+    private int resolveValidationFailureInvocationCount;
+
+    private TrackingServletApiExceptionHandler(
+        ApiExceptionHandler.ResolvedError commonResolvedError,
+        ApiExceptionHandler.ResolvedError validationResolvedError) {
+      this.commonResolvedError = commonResolvedError;
+      this.validationResolvedError = validationResolvedError;
+    }
+
+    @Override
+    public ApiExceptionHandler.ResolvedError resolveCommonException(Throwable throwable) {
+      commonResolvedThrowable = throwable;
+      resolveCommonExceptionInvocationCount++;
+      return commonResolvedError == null
+          ? super.resolveCommonException(throwable)
+          : commonResolvedError;
+    }
+
+    @Override
+    public ApiExceptionHandler.ResolvedError resolveValidationFailure(BindingResult bindingResult) {
+      validationResolvedBindingResult = bindingResult;
+      resolveValidationFailureInvocationCount++;
+      return validationResolvedError == null
+          ? super.resolveValidationFailure(bindingResult)
+          : validationResolvedError;
+    }
   }
 }

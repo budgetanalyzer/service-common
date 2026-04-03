@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -21,7 +20,6 @@ import reactor.core.publisher.Mono;
 import org.budgetanalyzer.service.api.ApiErrorResponse;
 import org.budgetanalyzer.service.api.ApiErrorType;
 import org.budgetanalyzer.service.api.ApiExceptionHandler;
-import org.budgetanalyzer.service.api.FieldError;
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
 import org.budgetanalyzer.service.exception.InvalidRequestException;
@@ -73,8 +71,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
   public Mono<ResponseEntity<ApiErrorResponse>> handleNotFound(
       ResourceNotFoundException exception) {
     logException(ApiErrorType.NOT_FOUND, null, exception);
-    return Mono.just(
-        ResponseEntity.status(HttpStatus.NOT_FOUND).body(buildNotFoundError(exception)));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -87,7 +84,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
   public Mono<ResponseEntity<ApiErrorResponse>> handleInvalidRequest(
       InvalidRequestException exception) {
     logException(ApiErrorType.INVALID_REQUEST, null, exception);
-    return Mono.just(ResponseEntity.badRequest().body(buildInvalidRequestError(exception)));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -99,8 +96,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
   @ExceptionHandler(BusinessException.class)
   public Mono<ResponseEntity<ApiErrorResponse>> handleBusiness(BusinessException exception) {
     logException(ApiErrorType.APPLICATION_ERROR, exception.getCode(), exception);
-    return Mono.just(
-        ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(buildBusinessError(exception)));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -115,27 +111,17 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
   @ExceptionHandler(WebExchangeBindException.class)
   public Mono<ResponseEntity<ApiErrorResponse>> handleValidation(
       WebExchangeBindException exception) {
-    var fieldErrors =
-        exception.getBindingResult().getAllErrors().stream()
-            .filter(error -> error instanceof org.springframework.validation.FieldError)
-            .map(
-                error -> {
-                  var springFieldError = (org.springframework.validation.FieldError) error;
-                  return FieldError.of(
-                      springFieldError.getField(),
-                      error.getDefaultMessage(),
-                      springFieldError.getRejectedValue());
-                })
-            .toList();
+    var resolvedError = resolveValidationFailure(exception.getBindingResult());
+    var fieldErrors = resolvedError.response().getFieldErrors();
 
     log.warn(
         "Handled exception type: VALIDATION_ERROR exception: {} field count: {} message: {}",
         exception.getClass(),
         fieldErrors.size(),
-        "Validation failed for " + fieldErrors.size() + " field(s)",
+        resolvedError.response().getMessage(),
         exception);
 
-    return Mono.just(ResponseEntity.badRequest().body(buildValidationError(fieldErrors)));
+    return Mono.just(toResponseEntity(resolvedError));
   }
 
   /**
@@ -148,9 +134,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
   public Mono<ResponseEntity<ApiErrorResponse>> handleServiceUnavailable(
       ServiceUnavailableException exception) {
     logException(ApiErrorType.SERVICE_UNAVAILABLE, null, exception);
-    return Mono.just(
-        ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-            .body(buildServiceUnavailableError(exception)));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -162,9 +146,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
   @ExceptionHandler(ClientException.class)
   public Mono<ResponseEntity<ApiErrorResponse>> handleClientException(ClientException exception) {
     logException(ApiErrorType.SERVICE_UNAVAILABLE, null, exception);
-    return Mono.just(
-        ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-            .body(buildServiceUnavailableError(exception)));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -180,8 +162,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
         "Handled security exception: {} message: {}",
         exception.getClass().getSimpleName(),
         exception.getMessage());
-    return Mono.just(
-        ResponseEntity.status(HttpStatus.FORBIDDEN).body(buildPermissionDeniedError()));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -197,8 +178,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
         "Handled security exception: {} message: {}",
         exception.getClass().getSimpleName(),
         exception.getMessage());
-    return Mono.just(
-        ResponseEntity.status(HttpStatus.FORBIDDEN).body(buildPermissionDeniedError()));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -214,7 +194,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
         "Handled security exception: {} message: {}",
         exception.getClass().getSimpleName(),
         exception.getMessage());
-    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(buildUnauthorizedError()));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -234,13 +214,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
         "Handled ResponseStatusException: status={} reason={}",
         statusCode.value(),
         exception.getReason());
-    var body =
-        ApiErrorResponse.builder()
-            .type(ApiExceptionHandler.errorTypeForStatus(statusCode))
-            .message(ApiExceptionHandler.messageForStatus(statusCode, exception.getReason()))
-            .build();
-
-    return Mono.just(ResponseEntity.status(statusCode).body(body));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**
@@ -254,9 +228,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
   @ExceptionHandler(Exception.class)
   public Mono<ResponseEntity<ApiErrorResponse>> handleGenericException(Exception exception) {
     logException(ApiErrorType.INTERNAL_ERROR, null, exception);
-    return Mono.just(
-        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(buildInternalError(exception)));
+    return Mono.just(toResponseEntity(resolveCommonException(exception)));
   }
 
   /**

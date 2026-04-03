@@ -3,6 +3,7 @@ package org.budgetanalyzer.service.reactive.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.IOException;
 
@@ -15,13 +16,16 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ResponseStatusException;
 
 import reactor.test.StepVerifier;
 
+import org.budgetanalyzer.service.api.ApiErrorResponse;
 import org.budgetanalyzer.service.api.ApiErrorType;
+import org.budgetanalyzer.service.api.ApiExceptionHandler;
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
 import org.budgetanalyzer.service.exception.InvalidRequestException;
@@ -759,6 +763,98 @@ class ReactiveApiExceptionHandlerTest {
         .verifyComplete();
   }
 
+  @Test
+  @DisplayName("Should delegate common exception handling to shared resolver")
+  void shouldDelegateCommonExceptionHandlingToSharedResolver() {
+    var resolvedError =
+        new ApiExceptionHandler.ResolvedError(
+            HttpStatus.NOT_FOUND,
+            ApiErrorResponse.builder()
+                .type(ApiErrorType.NOT_FOUND)
+                .message("shared not found")
+                .build());
+    var trackingHandler = new TrackingReactiveApiExceptionHandler(resolvedError, null);
+    var exception = new ResourceNotFoundException("controller-level message");
+
+    var result = trackingHandler.handleNotFound(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+              assertNotNull(response.getBody());
+              assertEquals("shared not found", response.getBody().getMessage());
+            })
+        .verifyComplete();
+
+    assertSame(exception, trackingHandler.commonResolvedThrowable);
+    assertEquals(1, trackingHandler.resolveCommonExceptionInvocationCount);
+  }
+
+  @Test
+  @DisplayName("Should delegate ResponseStatusException handling to shared resolver")
+  void shouldDelegateResponseStatusExceptionHandlingToSharedResolver() {
+    var resolvedError =
+        new ApiExceptionHandler.ResolvedError(
+            HttpStatus.BAD_REQUEST,
+            ApiErrorResponse.builder()
+                .type(ApiErrorType.INVALID_REQUEST)
+                .message("shared invalid request")
+                .build());
+    var trackingHandler = new TrackingReactiveApiExceptionHandler(resolvedError, null);
+    var exception = new ResponseStatusException(HttpStatus.BAD_REQUEST, "original reason");
+
+    var result = trackingHandler.handleResponseStatusException(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+              assertNotNull(response.getBody());
+              assertEquals("shared invalid request", response.getBody().getMessage());
+            })
+        .verifyComplete();
+
+    assertSame(exception, trackingHandler.commonResolvedThrowable);
+    assertEquals(1, trackingHandler.resolveCommonExceptionInvocationCount);
+  }
+
+  @Test
+  @DisplayName("Should delegate validation handling to shared validation resolver")
+  void shouldDelegateValidationHandlingToSharedValidationResolver() throws Exception {
+    var bindingResult = new BeanPropertyBindingResult(new TestPayload("", 0), "testPayload");
+    var resolvedError =
+        new ApiExceptionHandler.ResolvedError(
+            HttpStatus.BAD_REQUEST,
+            ApiErrorResponse.builder()
+                .type(ApiErrorType.VALIDATION_ERROR)
+                .message("shared validation")
+                .fieldErrors(
+                    java.util.List.of(
+                        org.budgetanalyzer.service.api.FieldError.of(
+                            "name", "must not be blank", "")))
+                .build());
+    var trackingHandler = new TrackingReactiveApiExceptionHandler(null, resolvedError);
+    var method = TestPayload.class.getMethod("getName");
+    var exception = new WebExchangeBindException(new MethodParameter(method, -1), bindingResult);
+
+    var result = trackingHandler.handleValidation(exception);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+              assertNotNull(response.getBody());
+              assertEquals("shared validation", response.getBody().getMessage());
+              assertNotNull(response.getBody().getFieldErrors());
+              assertEquals(1, response.getBody().getFieldErrors().size());
+            })
+        .verifyComplete();
+
+    assertSame(bindingResult, trackingHandler.validationResolvedBindingResult);
+    assertEquals(1, trackingHandler.resolveValidationFailureInvocationCount);
+  }
+
   /** Test payload for validation tests. */
   private static class TestPayload {
     private String name;
@@ -775,6 +871,42 @@ class ReactiveApiExceptionHandlerTest {
 
     public int getAge() {
       return age;
+    }
+  }
+
+  private static final class TrackingReactiveApiExceptionHandler
+      extends ReactiveApiExceptionHandler {
+
+    private final ApiExceptionHandler.ResolvedError commonResolvedError;
+    private final ApiExceptionHandler.ResolvedError validationResolvedError;
+    private Throwable commonResolvedThrowable;
+    private BindingResult validationResolvedBindingResult;
+    private int resolveCommonExceptionInvocationCount;
+    private int resolveValidationFailureInvocationCount;
+
+    private TrackingReactiveApiExceptionHandler(
+        ApiExceptionHandler.ResolvedError commonResolvedError,
+        ApiExceptionHandler.ResolvedError validationResolvedError) {
+      this.commonResolvedError = commonResolvedError;
+      this.validationResolvedError = validationResolvedError;
+    }
+
+    @Override
+    public ApiExceptionHandler.ResolvedError resolveCommonException(Throwable throwable) {
+      commonResolvedThrowable = throwable;
+      resolveCommonExceptionInvocationCount++;
+      return commonResolvedError == null
+          ? super.resolveCommonException(throwable)
+          : commonResolvedError;
+    }
+
+    @Override
+    public ApiExceptionHandler.ResolvedError resolveValidationFailure(BindingResult bindingResult) {
+      validationResolvedBindingResult = bindingResult;
+      resolveValidationFailureInvocationCount++;
+      return validationResolvedError == null
+          ? super.resolveValidationFailure(bindingResult)
+          : validationResolvedError;
     }
   }
 }

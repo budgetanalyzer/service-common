@@ -157,18 +157,32 @@ public ExchangeRate getExchangeRate(String currencyPair) {
 }
 ```
 
-## Global Exception Handler
+## Global Exception Handlers
 
-The **service-web** module provides `ServletApiExceptionHandler` - a `@RestControllerAdvice` that automatically converts all exceptions to standardized `ApiErrorResponse` format.
+The **service-web** module provides shared exception handling for both controller-level and
+reactive filter-level failures:
 
-**Location**: `service-web/src/main/java/org/budgetanalyzer/service/servlet/api/ServletApiExceptionHandler.java`
+- `ServletApiExceptionHandler` - shared servlet `@RestControllerAdvice` for Spring MVC controller
+  exceptions
+- `ReactiveApiExceptionHandler` - shared reactive `@RestControllerAdvice` for Spring WebFlux
+  controller exceptions
+- `ReactiveErrorWebExceptionHandler` - reactive fallback `ErrorWebExceptionHandler` for filter-level
+  exceptions raised before controller advice runs
+
+Services may override the default reactive `ErrorWebExceptionHandler` by defining their own
+`ErrorWebExceptionHandler` bean.
 
 ### How It Works
 
 1. **Include service-web dependency** in your microservice (`org.budgetanalyzer:service-web`)
-2. **Enable component scanning** for `org.budgetanalyzer.service` package
+2. **Let Spring Boot autoconfiguration register the shared handlers**
 3. **Throw exceptions** from your controllers/services
 4. **Handler automatically converts** to `ApiErrorResponse`
+
+For reactive applications, the shared JSON contract is applied in both places:
+
+- controller exceptions through `ReactiveApiExceptionHandler`
+- filter-level exceptions through `ReactiveErrorWebExceptionHandler`
 
 ### Exception Mapping Table
 
@@ -184,7 +198,7 @@ The **service-web** module provides `ServletApiExceptionHandler` - a `@RestContr
 | `AccessDeniedException` | 403 | `FORBIDDEN` | None |
 | `AuthorizationDeniedException` | 403 | `FORBIDDEN` | None |
 | `AuthenticationException` | 401 | `UNAUTHORIZED` | None |
-| `ResponseStatusException` | Preserved | Mapped from status | None |
+| `ResponseStatusException` | Preserved | Mapped from status | Protocol headers preserved |
 | Any other `Exception` | 500 | `INTERNAL_ERROR` | None |
 
 ### Bean Validation Integration
@@ -225,9 +239,15 @@ public TransactionResponse create(@Valid @RequestBody CreateTransactionRequest r
 
 The exception's `reason` is passed as the response message (it is developer-controlled, not an internal detail leak).
 
+Any HTTP headers attached to the exception are also preserved. This matters for standard Web
+exceptions such as `MethodNotAllowedException` (`Allow` header) and
+`UnsupportedMediaTypeStatusException` (`Accept` header), including reactive filter-level failures
+handled by `ReactiveErrorWebExceptionHandler`.
+
 Without this handler, `ResponseStatusException` would fall through to the generic `Exception` catch-all and incorrectly return HTTP 500 for all status codes.
 
-Both `ServletApiExceptionHandler` and `ReactiveApiExceptionHandler` support this.
+`ServletApiExceptionHandler`, `ReactiveApiExceptionHandler`, and
+`ReactiveErrorWebExceptionHandler` support this mapping where applicable.
 
 ## Best Practices
 

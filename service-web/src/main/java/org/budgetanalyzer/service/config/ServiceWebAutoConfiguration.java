@@ -2,10 +2,18 @@ package org.budgetanalyzer.service.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
+import org.springframework.boot.autoconfigure.web.reactive.error.ErrorWebFluxAutoConfiguration;
+import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.budgetanalyzer.service.reactive.api.ReactiveErrorWebExceptionHandler;
 
 /**
  * Auto-configuration for service-web supporting both servlet and reactive stacks.
@@ -20,8 +28,22 @@ import org.springframework.context.annotation.Configuration;
  * <p>This auto-configuration is automatically discovered by Spring Boot via
  * META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
  */
-@AutoConfiguration
+@AutoConfiguration(before = ErrorWebFluxAutoConfiguration.class)
 public class ServiceWebAutoConfiguration {
+
+  /**
+   * Registers the shared reactive fallback error handler before Boot's default handler.
+   *
+   * @param objectMapper object mapper used to serialize API error responses
+   * @return shared reactive fallback error handler
+   */
+  @Bean
+  @ConditionalOnWebApplication(type = Type.REACTIVE)
+  @ConditionalOnClass(name = "org.springframework.web.server.WebFilter")
+  @ConditionalOnMissingBean(ErrorWebExceptionHandler.class)
+  public ReactiveErrorWebExceptionHandler errorWebExceptionHandler(ObjectMapper objectMapper) {
+    return new ReactiveErrorWebExceptionHandler(objectMapper);
+  }
 
   /**
    * Configuration for servlet-based (Spring MVC) web applications.
@@ -81,7 +103,7 @@ public class ServiceWebAutoConfiguration {
         "org.budgetanalyzer.service.reactive.http",
         "org.budgetanalyzer.service.reactive.api"
       })
-  static class ReactiveWebConfiguration {
+  public static class ReactiveWebConfiguration {
     // Reactive-specific beans registered via component scanning
   }
 }
