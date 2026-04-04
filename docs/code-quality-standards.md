@@ -4,6 +4,18 @@
 
 All Budget Analyzer microservices follow strict code quality standards enforced through automated tooling and code review.
 
+### Toolchain Coverage
+
+Three tools enforce non-overlapping quality concerns across every build:
+
+| Tool | Enforces | Configured In |
+|------|----------|---------------|
+| **Spotless** | Formatting — Google Java Format, import ordering, whitespace | `build.gradle.kts` (shared via service-common convention) |
+| **Checkstyle** | Style rules, naming conventions, missing Javadoc, code structure | Remote [`checkstyle-config`](https://github.com/budgetanalyzer/checkstyle-config) repo |
+| **Javadoc (`-Xdoclint:all,-missing`)** | Javadoc correctness — HTML well-formedness, `@see`/`@param` references, syntax | `build.gradle.kts` Javadoc task options |
+
+The `-missing` exclusion in Xdoclint is intentional — checkstyle's `MissingJavadocMethod`/`MissingJavadocType` rules already enforce documentation presence, so Xdoclint focuses exclusively on correctness of existing docs.
+
 ## Why Open-Source Tooling
 
 **Core Principle**: All development tooling is open-source with no proprietary dependencies.
@@ -54,7 +66,7 @@ This is the foundation for collaborative AI-native development - a standardized,
 
 **Configuration**:
 - Version 12.0.1
-- Custom rules in `config/checkstyle/checkstyle.xml` (shared across all modules)
+- Centralized rules in [`checkstyle-config`](https://github.com/budgetanalyzer/checkstyle-config) repo (`/workspace/checkstyle-config/` locally), shared across all services
 - Enforces Hibernate import ban
 - Enforces naming conventions
 - Validates Javadoc completeness
@@ -64,8 +76,43 @@ This is the foundation for collaborative AI-native development - a standardized,
 - Missing Javadoc on public methods/classes
 - Wildcard imports (`import java.util.*`)
 - Hibernate-specific imports (`import org.hibernate.*`)
-- Line length violations (120 characters)
+- Line length violations (100 characters)
 - Naming convention violations
+
+## Javadoc Validation
+
+**Purpose**: Catch malformed Javadoc HTML, broken `@see`/`@param` references, and syntax errors
+
+**Scope**: All modules and all consuming services
+
+**Configuration** (in each repo's `build.gradle.kts`):
+```gradle
+tasks.withType<Javadoc> {
+    options {
+        (this as StandardJavadocDocletOptions).apply {
+            addStringOption("Xdoclint:all,-missing", "-quiet")
+        }
+    }
+}
+```
+
+**What it catches**:
+- Malformed HTML tags in Javadoc comments
+- Broken `@see` references (e.g., `@see Foo# bar()` with a stray space)
+- Invalid `@param`/`@return`/`@throws` syntax
+- Unresolved cross-package class references
+
+**What it skips** (`-missing`):
+- Missing Javadoc on public classes/methods — handled by checkstyle
+
+**Usage**:
+```bash
+# Run Javadoc validation standalone
+./gradlew javadoc
+
+# Also runs as part of the full build
+./gradlew clean build
+```
 
 ## Build Commands
 
@@ -398,6 +445,48 @@ Build completed with Checkstyle warnings that I cannot resolve:
 Please advise on how to proceed.
 ```
 
+## Suppression Policy
+
+### `@SuppressWarnings` Requires User Permission
+
+**CRITICAL**: Never add `@SuppressWarnings` without explicit user approval. When a checkstyle or compiler warning appears, the response priority is:
+
+1. **Fix the code** — the warning exists for a reason; resolve the underlying issue
+2. **Update checkstyle config** — if the rule is wrong or too strict for a legitimate pattern, propose a config change to `/workspace/checkstyle-config/checkstyle.xml` (e.g., adding an `allowedAbbreviations` entry, adjusting an XPath filter)
+3. **Suppress as a last resort** — only with user approval, and only on the narrowest possible scope
+
+### Prefer Checkstyle Config Over Inline Suppressions
+
+If the same suppression appears in multiple files, it belongs in the checkstyle config — not scattered as comments or annotations. A single config change eliminates the need for dozens of inline suppressions and keeps the codebase clean.
+
+**Anti-pattern**: The `session-gateway` repo accumulated 15 inline suppressions for `AbbreviationAsWordInName` across OAuth2 classes. The correct fix was adding `OAuth2` to `allowedAbbreviations` in `checkstyle.xml` — which was eventually done, making all 15 suppressions unnecessary.
+
+### What Counts as a Suppression
+
+All of the following require user permission:
+
+| Mechanism | Example |
+|-----------|---------|
+| `@SuppressWarnings("...")` | `@SuppressWarnings("unchecked")` |
+| `@SuppressWarnings("checkstyle:...")` | `@SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")` |
+
+Comment-based suppression (`CHECKSTYLE.OFF/ON`, `CHECKSTYLE.SUPPRESS`) is **not supported** — the comment filters have been removed from the checkstyle config. Use `@SuppressWarnings` annotations exclusively.
+
+### When Suggesting a Checkstyle Config Change
+
+Present the proposal clearly:
+
+```
+Checkstyle warning: AbbreviationAsWordInName on class `OAuth2ClientConfig`
+This affects 9+ classes using the OAuth2 protocol naming convention.
+
+Suggested fix — update checkstyle.xml allowedAbbreviations:
+  Current: value="SQL, MQ, DLQ, SLA"
+  Proposed: value="SQL, MQ, DLQ, SLA, OAuth2"
+
+This eliminates the need for per-file suppressions. Approve?
+```
+
 ## Code Review Checklist
 
 Before committing code, verify:
@@ -473,4 +562,4 @@ cat build/reports/checkstyle/main.html
 - [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
 - [Checkstyle Documentation](https://checkstyle.org/)
 - [Spotless Plugin](https://github.com/diffplug/spotless)
-- Project-specific rules: `config/checkstyle/checkstyle.xml`
+- Centralized checkstyle rules: [`checkstyle-config`](https://github.com/budgetanalyzer/checkstyle-config) repo — all rule changes must be made there, not in individual services

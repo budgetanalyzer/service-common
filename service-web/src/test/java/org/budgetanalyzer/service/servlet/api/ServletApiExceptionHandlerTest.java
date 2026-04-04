@@ -74,8 +74,7 @@ class ServletApiExceptionHandlerTest {
     bindingResult.addError(
         new org.springframework.validation.FieldError(
             "testPayload", "name", "", false, null, null, "must not be blank"));
-    var method = TestPayload.class.getDeclaredMethod("updateName", String.class);
-    var methodParameter = new MethodParameter(method, 0);
+    var methodParameter = new MethodParameter(Object.class.getMethod("equals", Object.class), 0);
     var exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
 
     var response = servletApiExceptionHandler.handle(exception, webRequest);
@@ -207,17 +206,17 @@ class ServletApiExceptionHandlerTest {
     assertNull(response.getCode());
   }
 
-  @SuppressWarnings("null")
   @Test
   @DisplayName("Should handle MethodArgumentTypeMismatchException with INVALID_REQUEST type")
-  void shouldHandleMethodArgumentTypeMismatchException() {
+  void shouldHandleMethodArgumentTypeMismatchException() throws NoSuchMethodException {
     // Simulate type mismatch exception (e.g., passing "abc" for Long parameter)
+    var methodParameter = new MethodParameter(Object.class.getMethod("equals", Object.class), 0);
     var exception =
         new MethodArgumentTypeMismatchException(
             "abc",
             Long.class,
             "id",
-            null, // MethodParameter can be null in test context
+            methodParameter,
             new NumberFormatException("For input string: \"abc\""));
 
     var response = servletApiExceptionHandler.handle(exception, webRequest);
@@ -632,9 +631,9 @@ class ServletApiExceptionHandlerTest {
                 .fieldErrors(List.of(FieldError.of("name", "must not be blank", "")))
                 .build());
     var trackingHandler = new TrackingServletApiExceptionHandler(null, resolvedError);
-    var method = TestPayload.class.getDeclaredMethod("updateName", String.class);
     var exception =
-        new MethodArgumentNotValidException(new MethodParameter(method, 0), bindingResult);
+        new MethodArgumentNotValidException(
+            new MethodParameter(Object.class.getMethod("equals", Object.class), 0), bindingResult);
 
     var response = trackingHandler.handle(exception, webRequest);
 
@@ -664,9 +663,6 @@ class ServletApiExceptionHandlerTest {
     public int getAge() {
       return age;
     }
-
-    @SuppressWarnings("unused")
-    public void updateName(String updatedName) {}
   }
 
   private static final class TrackingServletApiExceptionHandler extends ServletApiExceptionHandler {

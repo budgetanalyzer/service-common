@@ -47,7 +47,7 @@ subprojects {
     tasks.withType<Javadoc> {
         options {
             (this as StandardJavadocDocletOptions).apply {
-                addStringOption("Xdoclint:none", "-quiet")
+                addStringOption("Xdoclint:all,-missing", "-quiet")
                 // External API links for generating clickable Javadoc references
                 // Update these URLs when upgrading Spring Boot or Jakarta EE versions
                 links(
