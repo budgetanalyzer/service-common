@@ -1,5 +1,6 @@
 package org.budgetanalyzer.service.security;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.context.runner.ReactiveWebApplicationContex
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -54,8 +57,9 @@ class ClaimsHeaderSecurityConfigTest {
   }
 
   @Test
-  @DisplayName("Should back off when the application defines a custom SecurityFilterChain")
-  void shouldBackOffWhenCustomSecurityFilterChainExists() {
+  @DisplayName(
+      "Should coexist with a service-specific SecurityFilterChain that uses a scoped matcher")
+  void shouldCoexistWithScopedSecurityFilterChain() {
     servletContextRunner
         .withUserConfiguration(CustomServletSecurityConfig.class)
         .run(
@@ -63,10 +67,29 @@ class ClaimsHeaderSecurityConfigTest {
               assertTrue(
                   context.containsBean("customSecurityFilterChain"),
                   "Should keep the application-defined SecurityFilterChain");
-              assertFalse(
+              assertTrue(
                   context.containsBean("securityFilterChain"),
-                  "Should back off shared servlet claims security when a custom chain exists");
+                  "Should register the shared claims-header chain alongside the scoped chain");
             });
+  }
+
+  @Test
+  @DisplayName("Should register the shared chain at BASIC_AUTH_ORDER so service chains run first")
+  void shouldRegisterSharedChainAtBasicAuthOrder() {
+    servletContextRunner.run(
+        context -> {
+          var securityFilterChain = context.getBean("securityFilterChain");
+          var order =
+              org.springframework.core.annotation.AnnotationUtils.findAnnotation(
+                  securityFilterChain.getClass(), Order.class);
+          // SecurityFilterChain is a proxy — check the bean definition's method annotation instead
+          var beanOrder =
+              context.getBeanFactory().findAnnotationOnBean("securityFilterChain", Order.class);
+          assertEquals(
+              SecurityProperties.BASIC_AUTH_ORDER,
+              beanOrder != null ? beanOrder.value() : order != null ? order.value() : null,
+              "Shared chain should be ordered at BASIC_AUTH_ORDER");
+        });
   }
 
   @Test
@@ -95,8 +118,11 @@ class ClaimsHeaderSecurityConfigTest {
   static class CustomServletSecurityConfig {
 
     @Bean
+    @Order(1)
     SecurityFilterChain customSecurityFilterChain(HttpSecurity http) throws Exception {
-      return http.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll()).build();
+      return http.securityMatcher("/internal/**")
+          .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+          .build();
     }
   }
 }
