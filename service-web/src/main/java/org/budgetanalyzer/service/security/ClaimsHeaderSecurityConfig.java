@@ -3,11 +3,12 @@ package org.budgetanalyzer.service.security;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,9 +35,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </ul>
  *
  * <p><b>Usage:</b> All services consuming service-web automatically inherit this configuration. No
- * properties are required unless a consuming service defines its own {@link SecurityFilterChain},
- * which overrides the shared default chain. Authentication is performed before requests reach the
- * service.
+ * properties are required. Services that define additional {@link SecurityFilterChain} beans with a
+ * {@code securityMatcher} (e.g. for internal endpoints) coexist with this catch-all chain — the
+ * service-specific chain should use a lower {@code @Order} value so it is evaluated first.
  *
  * @see ClaimsHeaderAuthenticationFilter
  * @see ClaimsHeaderAuthenticationToken
@@ -68,7 +69,7 @@ public class ClaimsHeaderSecurityConfig {
    * @throws Exception if configuration fails
    */
   @Bean
-  @ConditionalOnMissingBean(SecurityFilterChain.class)
+  @Order(SecurityProperties.BASIC_AUTH_ORDER)
   public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper)
       throws Exception {
     logger.info("Configuring stateless claims-header security");

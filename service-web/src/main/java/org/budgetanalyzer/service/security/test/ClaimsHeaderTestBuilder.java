@@ -75,6 +75,7 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
           "users:delete",
           "roles:read",
           "roles:write",
+          "roles:delete",
           "audit:read",
           "currencies:read",
           "currencies:write",
