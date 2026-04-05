@@ -54,11 +54,11 @@ class SoftDeleteOperationsTest {
   }
 
   @Test
-  void shouldFindActiveEntityByLongId() {
+  void shouldFindNotDeletedEntityByLongId() {
     var activeEntity = persistTestEntity("Active Entity", false);
 
     var result =
-        executeInTransaction(() -> testEntityRepository.findByIdActive(activeEntity.getId()));
+        executeInTransaction(() -> testEntityRepository.findByIdNotDeleted(activeEntity.getId()));
 
     assertThat(result).isPresent();
     assertThat(result).get().extracting(TestEntity::getName).isEqualTo("Active Entity");
@@ -69,18 +69,18 @@ class SoftDeleteOperationsTest {
     var deletedEntity = persistTestEntity("Deleted Entity", true);
 
     var result =
-        executeInTransaction(() -> testEntityRepository.findByIdActive(deletedEntity.getId()));
+        executeInTransaction(() -> testEntityRepository.findByIdNotDeleted(deletedEntity.getId()));
 
     assertThat(result).isEmpty();
   }
 
   @Test
-  void shouldFindActiveEntityByStringId() {
+  void shouldFindNotDeletedEntityByStringId() {
     var activeEntity = persistTestStringIdEntity("role_admin", "Admin", false);
 
     var result =
         executeInTransaction(
-            () -> testStringIdEntityRepository.findByIdActive(activeEntity.getId()));
+            () -> testStringIdEntityRepository.findByIdNotDeleted(activeEntity.getId()));
 
     assertThat(result).isPresent();
     assertThat(result).get().extracting(TestStringIdEntity::getName).isEqualTo("Admin");
@@ -92,18 +92,18 @@ class SoftDeleteOperationsTest {
 
     var result =
         executeInTransaction(
-            () -> testStringIdEntityRepository.findByIdActive(deletedEntity.getId()));
+            () -> testStringIdEntityRepository.findByIdNotDeleted(deletedEntity.getId()));
 
     assertThat(result).isEmpty();
   }
 
   @Test
-  void shouldExcludeDeletedEntitiesFromFindAllActive() {
+  void shouldExcludeDeletedEntitiesFromFindAllNotDeleted() {
     persistTestEntity("Alpha", false);
     persistTestEntity("Bravo", true);
     persistTestEntity("Charlie", false);
 
-    var result = executeInTransaction(() -> testEntityRepository.findAllActive());
+    var result = executeInTransaction(() -> testEntityRepository.findAllNotDeleted());
 
     assertThat(result)
         .extracting(TestEntity::getName)
@@ -111,7 +111,7 @@ class SoftDeleteOperationsTest {
   }
 
   @Test
-  void shouldPaginateActiveEntitiesOnly() {
+  void shouldPaginateNotDeletedEntitiesOnly() {
     persistTestEntity("Alpha", false);
     persistTestEntity("Bravo", true);
     persistTestEntity("Charlie", false);
@@ -119,7 +119,7 @@ class SoftDeleteOperationsTest {
 
     var pageRequest = PageRequest.of(0, 2, Sort.by(Sort.Direction.ASC, "name"));
 
-    var result = executeInTransaction(() -> testEntityRepository.findAllActive(pageRequest));
+    var result = executeInTransaction(() -> testEntityRepository.findAllNotDeleted(pageRequest));
 
     assertThat(result.getTotalElements()).isEqualTo(3);
     assertThat(result.getContent())
@@ -136,13 +136,14 @@ class SoftDeleteOperationsTest {
     Specification<TestEntity> nameContainsMatch =
         (root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("name"), "Match%");
 
-    var result = executeInTransaction(() -> testEntityRepository.findAllActive(nameContainsMatch));
+    var result =
+        executeInTransaction(() -> testEntityRepository.findAllNotDeleted(nameContainsMatch));
 
     assertThat(result).extracting(TestEntity::getName).containsExactly("Match One");
   }
 
   @Test
-  void shouldFindSingleActiveEntityMatchingSpecification() {
+  void shouldFindSingleNotDeletedEntityMatchingSpecification() {
     persistTestStringIdEntity("perm_read", "Read Permission", false);
     persistTestStringIdEntity("perm_deleted", "Read Deleted", true);
 
@@ -151,14 +152,15 @@ class SoftDeleteOperationsTest {
             criteriaBuilder.equal(root.get("name"), "Read Permission");
 
     var result =
-        executeInTransaction(() -> testStringIdEntityRepository.findOneActive(nameStartsWithRead));
+        executeInTransaction(
+            () -> testStringIdEntityRepository.findOneNotDeleted(nameStartsWithRead));
 
     assertThat(result).isPresent();
     assertThat(result).get().extracting(TestStringIdEntity::getId).isEqualTo("perm_read");
   }
 
   @Test
-  void shouldCountOnlyActiveEntitiesMatchingSpecification() {
+  void shouldCountOnlyNotDeletedEntitiesMatchingSpecification() {
     persistTestStringIdEntity("perm_one", "Permission", false);
     persistTestStringIdEntity("perm_two", "Permission", false);
     persistTestStringIdEntity("perm_deleted", "Permission", true);
@@ -168,7 +170,7 @@ class SoftDeleteOperationsTest {
         (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("name"), "Permission");
 
     var count =
-        executeInTransaction(() -> testStringIdEntityRepository.countActive(namedPermission));
+        executeInTransaction(() -> testStringIdEntityRepository.countNotDeleted(namedPermission));
 
     assertThat(count).isEqualTo(2);
   }

@@ -14,7 +14,7 @@ import org.budgetanalyzer.core.domain.SoftDeletableEntity;
  * Repository interface providing query methods that automatically filter out soft-deleted entities.
  *
  * <p>This interface should be extended by repositories for entities that extend {@link
- * SoftDeletableEntity}. It provides "active" versions of common query methods that exclude
+ * SoftDeletableEntity}. It provides non-deleted versions of common query methods that exclude
  * soft-deleted records (where {@code deleted = true}).
  *
  * <p>All methods use JPA Specifications to dynamically add the {@code deleted = false} filter to
@@ -30,16 +30,16 @@ import org.budgetanalyzer.core.domain.SoftDeletableEntity;
  * }
  *
  * // In service layer
- * var allActive = repository.findAllActive();
- * var transaction = repository.findByIdActive(id)
+ * var allNotDeleted = repository.findAllNotDeleted();
+ * var transaction = repository.findByIdNotDeleted(id)
  *     .orElseThrow(() -&gt; new ResourceNotFoundException("Transaction not found"));
  *
- * var activePage = repository.findAllActive(PageRequest.of(0, 10));
+ * var notDeletedPage = repository.findAllNotDeleted(PageRequest.of(0, 10));
  *
  * // With custom specifications
  * Specification&lt;Transaction&gt; amountGreaterThan = (root, query, cb) -&gt;
  *     cb.greaterThan(root.get("amount"), BigDecimal.valueOf(100));
- * var results = repository.findAllActive(amountGreaterThan);
+ * var results = repository.findAllNotDeleted(amountGreaterThan);
  * </pre>
  *
  * @param <T> the entity type extending {@link SoftDeletableEntity}
@@ -61,74 +61,74 @@ public interface SoftDeleteOperations<T extends SoftDeletableEntity, ID>
   }
 
   /**
-   * Finds all active (non-deleted) entities.
+   * Finds all non-deleted entities.
    *
    * @return a list of all entities where deleted = false
    */
-  default List<T> findAllActive() {
+  default List<T> findAllNotDeleted() {
     return findAll(notDeleted()); // Calls JpaSpecificationExecutor.findAll
   }
 
   /**
-   * Finds all active (non-deleted) entities with pagination.
+   * Finds all non-deleted entities with pagination.
    *
    * @param pageable the pagination information (page number, size, sort)
-   * @return a page of active entities
+   * @return a page of non-deleted entities
    */
-  default Page<T> findAllActive(Pageable pageable) {
+  default Page<T> findAllNotDeleted(Pageable pageable) {
     return findAll(notDeleted(), pageable);
   }
 
   /**
-   * Finds all active entities matching the given specification.
+   * Finds all non-deleted entities matching the given specification.
    *
    * @param spec the search criteria specification
-   * @return a list of active entities matching the specification
+   * @return a list of non-deleted entities matching the specification
    */
-  default List<T> findAllActive(Specification<T> spec) {
+  default List<T> findAllNotDeleted(Specification<T> spec) {
     return findAll(notDeleted().and(spec));
   }
 
   /**
-   * Finds all active entities matching the given specification with pagination.
+   * Finds all non-deleted entities matching the given specification with pagination.
    *
    * @param spec the search criteria specification
    * @param pageable the pagination information (page number, size, sort)
-   * @return a page of active entities matching the specification
+   * @return a page of non-deleted entities matching the specification
    */
-  default Page<T> findAllActive(Specification<T> spec, Pageable pageable) {
+  default Page<T> findAllNotDeleted(Specification<T> spec, Pageable pageable) {
     return findAll(notDeleted().and(spec), pageable);
   }
 
   /**
-   * Finds an active entity by its ID.
+   * Finds a non-deleted entity by its ID.
    *
    * <p>This method returns an empty Optional if the entity doesn't exist or is soft-deleted.
    *
    * @param id the entity ID
-   * @return an Optional containing the entity if found and active, or empty otherwise
+   * @return an Optional containing the entity if found and not deleted, or empty otherwise
    */
-  default Optional<T> findByIdActive(ID id) {
+  default Optional<T> findByIdNotDeleted(ID id) {
     return findOne(notDeleted().and((root, query, cb) -> cb.equal(root.get("id"), id)));
   }
 
   /**
-   * Finds a single active entity matching the given specification.
+   * Finds a single non-deleted entity matching the given specification.
    *
    * @param spec the search criteria specification
-   * @return an Optional containing the entity if found and active, or empty otherwise
+   * @return an Optional containing the entity if found and not deleted, or empty otherwise
    */
-  default Optional<T> findOneActive(Specification<T> spec) {
+  default Optional<T> findOneNotDeleted(Specification<T> spec) {
     return findOne(notDeleted().and(spec));
   }
 
   /**
-   * Counts active entities matching the given specification.
+   * Counts non-deleted entities matching the given specification.
    *
    * @param spec the search criteria specification
-   * @return the number of active entities matching the specification
+   * @return the number of non-deleted entities matching the specification
    */
-  default long countActive(Specification<T> spec) {
+  default long countNotDeleted(Specification<T> spec) {
     return count(notDeleted().and(spec));
   }
 }
