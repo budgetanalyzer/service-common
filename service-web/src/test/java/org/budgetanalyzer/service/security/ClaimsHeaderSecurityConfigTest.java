@@ -84,9 +84,7 @@ class ClaimsHeaderSecurityConfigTest {
                   securityFilterChain.getClass(), Order.class);
           // SecurityFilterChain is a proxy — check the bean definition's method annotation instead
           var beanOrder =
-              context
-                  .getBeanFactory()
-                  .findAnnotationOnBean("securityFilterChain", Order.class);
+              context.getBeanFactory().findAnnotationOnBean("securityFilterChain", Order.class);
           assertEquals(
               SecurityProperties.BASIC_AUTH_ORDER,
               beanOrder != null ? beanOrder.value() : order != null ? order.value() : null,
