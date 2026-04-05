@@ -48,9 +48,9 @@ import org.budgetanalyzer.core.repository.SoftDeleteOperations;
  *                                                SoftDeleteOperations&lt;Transaction, Long&gt; {
  * }
  *
- * // Query only active (non-deleted) records
- * var activeTransactions = repository.findAllActive();
- * var transaction = repository.findByIdActive(id);
+ * // Query only non-deleted records
+ * var notDeletedTransactions = repository.findAllNotDeleted();
+ * var transaction = repository.findByIdNotDeleted(id);
  * </pre>
  */
 @MappedSuperclass

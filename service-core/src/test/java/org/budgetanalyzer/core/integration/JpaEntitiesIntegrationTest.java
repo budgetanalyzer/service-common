@@ -159,9 +159,9 @@ class JpaEntitiesIntegrationTest {
     entity2.markDeleted("test-user");
     softDeletableRepository.save(entity2);
 
-    var nonDeletedEntities = softDeletableRepository.findAllActive();
-    var activeEntity = softDeletableRepository.findByIdActive(entity1.getId());
-    var deletedEntity = softDeletableRepository.findByIdActive(entity2.getId());
+    var nonDeletedEntities = softDeletableRepository.findAllNotDeleted();
+    var activeEntity = softDeletableRepository.findByIdNotDeleted(entity1.getId());
+    var deletedEntity = softDeletableRepository.findByIdNotDeleted(entity2.getId());
 
     assertThat(nonDeletedEntities)
         .extracting(TestSoftDeletableEntity::getName)
