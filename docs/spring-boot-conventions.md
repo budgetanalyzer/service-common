@@ -858,6 +858,8 @@ public ResponseEntity<ResourceResponse> create(@Valid @RequestBody CreateRequest
 - Always include response body (the created resource representation)
 - Location must be an absolute URI (ServletUriComponentsBuilder handles this)
 
+**Batch-creation endpoints**: When a single POST creates *multiple* resources in one call, there is no single primary resource to point at, so a `Location` header does not fit. Return `200 OK` (Spring's default for a POST with a body) instead of `201 Created` for these endpoints. See `TransactionController.batchImportTransactions()` in transaction-service for an example.
+
 **Discovery**:
 ```bash
 # Find all POST endpoints in a service
@@ -867,7 +869,7 @@ grep -r "@PostMapping" src/main/java/*/api/
 grep -rA 10 "ResponseEntity.created" src/main/java/
 ```
 
-**Example**: See `AdminCurrencySeriesController.create()` in currency-service for a complete implementation.
+**Example**: See `CurrencySeriesController.create()` in currency-service for a complete implementation.
 
 ## Testing Patterns
 
@@ -895,4 +897,4 @@ See [testing-patterns.md](testing-patterns.md) for detailed testing guidelines.
 
 *The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use this link to access the referenced controller:*
 
-- [AdminCurrencySeriesController.java](https://github.com/budgetanalyzer/currency-service/blob/main/src/main/java/org/budgetanalyzer/currency/api/AdminCurrencySeriesController.java)
+- [CurrencySeriesController.java](https://github.com/budgetanalyzer/currency-service/blob/main/src/main/java/org/budgetanalyzer/currency/api/CurrencySeriesController.java)
