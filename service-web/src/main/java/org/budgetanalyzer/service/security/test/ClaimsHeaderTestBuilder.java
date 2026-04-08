@@ -57,7 +57,15 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
   private static final String DEFAULT_USER_ID = "usr_test123";
   private static final List<String> DEFAULT_ROLES = List.of("USER");
   private static final List<String> DEFAULT_PERMISSIONS =
-      List.of("transactions:read", "accounts:read", "budgets:read");
+      List.of(
+          "transactions:read",
+          "transactions:write",
+          "transactions:delete",
+          "views:read",
+          "views:write",
+          "views:delete",
+          "statementformats:read",
+          "currencies:read");
 
   private static final List<String> ADMIN_PERMISSIONS =
       List.of(
@@ -67,24 +75,14 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
           "transactions:read:any",
           "transactions:write:any",
           "transactions:delete:any",
-          "accounts:read",
-          "accounts:write",
-          "accounts:delete",
-          "budgets:read",
-          "budgets:write",
-          "budgets:delete",
           "users:read",
           "users:write",
           "users:delete",
-          "roles:read",
-          "roles:write",
-          "roles:delete",
-          "audit:read",
-          "currencies:read",
-          "currencies:write",
           "statementformats:read",
           "statementformats:write",
-          "statementformats:delete");
+          "statementformats:delete",
+          "currencies:read",
+          "currencies:write");
 
   private String userId;
   private List<String> roles;
@@ -104,7 +102,8 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
    * <ul>
    *   <li>User ID: "usr_test123"
    *   <li>Roles: ["USER"]
-   *   <li>Permissions: ["transactions:read", "accounts:read", "budgets:read"]
+   *   <li>Permissions: ["transactions:read", "transactions:write", "transactions:delete",
+   *       "views:read", "views:write", "views:delete", "statementformats:read", "currencies:read"]
    * </ul>
    *
    * @return builder configured as default user (also usable as RequestPostProcessor)
@@ -133,8 +132,8 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
    * <ul>
    *   <li>User ID: "usr_admin456"
    *   <li>Roles: ["ADMIN"]
-   *   <li>Permissions: all CRUD permissions for transactions, accounts, budgets, users, roles,
-   *       audit, currencies, and statement formats
+   *   <li>Permissions: all non-view permissions for transactions (including {@code :any} variants),
+   *       users, statement formats, and currencies
    * </ul>
    *
    * @return builder configured as admin user
@@ -150,7 +149,7 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
   /**
    * Sets the permissions for this test user.
    *
-   * @param permissions permission values (e.g., "transactions:read", "accounts:write")
+   * @param permissions permission values (e.g., "transactions:read", "currencies:write")
    * @return this builder for method chaining
    */
   public ClaimsHeaderTestBuilder withPermissions(String... permissions) {
@@ -213,7 +212,7 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
    * <p>Useful for {@code @WebMvcTest} tests that need explicit authority lists.
    *
    * @param commaSeparatedPermissions comma-separated permissions (e.g., "transactions:read,
-   *     accounts:read")
+   *     currencies:read")
    * @param commaSeparatedRoles comma-separated roles (e.g., "ADMIN, USER")
    * @return collection of granted authorities
    */

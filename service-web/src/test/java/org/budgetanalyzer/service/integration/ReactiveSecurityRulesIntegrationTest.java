@@ -128,7 +128,11 @@ class ReactiveSecurityRulesIntegrationTest {
         .get()
         .uri("/api/reactive-security/transactions-write")
         .headers(
-            headers -> ClaimsHeaderTestBuilder.defaultUser().buildHeaders().forEach(headers::add))
+            headers ->
+                ClaimsHeaderTestBuilder.user("usr_reactive_reader")
+                    .withPermissions("currencies:read")
+                    .buildHeaders()
+                    .forEach(headers::add))
         .exchange()
         .expectStatus()
         .isForbidden()

@@ -19,7 +19,10 @@ class ClaimsHeaderTestBuilderTest {
 
     assertThat(headers).containsEntry("X-User-Id", "usr_test123");
     assertThat(headers)
-        .containsEntry("X-Permissions", "transactions:read,accounts:read,budgets:read");
+        .containsEntry(
+            "X-Permissions",
+            "transactions:read,transactions:write,transactions:delete,views:read,views:write,"
+                + "views:delete,statementformats:read,currencies:read");
     assertThat(headers).containsEntry("X-Roles", "USER");
   }
 
@@ -44,24 +47,17 @@ class ClaimsHeaderTestBuilderTest {
     assertThat(permissions).contains("transactions:read:any");
     assertThat(permissions).contains("transactions:write:any");
     assertThat(permissions).contains("transactions:delete:any");
-    assertThat(permissions).contains("accounts:read");
-    assertThat(permissions).contains("accounts:write");
-    assertThat(permissions).contains("accounts:delete");
-    assertThat(permissions).contains("budgets:read");
-    assertThat(permissions).contains("budgets:write");
-    assertThat(permissions).contains("budgets:delete");
     assertThat(permissions).contains("users:read");
     assertThat(permissions).contains("users:write");
     assertThat(permissions).contains("users:delete");
-    assertThat(permissions).contains("roles:read");
-    assertThat(permissions).contains("roles:write");
-    assertThat(permissions).contains("roles:delete");
-    assertThat(permissions).contains("audit:read");
     assertThat(permissions).contains("currencies:read");
     assertThat(permissions).contains("currencies:write");
     assertThat(permissions).contains("statementformats:read");
     assertThat(permissions).contains("statementformats:write");
     assertThat(permissions).contains("statementformats:delete");
+    assertThat(permissions).doesNotContain("views:read");
+    assertThat(permissions).doesNotContain("views:write");
+    assertThat(permissions).doesNotContain("views:delete");
   }
 
   @Test
@@ -100,13 +96,13 @@ class ClaimsHeaderTestBuilderTest {
   void buildHeaders_shouldReturnCorrectMap() {
     var headers =
         ClaimsHeaderTestBuilder.user("usr_abc123")
-            .withPermissions("accounts:read")
+            .withPermissions("currencies:read")
             .withRoles("USER")
             .buildHeaders();
 
     assertThat(headers).hasSize(3);
     assertThat(headers).containsEntry("X-User-Id", "usr_abc123");
-    assertThat(headers).containsEntry("X-Permissions", "accounts:read");
+    assertThat(headers).containsEntry("X-Permissions", "currencies:read");
     assertThat(headers).containsEntry("X-Roles", "USER");
   }
 
@@ -114,25 +110,25 @@ class ClaimsHeaderTestBuilderTest {
   void postProcessRequest_shouldAddHeadersToRequest() {
     var builder =
         ClaimsHeaderTestBuilder.user("usr_abc123")
-            .withPermissions("transactions:read", "accounts:read")
+            .withPermissions("transactions:read", "currencies:read")
             .withRoles("USER");
 
     var request = new MockHttpServletRequest();
     builder.postProcessRequest(request);
 
     assertThat(request.getHeader("X-User-Id")).isEqualTo("usr_abc123");
-    assertThat(request.getHeader("X-Permissions")).isEqualTo("transactions:read,accounts:read");
+    assertThat(request.getHeader("X-Permissions")).isEqualTo("transactions:read,currencies:read");
     assertThat(request.getHeader("X-Roles")).isEqualTo("USER");
   }
 
   @Test
   void authoritiesFor_shouldCombinePermissionsAndRoles() {
     var authorities =
-        ClaimsHeaderTestBuilder.authoritiesFor("transactions:read,accounts:read", "ADMIN");
+        ClaimsHeaderTestBuilder.authoritiesFor("transactions:read,currencies:read", "ADMIN");
 
     assertThat(authorities)
         .extracting(GrantedAuthority::getAuthority)
-        .containsExactly("transactions:read", "accounts:read", "ROLE_ADMIN");
+        .containsExactly("transactions:read", "currencies:read", "ROLE_ADMIN");
   }
 
   @Test
@@ -162,10 +158,10 @@ class ClaimsHeaderTestBuilderTest {
   void authoritiesFor_shouldTrimWhitespace() {
     var authorities =
         ClaimsHeaderTestBuilder.authoritiesFor(
-            " transactions:read , accounts:read ", " ADMIN , USER ");
+            " transactions:read , currencies:read ", " ADMIN , USER ");
 
     assertThat(authorities)
         .extracting(GrantedAuthority::getAuthority)
-        .containsExactly("transactions:read", "accounts:read", "ROLE_ADMIN", "ROLE_USER");
+        .containsExactly("transactions:read", "currencies:read", "ROLE_ADMIN", "ROLE_USER");
   }
 }
