@@ -41,6 +41,9 @@ class ClaimsHeaderTestBuilderTest {
     assertThat(permissions).contains("transactions:read");
     assertThat(permissions).contains("transactions:write");
     assertThat(permissions).contains("transactions:delete");
+    assertThat(permissions).contains("transactions:read:any");
+    assertThat(permissions).contains("transactions:write:any");
+    assertThat(permissions).contains("transactions:delete:any");
     assertThat(permissions).contains("accounts:read");
     assertThat(permissions).contains("accounts:write");
     assertThat(permissions).contains("accounts:delete");
@@ -52,6 +55,7 @@ class ClaimsHeaderTestBuilderTest {
     assertThat(permissions).contains("users:delete");
     assertThat(permissions).contains("roles:read");
     assertThat(permissions).contains("roles:write");
+    assertThat(permissions).contains("roles:delete");
     assertThat(permissions).contains("audit:read");
     assertThat(permissions).contains("currencies:read");
     assertThat(permissions).contains("currencies:write");
