@@ -54,7 +54,7 @@ class ClaimsHeaderTestBuilderTest {
     assertThat(permissions).contains("currencies:write");
     assertThat(permissions).contains("statementformats:read");
     assertThat(permissions).contains("statementformats:write");
-    assertThat(permissions).contains("statementformats:delete");
+    assertThat(permissions).doesNotContain("statementformats:delete");
     assertThat(permissions).doesNotContain("views:read");
     assertThat(permissions).doesNotContain("views:write");
     assertThat(permissions).doesNotContain("views:delete");

@@ -80,7 +80,6 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
           "users:delete",
           "statementformats:read",
           "statementformats:write",
-          "statementformats:delete",
           "currencies:read",
           "currencies:write");
 
