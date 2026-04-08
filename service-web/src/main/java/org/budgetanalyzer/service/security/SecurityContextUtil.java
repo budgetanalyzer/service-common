@@ -18,7 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * <ul>
  *   <li>Logging user actions for audit trails
  *   <li>Extracting user ID for user-specific queries
- *   <li>Checking user roles for authorization decisions
+ *   <li>Checking user roles or authorities for authorization decisions
  * </ul>
  *
  * <p><b>Thread safety:</b> This utility is thread-safe as it reads from Spring's
@@ -73,6 +73,27 @@ public class SecurityContextUtil {
     }
     return authentication.getAuthorities().stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_" + role));
+  }
+
+  /**
+   * Checks whether the currently authenticated user has the specified authority.
+   *
+   * <p>Authorities are matched verbatim — no prefix is added. This is the imperative equivalent of
+   * Spring Security's {@code hasAuthority(...)} SpEL expression used in {@code @PreAuthorize}, and
+   * is intended for fine-grained permission checks inside controller or service code (e.g., "does
+   * the caller have the {@code transactions:read:any} permission so we can skip the owner
+   * filter?").
+   *
+   * @param authority the authority name to check (e.g., "transactions:read:any")
+   * @return true if the user has the specified authority, false otherwise
+   */
+  public static boolean hasAuthority(String authority) {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null || authority == null) {
+      return false;
+    }
+    return authentication.getAuthorities().stream()
+        .anyMatch(granted -> authority.equals(granted.getAuthority()));
   }
 
   /**

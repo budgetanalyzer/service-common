@@ -84,6 +84,62 @@ class SecurityContextUtilTest {
     assertThat(SecurityContextUtil.hasRole("ADMIN")).isFalse();
   }
 
+  // --- hasAuthority tests ---
+
+  @Test
+  void hasAuthority_shouldReturnTrueWhenUserHasAuthority() {
+    var authentication =
+        new ClaimsHeaderAuthenticationToken(
+            "usr_abc123",
+            Set.of("USER"),
+            List.of(
+                new SimpleGrantedAuthority("transactions:read"),
+                new SimpleGrantedAuthority("transactions:read:any")));
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    assertThat(SecurityContextUtil.hasAuthority("transactions:read:any")).isTrue();
+  }
+
+  @Test
+  void hasAuthority_shouldReturnFalseWhenUserLacksAuthority() {
+    var authentication =
+        new ClaimsHeaderAuthenticationToken(
+            "usr_abc123", Set.of("USER"), List.of(new SimpleGrantedAuthority("transactions:read")));
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    assertThat(SecurityContextUtil.hasAuthority("transactions:read:any")).isFalse();
+  }
+
+  @Test
+  void hasAuthority_shouldReturnFalseWhenNoAuthentication() {
+    SecurityContextHolder.clearContext();
+
+    assertThat(SecurityContextUtil.hasAuthority("transactions:read:any")).isFalse();
+  }
+
+  @Test
+  void hasAuthority_shouldReturnFalseWhenAuthorityIsNull() {
+    var authentication =
+        new ClaimsHeaderAuthenticationToken(
+            "usr_abc123",
+            Set.of("USER"),
+            List.of(new SimpleGrantedAuthority("transactions:read:any")));
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    assertThat(SecurityContextUtil.hasAuthority(null)).isFalse();
+  }
+
+  @Test
+  void hasAuthority_shouldNotAddRolePrefix() {
+    var authentication =
+        new ClaimsHeaderAuthenticationToken(
+            "usr_abc123", Set.of("ADMIN"), List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+    assertThat(SecurityContextUtil.hasAuthority("ADMIN")).isFalse();
+    assertThat(SecurityContextUtil.hasAuthority("ROLE_ADMIN")).isTrue();
+  }
+
   // --- logAuthenticationContext tests ---
 
   @Test
