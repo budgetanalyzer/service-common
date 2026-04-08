@@ -676,6 +676,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
 **Note**: `SoftDeleteOperations` interface is also in service-core (`org.budgetanalyzer.core.repository`).
 
+### Choosing Between Them
+
+**Decision rule**: Use `SoftDeletableEntity` when "deleted but preserved" is a meaningful state in the domain. Use `AuditableEntity` alone when one of the following applies:
+
+- **The entity is append-only.** You never delete rows; corrections happen by inserting new ones or updating in place. Example: `ExchangeRate` — historical rates with a `UNIQUE(base, target, date)` constraint, populated by import jobs.
+- **A domain field already expresses disablement.** An `enabled` flag, a status enum, or similar already covers the "turned off but preserved" state, so adding `deleted` would be a second mechanism for the same concept. Example: `CurrencySeries` has `enabled` — setting `enabled=false` is the intended way to retire a series from the catalog.
+- **The row's existence IS the business fact.** Pure association rows where the row's presence means "this link exists" and its absence means "this link does not exist." Example: `UserRole`, `RolePermission` — a row means "this user has this role."
+
+Use `SoftDeletableEntity` otherwise — particularly for user-owned business data (e.g., `Transaction`) and identity/authorization aggregates that other rows reference by ID (e.g., `User`).
+
 ## Persistence Layer: Pure JPA
 
 **CRITICAL RULE**: Use pure JPA (Jakarta Persistence API) exclusively. NO Hibernate-specific features.
