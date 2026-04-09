@@ -778,17 +778,60 @@ void badExample() throws Exception {
 
 ### Service Layer Exception Testing
 
+**CRITICAL**: The same rule applies to service-layer exception tests. Assert on the **exception type only** — never on the exception message text. Exception types are part of the service contract; message text is implementation detail that will drift for clarity, i18n, or UX reasons.
+
+**Stable contract** (safe to assert on):
+- Exception type (`assertThrows(X.class, ...)` / `.isInstanceOf(X.class)`)
+
+**Unstable** (DO NOT assert on):
+- Exception message text — including via AssertJ `.hasMessage(...)`, `.hasMessageContaining(...)`, `.hasMessageMatching(...)`, or JUnit `exception.getMessage()` comparisons
+- Exception `cause` message text
+- Any wording embedded in the exception
+
+AssertJ's `.hasMessageContaining(...)` is the most common vector for this anti-pattern — it looks innocuous because it's "just checking the ID is in the message", but it couples the test to the exact phrasing of the thrown exception and breaks every time the message is rewritten.
+
+**Examples**
+
 ```java
+// ✅ GOOD - Assert on exception type only
 @Test
 void shouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
     when(repository.findByIdActive(999L)).thenReturn(Optional.empty());
 
     assertThrows(ResourceNotFoundException.class,
         () -> service.getById(999L));
-    // ✅ Exception type is part of the contract
-    // ✅ No assertion on exception message - it's subject to change
+}
+
+// ✅ GOOD - AssertJ equivalent, still type-only
+@Test
+void shouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
+    when(repository.findByIdActive(999L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.getById(999L))
+        .isInstanceOf(ResourceNotFoundException.class);
+}
+
+// ❌ BAD - hasMessageContaining couples the test to message wording
+@Test
+void badExample() {
+    when(repository.findByIdActive(999L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.getById(999L))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("999")           // ❌ message text is not contract
+        .hasMessageContaining("not found");    // ❌ message text is not contract
+}
+
+// ❌ BAD - JUnit equivalent, same problem
+@Test
+void badExample() {
+    var exception = assertThrows(ResourceNotFoundException.class,
+        () -> service.getById(999L));
+    assertEquals("User not found: 999", exception.getMessage()); // ❌
 }
 ```
+
+**If you need to distinguish between two failure modes of the same exception type**, that is a signal to introduce a more specific exception type (or an error code on the existing one), not to grep the message. Exception subtypes and error codes are contract; strings are not.
 
 ### Why This Matters
 
