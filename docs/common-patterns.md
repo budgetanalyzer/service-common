@@ -339,13 +339,15 @@ public class CsvImportService {
 
 ### 7. Implement Health Checks via Actuator
 
+The `prometheus` endpoint is automatically exposed by service-core. Add other endpoints as needed:
+
 ```yaml
 # application.yml
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics  # prometheus is added automatically
   health:
     readiness:
       enabled: true
