@@ -211,6 +211,7 @@ cat service-web/src/main/java/org/budgetanalyzer/service/api/ServletApiException
 - Understanding test philosophy → Read [Testing Philosophy](docs/testing-patterns.md#testing-philosophy) (test correct behavior)
 
 **Quick reference**:
+- **Assertions**: AssertJ exclusively (`assertThat`). Do NOT use JUnit assertions (`assertEquals`, `assertTrue`, `assertThrows`, etc.)
 - Unit tests: `*Test.java` (no Spring context, fast, isolated)
 - Integration tests: `*IntegrationTest.java` (with `@SpringBootTest` + TestContainers)
 - Minimum coverage: 80% line coverage via JaCoCo

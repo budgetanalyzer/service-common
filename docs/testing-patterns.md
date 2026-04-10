@@ -55,9 +55,9 @@ void shouldHandleNewFeature() {
 // ❌ NEVER DO THIS — gutting an existing test to make yours pass
 @Test
 void shouldValidateAmount() {
-    // Changed from assertThrows to just checking non-null
+    // Changed from assertThatThrownBy to just checking non-null
     // because my new validation broke the old behavior
-    assertNotNull(service.validate(amount));
+    assertThat(service.validate(amount)).isNotNull();
 }
 
 // ❌ NEVER DO THIS — modifying shared test config for your feature
@@ -153,7 +153,7 @@ This separation lets you validate the upgrade without rewriting the entire test 
 - `service-web/src/test/java` (for service-web tests)
 - `{service-name}/src/test/java` (for individual service tests)
 
-**Framework**: JUnit 5 (Jupiter)
+**Framework**: JUnit 5 (Jupiter) + AssertJ
 **Spring Context**: No
 
 **Characteristics**:
@@ -170,7 +170,7 @@ class TransactionServiceTest {
     void shouldCalculateTotalAmount() {
         var service = new TransactionService();
         var result = service.calculateTotal(transactions);
-        assertEquals(new BigDecimal("150.00"), result);
+        assertThat(result).isEqualByComparingTo(new BigDecimal("150.00"));
     }
 }
 ```
@@ -183,7 +183,7 @@ class TransactionServiceTest {
 - `service-web/src/test/java` (for service-web integration tests)
 - `{service-name}/src/test/java` (for individual service integration tests)
 
-**Framework**: JUnit 5 + Spring Boot Test
+**Framework**: JUnit 5 + Spring Boot Test + AssertJ
 **Spring Context**: Yes
 
 **Characteristics**:
@@ -212,8 +212,8 @@ class TransactionRepositoryIntegrationTest {
         var saved = repository.save(transaction);
         var retrieved = repository.findByIdActive(saved.getId());
 
-        assertTrue(retrieved.isPresent());
-        assertEquals(saved.getId(), retrieved.get().getId());
+        assertThat(retrieved).isPresent();
+        assertThat(retrieved.get().getId()).isEqualTo(saved.getId());
     }
 }
 ```
@@ -222,7 +222,7 @@ class TransactionRepositoryIntegrationTest {
 
 **File Pattern**: `*ControllerTest.java`
 **Location**: `src/test/java` (mirror of `src/main/java`)
-**Framework**: JUnit 5 + MockMvc
+**Framework**: JUnit 5 + MockMvc + AssertJ
 **Spring Context**: Partial (Web Layer only)
 
 **Characteristics**:
@@ -366,7 +366,7 @@ void shouldSaveTransactionWithCorrectTimestamp() {
     transactionService.create(transaction);
 
     verify(repository).save(captor.capture());
-    assertNotNull(captor.getValue().getCreatedAt());
+    assertThat(captor.getValue().getCreatedAt()).isNotNull();
 }
 ```
 
@@ -454,7 +454,7 @@ void shouldCalculateTotal() {
     var total = service.calculateTotal(transactions);
 
     // Assert - Verify the result
-    assertEquals(new BigDecimal("150.00"), total);
+    assertThat(total).isEqualByComparingTo(new BigDecimal("150.00"));
 }
 ```
 
@@ -614,7 +614,7 @@ void shouldHandleSpecialCharacters() { }
 void shouldSaveToDatabase() {
     repository.save(transaction);
     var found = repository.findById(transaction.getId());
-    assertTrue(found.isPresent());
+    assertThat(found).isPresent();
     // This just tests that JPA works - provides no value
 }
 
@@ -636,8 +636,9 @@ void shouldPreventConcurrentScheduledTaskExecution() {
 // ❌ BAD - Testing that @Transactional works
 @Test
 void shouldRollbackOnException() {
-    assertThrows(Exception.class, () -> service.failingMethod());
-    assertEquals(0, repository.count());
+    assertThatThrownBy(() -> service.failingMethod())
+        .isInstanceOf(Exception.class);
+    assertThat(repository.count()).isZero();
     // This tests Spring's transaction management - not our business logic
 }
 
@@ -656,8 +657,8 @@ void shouldValidateAmountBeforeSaving() {
     var negativeAmount = new Transaction();
     negativeAmount.setAmount(new BigDecimal("-100.00"));
 
-    assertThrows(BusinessException.class,
-        () -> service.create(negativeAmount));
+    assertThatThrownBy(() -> service.create(negativeAmount))
+        .isInstanceOf(BusinessException.class);
     // Tests OUR validation rule - this is our domain logic
 }
 
@@ -671,7 +672,7 @@ void shouldCalculateTotalWithCorrectExchangeRates() {
 
     var total = service.calculateTotalInUSD(transactions);
 
-    assertEquals(new BigDecimal("145.00"), total);
+    assertThat(total).isEqualByComparingTo(new BigDecimal("145.00"));
     // Tests OUR business logic for currency conversion
 }
 
@@ -682,8 +683,8 @@ void shouldIncludeCorrectDataInPublishedEvent() {
 
     // Capture the event that was published
     var event = eventCaptor.getValue();
-    assertEquals(transaction.getId(), event.getTransactionId());
-    assertEquals(transaction.getAmount(), event.getAmount());
+    assertThat(event.getTransactionId()).isEqualTo(transaction.getId());
+    assertThat(event.getAmount()).isEqualTo(transaction.getAmount());
     // Tests that OUR code publishes the right data, not that Modulith works
 }
 ```
@@ -705,11 +706,11 @@ void shouldSoftDeleteTransaction() {
     repository.delete(transaction);
 
     // Should not be in active records
-    assertFalse(repository.findByIdActive(transaction.getId()).isPresent());
+    assertThat(repository.findByIdActive(transaction.getId())).isEmpty();
 
     // But should still exist in database
-    assertTrue(repository.findById(transaction.getId()).isPresent());
-    assertTrue(repository.findById(transaction.getId()).get().isDeleted());
+    assertThat(repository.findById(transaction.getId())).isPresent();
+    assertThat(repository.findById(transaction.getId()).get().isDeleted()).isTrue();
 }
 ```
 
@@ -781,10 +782,10 @@ void badExample() throws Exception {
 **CRITICAL**: The same rule applies to service-layer exception tests. Assert on the **exception type only** — never on the exception message text. Exception types are part of the service contract; message text is implementation detail that will drift for clarity, i18n, or UX reasons.
 
 **Stable contract** (safe to assert on):
-- Exception type (`assertThrows(X.class, ...)` / `.isInstanceOf(X.class)`)
+- Exception type (`assertThatThrownBy(...).isInstanceOf(X.class)`)
 
 **Unstable** (DO NOT assert on):
-- Exception message text — including via AssertJ `.hasMessage(...)`, `.hasMessageContaining(...)`, `.hasMessageMatching(...)`, or JUnit `exception.getMessage()` comparisons
+- Exception message text — including via `.hasMessage(...)`, `.hasMessageContaining(...)`, `.hasMessageMatching(...)`
 - Exception `cause` message text
 - Any wording embedded in the exception
 
@@ -794,15 +795,6 @@ AssertJ's `.hasMessageContaining(...)` is the most common vector for this anti-p
 
 ```java
 // ✅ GOOD - Assert on exception type only
-@Test
-void shouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
-    when(repository.findByIdActive(999L)).thenReturn(Optional.empty());
-
-    assertThrows(ResourceNotFoundException.class,
-        () -> service.getById(999L));
-}
-
-// ✅ GOOD - AssertJ equivalent, still type-only
 @Test
 void shouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
     when(repository.findByIdActive(999L)).thenReturn(Optional.empty());
@@ -822,12 +814,12 @@ void badExample() {
         .hasMessageContaining("not found");    // ❌ message text is not contract
 }
 
-// ❌ BAD - JUnit equivalent, same problem
+// ❌ BAD - Asserting on message text
 @Test
 void badExample() {
-    var exception = assertThrows(ResourceNotFoundException.class,
-        () -> service.getById(999L));
-    assertEquals("User not found: 999", exception.getMessage()); // ❌
+    assertThatThrownBy(() -> service.getById(999L))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessage("User not found: 999"); // ❌ message text is not contract
 }
 ```
 
@@ -858,7 +850,7 @@ void shouldHandleLargeDataset() {
     var duration = System.currentTimeMillis() - startTime;
 
     // Should process 10k transactions in under 5 seconds
-    assertTrue(duration < 5000, "Processing took too long: " + duration + "ms");
+    assertThat(duration).as("Processing took too long: %dms", duration).isLessThan(5000);
 }
 ```
 
@@ -913,10 +905,10 @@ src/test/java/
 ### 1. Brittle Tests
 ```java
 // ❌ BAD - Will break if order changes
-assertEquals("John", users.get(0).getName());
+assertThat(users.get(0).getName()).isEqualTo("John");
 
 // ✅ GOOD - Tests what matters
-assertTrue(users.stream().anyMatch(u -> u.getName().equals("John")));
+assertThat(users).extracting("name").contains("John");
 ```
 
 ### 2. Testing Implementation Details
@@ -941,7 +933,8 @@ void tearDown() {
 
 ## Resources
 
-- [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/)
+- [AssertJ Documentation](https://assertj.github.io/doc/) (assertion library)
+- [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/) (test runner)
 - [Spring Boot Testing Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing)
 - [TestContainers Documentation](https://testcontainers.com/)
 - [Mockito Documentation](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html)
