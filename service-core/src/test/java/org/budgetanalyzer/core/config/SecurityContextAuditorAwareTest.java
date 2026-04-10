@@ -1,8 +1,6 @@
 package org.budgetanalyzer.core.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -41,8 +39,7 @@ class SecurityContextAuditorAwareTest {
     var result = auditorAware.getCurrentAuditor();
 
     // Assert
-    assertTrue(result.isPresent(), "Should return auditor when authenticated");
-    assertEquals(userId, result.get(), "Should return the user ID from authentication");
+    assertThat(result).isPresent().hasValue(userId);
   }
 
   @Test
@@ -53,7 +50,7 @@ class SecurityContextAuditorAwareTest {
     var result = auditorAware.getCurrentAuditor();
 
     // Assert
-    assertFalse(result.isPresent(), "Should return empty when no authentication");
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -72,7 +69,7 @@ class SecurityContextAuditorAwareTest {
     var result = auditorAware.getCurrentAuditor();
 
     // Assert
-    assertFalse(result.isPresent(), "Should return empty when not authenticated");
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -87,7 +84,7 @@ class SecurityContextAuditorAwareTest {
     var result = auditorAware.getCurrentAuditor();
 
     // Assert
-    assertFalse(result.isPresent(), "Should return empty for anonymous user");
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -135,8 +132,7 @@ class SecurityContextAuditorAwareTest {
     var result = auditorAware.getCurrentAuditor();
 
     // Assert
-    assertTrue(result.isPresent(), "Should return auditor for custom authentication");
-    assertEquals(userId, result.get(), "Should return the user ID from custom authentication");
+    assertThat(result).isPresent().hasValue(userId);
   }
 
   @Test
@@ -151,8 +147,7 @@ class SecurityContextAuditorAwareTest {
     var result = auditorAware.getCurrentAuditor();
 
     // Assert
-    assertTrue(result.isPresent(), "Should return auditor for JWT-style user ID");
-    assertEquals(idpUserId, result.get(), "Should preserve full IdP user ID format");
+    assertThat(result).isPresent().hasValue(idpUserId);
   }
 
   @Test
@@ -166,7 +161,6 @@ class SecurityContextAuditorAwareTest {
     var result = auditorAware.getCurrentAuditor();
 
     // Assert
-    assertTrue(result.isPresent(), "Should return auditor when using email as user ID");
-    assertEquals(email, result.get(), "Should return email as user ID");
+    assertThat(result).isPresent().hasValue(email);
   }
 }

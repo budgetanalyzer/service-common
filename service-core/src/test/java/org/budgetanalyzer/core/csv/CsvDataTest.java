@@ -1,9 +1,7 @@
 package org.budgetanalyzer.core.csv;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.Map;
@@ -25,10 +23,10 @@ class CsvDataTest {
 
     var csvData = new CsvData("test.csv", "user-data", headers, rows);
 
-    assertEquals("test.csv", csvData.fileName());
-    assertEquals("user-data", csvData.format());
-    assertEquals(headers, csvData.headers());
-    assertEquals(rows, csvData.rows());
+    assertThat(csvData.fileName()).isEqualTo("test.csv");
+    assertThat(csvData.format()).isEqualTo("user-data");
+    assertThat(csvData.headers()).isEqualTo(headers);
+    assertThat(csvData.rows()).isEqualTo(rows);
   }
 
   @Test
@@ -36,10 +34,9 @@ class CsvDataTest {
     var headers = List.of("Name");
     var rows = List.<CsvRow>of();
 
-    var exception =
-        assertThrows(NullPointerException.class, () -> new CsvData(null, "format", headers, rows));
-
-    assertEquals("fileName cannot be null", exception.getMessage());
+    assertThatThrownBy(() -> new CsvData(null, "format", headers, rows))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("fileName cannot be null");
   }
 
   @Test
@@ -47,49 +44,43 @@ class CsvDataTest {
     var headers = List.of("Name");
     var rows = List.<CsvRow>of();
 
-    var exception =
-        assertThrows(
-            NullPointerException.class, () -> new CsvData("test.csv", null, headers, rows));
-
-    assertEquals("format cannot be null", exception.getMessage());
+    assertThatThrownBy(() -> new CsvData("test.csv", null, headers, rows))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("format cannot be null");
   }
 
   @Test
   void shouldConvertNullHeadersToEmptyList() {
     var csvData = new CsvData("test.csv", "format", null, List.of());
 
-    assertNotNull(csvData.headers());
-    assertTrue(csvData.headers().isEmpty());
+    assertThat(csvData.headers()).isNotNull().isEmpty();
   }
 
   @Test
   void shouldConvertNullRowsToEmptyList() {
     var csvData = new CsvData("test.csv", "format", List.of(), null);
 
-    assertNotNull(csvData.rows());
-    assertTrue(csvData.rows().isEmpty());
+    assertThat(csvData.rows()).isNotNull().isEmpty();
   }
 
   @Test
   void shouldHandleEmptyHeadersAndRows() {
     var csvData = new CsvData("empty.csv", "empty-format", List.of(), List.of());
 
-    assertEquals("empty.csv", csvData.fileName());
-    assertEquals("empty-format", csvData.format());
-    assertTrue(csvData.headers().isEmpty());
-    assertTrue(csvData.rows().isEmpty());
+    assertThat(csvData.fileName()).isEqualTo("empty.csv");
+    assertThat(csvData.format()).isEqualTo("empty-format");
+    assertThat(csvData.headers()).isEmpty();
+    assertThat(csvData.rows()).isEmpty();
   }
 
   @Test
   void shouldHandleNullHeadersAndNullRows() {
     var csvData = new CsvData("empty.csv", "empty-format", null, null);
 
-    assertEquals("empty.csv", csvData.fileName());
-    assertEquals("empty-format", csvData.format());
-    assertNotNull(csvData.headers());
-    assertNotNull(csvData.rows());
-    assertTrue(csvData.headers().isEmpty());
-    assertTrue(csvData.rows().isEmpty());
+    assertThat(csvData.fileName()).isEqualTo("empty.csv");
+    assertThat(csvData.format()).isEqualTo("empty-format");
+    assertThat(csvData.headers()).isNotNull().isEmpty();
+    assertThat(csvData.rows()).isNotNull().isEmpty();
   }
 
   @Test
@@ -99,9 +90,6 @@ class CsvDataTest {
 
     var actualHeaders = csvData.headers();
 
-    assertEquals(3, actualHeaders.size());
-    assertEquals("Column1", actualHeaders.get(0));
-    assertEquals("Column2", actualHeaders.get(1));
-    assertEquals("Column3", actualHeaders.get(2));
+    assertThat(actualHeaders).containsExactly("Column1", "Column2", "Column3");
   }
 }

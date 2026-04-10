@@ -1,8 +1,6 @@
 package org.budgetanalyzer.core.csv.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -34,13 +32,10 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals("test.csv", csvData.fileName());
-    assertEquals("user-data", csvData.format());
-    assertEquals(3, csvData.headers().size());
-    assertEquals("Name", csvData.headers().get(0));
-    assertEquals("Age", csvData.headers().get(1));
-    assertEquals("City", csvData.headers().get(2));
-    assertEquals(2, csvData.rows().size());
+    assertThat(csvData.fileName()).isEqualTo("test.csv");
+    assertThat(csvData.format()).isEqualTo("user-data");
+    assertThat(csvData.headers()).containsExactly("Name", "Age", "City");
+    assertThat(csvData.rows()).hasSize(2);
   }
 
   @Test
@@ -50,12 +45,8 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "transactions.csv", "transaction");
 
-    var headers = csvData.headers();
-    assertEquals(4, headers.size());
-    assertEquals("Transaction Date", headers.get(0));
-    assertEquals("Amount", headers.get(1));
-    assertEquals("Description", headers.get(2));
-    assertEquals("Category", headers.get(3));
+    assertThat(csvData.headers())
+        .containsExactly("Transaction Date", "Amount", "Description", "Category");
   }
 
   @Test
@@ -66,14 +57,14 @@ class OpenCsvParserTest {
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("30", firstRow.values().get("Age"));
-    assertEquals("NYC", firstRow.values().get("City"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Age")).isEqualTo("30");
+    assertThat(firstRow.values().get("City")).isEqualTo("NYC");
 
     var secondRow = csvData.rows().get(1);
-    assertEquals("Alice", secondRow.values().get("Name"));
-    assertEquals("25", secondRow.values().get("Age"));
-    assertEquals("Boston", secondRow.values().get("City"));
+    assertThat(secondRow.values().get("Name")).isEqualTo("Alice");
+    assertThat(secondRow.values().get("Age")).isEqualTo("25");
+    assertThat(secondRow.values().get("City")).isEqualTo("Boston");
   }
 
   @Test
@@ -83,10 +74,10 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "empty.csv", "empty");
 
-    assertEquals("empty.csv", csvData.fileName());
-    assertEquals("empty", csvData.format());
-    assertTrue(csvData.headers().isEmpty());
-    assertTrue(csvData.rows().isEmpty());
+    assertThat(csvData.fileName()).isEqualTo("empty.csv");
+    assertThat(csvData.format()).isEqualTo("empty");
+    assertThat(csvData.headers()).isEmpty();
+    assertThat(csvData.rows()).isEmpty();
   }
 
   @Test
@@ -96,11 +87,8 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "headers-only.csv", "test");
 
-    assertEquals(3, csvData.headers().size());
-    assertEquals("Name", csvData.headers().get(0));
-    assertEquals("Age", csvData.headers().get(1));
-    assertEquals("City", csvData.headers().get(2));
-    assertTrue(csvData.rows().isEmpty());
+    assertThat(csvData.headers()).containsExactly("Name", "Age", "City");
+    assertThat(csvData.rows()).isEmpty();
   }
 
   @Test
@@ -110,10 +98,7 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    var headers = csvData.headers();
-    assertEquals("Name", headers.get(0));
-    assertEquals("Age", headers.get(1));
-    assertEquals("City", headers.get(2));
+    assertThat(csvData.headers()).containsExactly("Name", "Age", "City");
   }
 
   @Test
@@ -124,9 +109,9 @@ class OpenCsvParserTest {
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("30", firstRow.values().get("Age"));
-    assertEquals("NYC", firstRow.values().get("City"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Age")).isEqualTo("30");
+    assertThat(firstRow.values().get("City")).isEqualTo("NYC");
   }
 
   @Test
@@ -137,11 +122,11 @@ class OpenCsvParserTest {
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("30", firstRow.values().get("Age"));
-    assertEquals("NYC", firstRow.values().get("City"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Age")).isEqualTo("30");
+    assertThat(firstRow.values().get("City")).isEqualTo("NYC");
     // Empty header column should be skipped, so no mapping for "ignored" value
-    assertEquals(3, firstRow.values().size());
+    assertThat(firstRow.values()).hasSize(3);
   }
 
   @Test
@@ -151,9 +136,9 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(2, csvData.rows().get(0).lineNumber()); // First data row is line 2
-    assertEquals(3, csvData.rows().get(1).lineNumber()); // Second data row is line 3
-    assertEquals(4, csvData.rows().get(2).lineNumber()); // Third data row is line 4
+    assertThat(csvData.rows().get(0).lineNumber()).isEqualTo(2); // First data row is line 2
+    assertThat(csvData.rows().get(1).lineNumber()).isEqualTo(3); // Second data row is line 3
+    assertThat(csvData.rows().get(2).lineNumber()).isEqualTo(4); // Third data row is line 4
   }
 
   @Test
@@ -164,12 +149,12 @@ class OpenCsvParserTest {
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("Smith, Jr.", firstRow.values().get("Description"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Description")).isEqualTo("Smith, Jr.");
 
     var secondRow = csvData.rows().get(1);
-    assertEquals("Alice", secondRow.values().get("Name"));
-    assertEquals("O'Brien", secondRow.values().get("Description"));
+    assertThat(secondRow.values().get("Name")).isEqualTo("Alice");
+    assertThat(secondRow.values().get("Description")).isEqualTo("O'Brien");
   }
 
   @Test
@@ -188,11 +173,11 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "large.csv", "user-data");
 
-    assertEquals(3, csvData.headers().size());
-    assertEquals(1000, csvData.rows().size());
-    assertEquals("User1", csvData.rows().get(0).values().get("Name"));
-    assertEquals("user500@example.com", csvData.rows().get(499).values().get("Email"));
-    assertEquals("User1000", csvData.rows().get(999).values().get("Name"));
+    assertThat(csvData.headers()).hasSize(3);
+    assertThat(csvData.rows()).hasSize(1000);
+    assertThat(csvData.rows().get(0).values().get("Name")).isEqualTo("User1");
+    assertThat(csvData.rows().get(499).values().get("Email")).isEqualTo("user500@example.com");
+    assertThat(csvData.rows().get(999).values().get("Name")).isEqualTo("User1000");
   }
 
   @Test
@@ -206,22 +191,22 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "transactions.csv", "transaction");
 
-    assertEquals(3, csvData.rows().size());
+    assertThat(csvData.rows()).hasSize(3);
 
     var row1 = csvData.rows().get(0);
-    assertEquals("2024-01-15", row1.values().get("Date"));
-    assertEquals("99.99", row1.values().get("Amount"));
-    assertEquals("Coffee", row1.values().get("Description"));
+    assertThat(row1.values().get("Date")).isEqualTo("2024-01-15");
+    assertThat(row1.values().get("Amount")).isEqualTo("99.99");
+    assertThat(row1.values().get("Description")).isEqualTo("Coffee");
 
     var row2 = csvData.rows().get(1);
-    assertEquals("2024-01-16", row2.values().get("Date"));
-    assertEquals("45.50", row2.values().get("Amount"));
-    assertEquals("Lunch", row2.values().get("Description"));
+    assertThat(row2.values().get("Date")).isEqualTo("2024-01-16");
+    assertThat(row2.values().get("Amount")).isEqualTo("45.50");
+    assertThat(row2.values().get("Description")).isEqualTo("Lunch");
 
     var row3 = csvData.rows().get(2);
-    assertEquals("2024-01-17", row3.values().get("Date"));
-    assertEquals("150.00", row3.values().get("Amount"));
-    assertEquals("Groceries", row3.values().get("Description"));
+    assertThat(row3.values().get("Date")).isEqualTo("2024-01-17");
+    assertThat(row3.values().get("Amount")).isEqualTo("150.00");
+    assertThat(row3.values().get("Description")).isEqualTo("Groceries");
   }
 
   @Test
@@ -231,11 +216,7 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "test");
 
-    assertNotNull(csvData.headers());
-    assertEquals(3, csvData.headers().size());
-    assertEquals("Column1", csvData.headers().get(0));
-    assertEquals("Column2", csvData.headers().get(1));
-    assertEquals("Column3", csvData.headers().get(2));
+    assertThat(csvData.headers()).isNotNull().containsExactly("Column1", "Column2", "Column3");
   }
 
   @Test
@@ -246,14 +227,14 @@ class OpenCsvParserTest {
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("", firstRow.values().get("Age"));
-    assertEquals("NYC", firstRow.values().get("City"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Age")).isEmpty();
+    assertThat(firstRow.values().get("City")).isEqualTo("NYC");
 
     var secondRow = csvData.rows().get(1);
-    assertEquals("", secondRow.values().get("Name"));
-    assertEquals("25", secondRow.values().get("Age"));
-    assertEquals("Boston", secondRow.values().get("City"));
+    assertThat(secondRow.values().get("Name")).isEmpty();
+    assertThat(secondRow.values().get("Age")).isEqualTo("25");
+    assertThat(secondRow.values().get("City")).isEqualTo("Boston");
   }
 
   @Test
@@ -263,21 +244,21 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(3, csvData.headers().size());
-    assertEquals(2, csvData.rows().size());
+    assertThat(csvData.headers()).hasSize(3);
+    assertThat(csvData.rows()).hasSize(2);
 
     // First row has 2 values (missing City)
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("30", firstRow.values().get("Age"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Age")).isEqualTo("30");
     // OpenCSV returns empty string for missing columns
-    assertEquals("", firstRow.values().get("City"));
+    assertThat(firstRow.values().get("City")).isEmpty();
 
     // Second row has 1 value (missing Age and City)
     var secondRow = csvData.rows().get(1);
-    assertEquals("Alice", secondRow.values().get("Name"));
-    assertEquals("", secondRow.values().get("Age"));
-    assertEquals("", secondRow.values().get("City"));
+    assertThat(secondRow.values().get("Name")).isEqualTo("Alice");
+    assertThat(secondRow.values().get("Age")).isEmpty();
+    assertThat(secondRow.values().get("City")).isEmpty();
   }
 
   @Test
@@ -287,15 +268,15 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(2, csvData.headers().size());
-    assertEquals(1, csvData.rows().size());
+    assertThat(csvData.headers()).hasSize(2);
+    assertThat(csvData.rows()).hasSize(1);
 
     // Row has 4 values but only 2 headers
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("30", firstRow.values().get("Age"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Age")).isEqualTo("30");
     // Extra columns beyond headers are ignored by our implementation
-    assertEquals(2, firstRow.values().size());
+    assertThat(firstRow.values()).hasSize(2);
   }
 
   @Test
@@ -306,26 +287,26 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(3, csvData.headers().size());
-    assertEquals(3, csvData.rows().size());
+    assertThat(csvData.headers()).hasSize(3);
+    assertThat(csvData.rows()).hasSize(3);
 
     // First row - all columns present
     var row1 = csvData.rows().get(0);
-    assertEquals("1", row1.values().get("ID"));
-    assertEquals("Alice", row1.values().get("Name"));
-    assertEquals("alice@example.com", row1.values().get("Email"));
+    assertThat(row1.values().get("ID")).isEqualTo("1");
+    assertThat(row1.values().get("Name")).isEqualTo("Alice");
+    assertThat(row1.values().get("Email")).isEqualTo("alice@example.com");
 
     // Second row - missing Email column
     var row2 = csvData.rows().get(1);
-    assertEquals("2", row2.values().get("ID"));
-    assertEquals("Bob", row2.values().get("Name"));
-    assertEquals("", row2.values().get("Email"));
+    assertThat(row2.values().get("ID")).isEqualTo("2");
+    assertThat(row2.values().get("Name")).isEqualTo("Bob");
+    assertThat(row2.values().get("Email")).isEmpty();
 
     // Third row - has extra column beyond headers
     var row3 = csvData.rows().get(2);
-    assertEquals("3", row3.values().get("ID"));
-    assertEquals("Carol", row3.values().get("Name"));
-    assertEquals("carol@example.com", row3.values().get("Email"));
+    assertThat(row3.values().get("ID")).isEqualTo("3");
+    assertThat(row3.values().get("Name")).isEqualTo("Carol");
+    assertThat(row3.values().get("Email")).isEqualTo("carol@example.com");
   }
 
   @Test
@@ -335,19 +316,19 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(3, csvData.rows().size());
+    assertThat(csvData.rows()).hasSize(3);
 
     var row1 = csvData.rows().get(0);
-    assertEquals("José", row1.values().get("Name"));
-    assertEquals("Café au lait", row1.values().get("Description"));
+    assertThat(row1.values().get("Name")).isEqualTo("José");
+    assertThat(row1.values().get("Description")).isEqualTo("Café au lait");
 
     var row2 = csvData.rows().get(1);
-    assertEquals("李明", row2.values().get("Name"));
-    assertEquals("中文测试", row2.values().get("Description"));
+    assertThat(row2.values().get("Name")).isEqualTo("李明");
+    assertThat(row2.values().get("Description")).isEqualTo("中文测试");
 
     var row3 = csvData.rows().get(2);
-    assertEquals("Müller", row3.values().get("Name"));
-    assertEquals("Größe", row3.values().get("Description"));
+    assertThat(row3.values().get("Name")).isEqualTo("Müller");
+    assertThat(row3.values().get("Description")).isEqualTo("Größe");
   }
 
   @Test
@@ -361,10 +342,8 @@ class OpenCsvParserTest {
 
     // OpenCSV should handle BOM, but first header might include it
     // This test documents current behavior
-    assertNotNull(csvData.headers());
-    assertEquals(3, csvData.headers().size());
-    assertTrue(
-        csvData.headers().get(0).equals("Name") || csvData.headers().get(0).equals("\uFEFFName"));
+    assertThat(csvData.headers()).isNotNull().hasSize(3);
+    assertThat(csvData.headers().get(0)).isIn("Name", "\uFEFFName");
   }
 
   @Test
@@ -377,9 +356,9 @@ class OpenCsvParserTest {
 
     // This test documents that UTF-16 may not be automatically detected
     // The parser should still attempt to parse, but results may vary
-    assertNotNull(csvData);
-    assertNotNull(csvData.headers());
-    assertNotNull(csvData.rows());
+    assertThat(csvData).isNotNull();
+    assertThat(csvData.headers()).isNotNull();
+    assertThat(csvData.rows()).isNotNull();
   }
 
   @Test
@@ -392,9 +371,9 @@ class OpenCsvParserTest {
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
     // This test documents encoding behavior - results depend on system default encoding
-    assertNotNull(csvData);
-    assertNotNull(csvData.headers());
-    assertNotNull(csvData.rows());
+    assertThat(csvData).isNotNull();
+    assertThat(csvData.headers()).isNotNull();
+    assertThat(csvData.rows()).isNotNull();
   }
 
   @Test
@@ -404,15 +383,15 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(2, csvData.rows().size());
+    assertThat(csvData.rows()).hasSize(2);
 
     var row1 = csvData.rows().get(0);
-    assertEquals("Coffee", row1.values().get("Product"));
-    assertEquals("☕ Excellent! 😍", row1.values().get("Rating"));
+    assertThat(row1.values().get("Product")).isEqualTo("Coffee");
+    assertThat(row1.values().get("Rating")).isEqualTo("☕ Excellent! 😍");
 
     var row2 = csvData.rows().get(1);
-    assertEquals("Pizza", row2.values().get("Product"));
-    assertEquals("🍕 Amazing! 🎉", row2.values().get("Rating"));
+    assertThat(row2.values().get("Product")).isEqualTo("Pizza");
+    assertThat(row2.values().get("Rating")).isEqualTo("🍕 Amazing! 🎉");
   }
 
   @Test
@@ -423,9 +402,9 @@ class OpenCsvParserTest {
 
     var csvDataCrlf = openCsvParser.parseCsvInputStream(inputStreamCrlf, "test.csv", "user-data");
 
-    assertEquals(2, csvDataCrlf.headers().size());
-    assertEquals(2, csvDataCrlf.rows().size());
-    assertEquals("John", csvDataCrlf.rows().get(0).values().get("Name"));
+    assertThat(csvDataCrlf.headers()).hasSize(2);
+    assertThat(csvDataCrlf.rows()).hasSize(2);
+    assertThat(csvDataCrlf.rows().get(0).values().get("Name")).isEqualTo("John");
 
     // Test CR only (old Mac style)
     var csvContentCr = "Name,Age\rJohn,30\rAlice,25";
@@ -433,9 +412,9 @@ class OpenCsvParserTest {
 
     var csvDataCr = openCsvParser.parseCsvInputStream(inputStreamCr, "test.csv", "user-data");
 
-    assertEquals(2, csvDataCr.headers().size());
-    assertEquals(2, csvDataCr.rows().size());
-    assertEquals("John", csvDataCr.rows().get(0).values().get("Name"));
+    assertThat(csvDataCr.headers()).hasSize(2);
+    assertThat(csvDataCr.rows()).hasSize(2);
+    assertThat(csvDataCr.rows().get(0).values().get("Name")).isEqualTo("John");
   }
 
   @Test
@@ -445,15 +424,15 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(2, csvData.rows().size());
+    assertThat(csvData.rows()).hasSize(2);
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("123 Main St\nApt 4B\nNew York", firstRow.values().get("Address"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Address")).isEqualTo("123 Main St\nApt 4B\nNew York");
 
     var secondRow = csvData.rows().get(1);
-    assertEquals("Alice", secondRow.values().get("Name"));
-    assertEquals("456 Oak Ave", secondRow.values().get("Address"));
+    assertThat(secondRow.values().get("Name")).isEqualTo("Alice");
+    assertThat(secondRow.values().get("Address")).isEqualTo("456 Oak Ave");
   }
 
   @Test
@@ -463,15 +442,15 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(2, csvData.rows().size());
+    assertThat(csvData.rows()).hasSize(2);
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("He said \"Hello\"", firstRow.values().get("Quote"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Quote")).isEqualTo("He said \"Hello\"");
 
     var secondRow = csvData.rows().get(1);
-    assertEquals("Alice", secondRow.values().get("Name"));
-    assertEquals("She replied \"Hi\"", secondRow.values().get("Quote"));
+    assertThat(secondRow.values().get("Name")).isEqualTo("Alice");
+    assertThat(secondRow.values().get("Quote")).isEqualTo("She replied \"Hi\"");
   }
 
   @Test
@@ -483,15 +462,15 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(2, csvData.rows().size());
+    assertThat(csvData.rows()).hasSize(2);
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("1", firstRow.values().get("ID"));
-    assertEquals(longValue, firstRow.values().get("Data"));
+    assertThat(firstRow.values().get("ID")).isEqualTo("1");
+    assertThat(firstRow.values().get("Data")).isEqualTo(longValue);
 
     var secondRow = csvData.rows().get(1);
-    assertEquals("2", secondRow.values().get("ID"));
-    assertEquals("Short", secondRow.values().get("Data"));
+    assertThat(secondRow.values().get("ID")).isEqualTo("2");
+    assertThat(secondRow.values().get("Data")).isEqualTo("Short");
   }
 
   @Test
@@ -501,15 +480,15 @@ class OpenCsvParserTest {
 
     var csvData = openCsvParser.parseCsvInputStream(inputStream, "test.csv", "user-data");
 
-    assertEquals(2, csvData.rows().size());
+    assertThat(csvData.rows()).hasSize(2);
 
     var firstRow = csvData.rows().get(0);
-    assertEquals("John", firstRow.values().get("Name"));
-    assertEquals("First\tSecond\tThird", firstRow.values().get("Notes"));
+    assertThat(firstRow.values().get("Name")).isEqualTo("John");
+    assertThat(firstRow.values().get("Notes")).isEqualTo("First\tSecond\tThird");
 
     var secondRow = csvData.rows().get(1);
-    assertEquals("Alice", secondRow.values().get("Name"));
-    assertEquals("Normal text", secondRow.values().get("Notes"));
+    assertThat(secondRow.values().get("Name")).isEqualTo("Alice");
+    assertThat(secondRow.values().get("Notes")).isEqualTo("Normal text");
   }
 
   private InputStream createInputStream(String content) {

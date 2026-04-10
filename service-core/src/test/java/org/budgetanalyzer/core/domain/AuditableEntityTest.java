@@ -1,11 +1,6 @@
 package org.budgetanalyzer.core.domain;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -62,21 +57,17 @@ class AuditableEntityTest {
     final Instant afterPersist = Instant.now();
 
     // Assert
-    assertNotNull(entity.getCreatedAt(), "createdAt should be set after persist");
-    assertNotNull(entity.getUpdatedAt(), "updatedAt should be set after persist");
-    assertTrue(
-        !entity.getCreatedAt().isBefore(beforePersist)
-            && !entity.getCreatedAt().isAfter(afterPersist),
-        "createdAt should be within persist time range");
-    assertTrue(
-        !entity.getUpdatedAt().isBefore(beforePersist)
-            && !entity.getUpdatedAt().isAfter(afterPersist),
-        "updatedAt should be within persist time range");
+    assertThat(entity.getCreatedAt()).isNotNull();
+    assertThat(entity.getUpdatedAt()).isNotNull();
+    assertThat(entity.getCreatedAt())
+        .isAfterOrEqualTo(beforePersist)
+        .isBeforeOrEqualTo(afterPersist);
+    assertThat(entity.getUpdatedAt())
+        .isAfterOrEqualTo(beforePersist)
+        .isBeforeOrEqualTo(afterPersist);
     // createdAt and updatedAt should be very close (within 1 millisecond)
     var timeDiffMillis = Duration.between(entity.getCreatedAt(), entity.getUpdatedAt()).toMillis();
-    assertTrue(
-        Math.abs(timeDiffMillis) <= 1,
-        "createdAt and updatedAt should be within 1ms on initial persist");
+    assertThat(Math.abs(timeDiffMillis)).isLessThanOrEqualTo(1);
   }
 
   @Test
@@ -102,12 +93,9 @@ class AuditableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert
-    assertEquals(
-        originalCreatedAt, entity.getCreatedAt(), "createdAt should remain unchanged on update");
-    assertNotEquals(originalUpdatedAt, entity.getUpdatedAt(), "updatedAt should change on update");
-    assertTrue(
-        entity.getUpdatedAt().isAfter(originalUpdatedAt),
-        "updatedAt should be later than original");
+    assertThat(entity.getCreatedAt()).isEqualTo(originalCreatedAt);
+    assertThat(entity.getUpdatedAt()).isNotEqualTo(originalUpdatedAt);
+    assertThat(entity.getUpdatedAt()).isAfter(originalUpdatedAt);
   }
 
   @Test
@@ -138,11 +126,11 @@ class AuditableEntityTest {
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
-    Instant thirdUpdatedAt = entity.getUpdatedAt();
+    var thirdUpdatedAt = entity.getUpdatedAt();
 
     // Assert
-    assertTrue(secondUpdatedAt.isAfter(firstUpdatedAt), "Second update timestamp should be later");
-    assertTrue(thirdUpdatedAt.isAfter(secondUpdatedAt), "Third update timestamp should be later");
+    assertThat(secondUpdatedAt).isAfter(firstUpdatedAt);
+    assertThat(thirdUpdatedAt).isAfter(secondUpdatedAt);
   }
 
   @Test
@@ -164,9 +152,7 @@ class AuditableEntityTest {
     // Assert - Allow for sub-millisecond database precision differences
     var timeDiffMillis =
         Duration.between(originalCreatedAt, reloadedEntity.getCreatedAt()).toMillis();
-    assertTrue(
-        Math.abs(timeDiffMillis) <= 1,
-        "createdAt should be immutable (within 1ms precision after reload)");
+    assertThat(Math.abs(timeDiffMillis)).isLessThanOrEqualTo(1);
   }
 
   @Test
@@ -185,14 +171,8 @@ class AuditableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert
-    assertNotNull(entity1.getCreatedAt());
-    assertNotNull(entity2.getCreatedAt());
-    // Timestamps might be equal or different depending on execution speed,
-    // but both should be set
-    assertTrue(
-        entity1.getCreatedAt().equals(entity2.getCreatedAt())
-            || !entity1.getCreatedAt().equals(entity2.getCreatedAt()),
-        "Both entities should have valid timestamps");
+    assertThat(entity1.getCreatedAt()).isNotNull();
+    assertThat(entity2.getCreatedAt()).isNotNull();
   }
 
   @Test
@@ -206,12 +186,12 @@ class AuditableEntityTest {
     entityManager.getTransaction().commit();
 
     // Act
-    Instant createdAt = entity.getCreatedAt();
-    Instant updatedAt = entity.getUpdatedAt();
+    var createdAt = entity.getCreatedAt();
+    var updatedAt = entity.getUpdatedAt();
 
     // Assert
-    assertInstanceOf(Instant.class, createdAt, "createdAt should be an Instant");
-    assertInstanceOf(Instant.class, updatedAt, "updatedAt should be an Instant");
+    assertThat(createdAt).isInstanceOf(Instant.class);
+    assertThat(updatedAt).isInstanceOf(Instant.class);
   }
 
   @Test
@@ -227,9 +207,7 @@ class AuditableEntityTest {
 
     // Assert - createdAt and updatedAt should be very close (PreUpdate not called separately)
     var timeDiffMillis = Duration.between(entity.getCreatedAt(), entity.getUpdatedAt()).toMillis();
-    assertTrue(
-        Math.abs(timeDiffMillis) <= 1,
-        "PreUpdate should not be triggered on persist (timestamps within 1ms)");
+    assertThat(Math.abs(timeDiffMillis)).isLessThanOrEqualTo(1);
   }
 
   @Test
@@ -253,8 +231,7 @@ class AuditableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert - createdAt should not change (PrePersist not called on update)
-    assertEquals(
-        originalCreatedAt, entity.getCreatedAt(), "PrePersist should not be triggered on update");
+    assertThat(entity.getCreatedAt()).isEqualTo(originalCreatedAt);
   }
 
   @Test
@@ -269,7 +246,7 @@ class AuditableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert - createdBy is null without AuditorAware configuration
-    assertNull(entity.getCreatedBy(), "createdBy should be null without AuditorAware");
+    assertThat(entity.getCreatedBy()).isNull();
   }
 
   @Test
@@ -284,7 +261,7 @@ class AuditableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert - updatedBy is null without AuditorAware configuration
-    assertNull(entity.getUpdatedBy(), "updatedBy should be null without AuditorAware");
+    assertThat(entity.getUpdatedBy()).isNull();
   }
 
   @Test
@@ -302,8 +279,8 @@ class AuditableEntityTest {
     var reloadedEntity = entityManager.find(TestAuditableEntity.class, entity.getId());
 
     // Assert - Fields should be accessible after reload (null without AuditorAware)
-    assertNull(reloadedEntity.getCreatedBy(), "createdBy should persist as null");
-    assertNull(reloadedEntity.getUpdatedBy(), "updatedBy should persist as null");
+    assertThat(reloadedEntity.getCreatedBy()).isNull();
+    assertThat(reloadedEntity.getUpdatedBy()).isNull();
   }
 
   // Concrete test entity for testing AuditableEntity
