@@ -111,7 +111,7 @@ When service-web is on your classpath, you automatically get:
   - Maps: 400 (Bad Request), 404 (Not Found), 422 (Business Logic), 500 (Server Error)
 - **Claims Header Security** - Automatic stateless authentication from trusted ingress external-auth headers
   - Reads `X-User-Id`, `X-Permissions`, `X-Roles` headers for both servlet and reactive services
-  - Public endpoints stay limited to health and OpenAPI routes; all other endpoints, including `/internal/**`, require service-owned rules or authenticated claims headers
+  - Public endpoints: health, prometheus, and OpenAPI routes; all other endpoints, including `/internal/**`, require service-owned rules or authenticated claims headers
 - **Correlation ID Filter** - Automatically adds correlation IDs to all requests and regenerates malformed inbound values before they reach logs or response headers
 - **HTTP Logging Filter** - Optional (enable with `budgetanalyzer.service.http-logging.enabled=true`)
   - Text bodies only: common secret fields in JSON and form payloads are redacted

@@ -30,11 +30,11 @@ class PrometheusEndpointPostProcessorTest {
 
     // Assert
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    assertThat(result).isEqualTo("prometheus");
+    assertThat(result).isEqualTo("health,prometheus");
   }
 
   @Test
-  void shouldMergePrometheusWithExistingConfig() {
+  void shouldNotOverrideExistingConfig() {
     // Arrange
     environment
         .getPropertySources()
@@ -44,9 +44,9 @@ class PrometheusEndpointPostProcessorTest {
     // Act
     postProcessor.postProcessEnvironment(environment, new SpringApplication());
 
-    // Assert
+    // Assert -- consumer's property source wins because prometheusDefaults is addLast
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    assertThat(result).contains("prometheus", "health", "info", "metrics");
+    assertThat(result).isEqualTo("health,info,metrics");
   }
 
   @Test
@@ -61,10 +61,9 @@ class PrometheusEndpointPostProcessorTest {
     // Act
     postProcessor.postProcessEnvironment(environment, new SpringApplication());
 
-    // Assert
+    // Assert -- consumer source wins; prometheus appears once in that value
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    var count = result.split("prometheus", -1).length - 1;
-    assertThat(count).as("prometheus should appear exactly once").isEqualTo(1);
+    assertThat(result).isEqualTo("health,prometheus,metrics");
   }
 
   @Test
@@ -79,8 +78,8 @@ class PrometheusEndpointPostProcessorTest {
     // Act
     postProcessor.postProcessEnvironment(environment, new SpringApplication());
 
-    // Assert
+    // Assert -- consumer source wins
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    assertThat(result).contains("prometheus");
+    assertThat(result).isEqualTo(" health , info , metrics ");
   }
 }

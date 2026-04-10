@@ -408,7 +408,7 @@ grep -r "@Component" service-core/src/main/java/
   - Extracts permissions as direct authorities (e.g., `transactions:read`)
   - Extracts roles as ROLE_-prefixed authorities (e.g., `ROLE_ADMIN`)
   - Enables method security for both stacks, including reactive `@PreAuthorize` enforcement in WebFlux services
-  - Public endpoints: `/actuator/health/**`, OpenAPI docs
+  - Public endpoints: `/actuator/health/**`, `/actuator/prometheus/**`, OpenAPI docs
   - Protected: All other endpoints (requires `X-User-Id` header)
   - Stateless by default; `/internal/**` is not globally anonymous
   - The shared default filter chain backs off when a service defines its own `SecurityFilterChain` or `SecurityWebFilterChain`

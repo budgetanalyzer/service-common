@@ -97,7 +97,11 @@ public class ReactiveClaimsHeaderSecurityConfig {
         .authorizeExchange(
             exchange ->
                 exchange
-                    .pathMatchers("/actuator/health", "/actuator/health/**")
+                    .pathMatchers(
+                        "/actuator/health",
+                        "/actuator/health/**",
+                        "/actuator/prometheus",
+                        "/actuator/prometheus/**")
                     .permitAll()
                     .pathMatchers(
                         "/v3/api-docs",
