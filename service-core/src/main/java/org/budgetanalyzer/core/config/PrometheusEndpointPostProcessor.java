@@ -1,6 +1,7 @@
 package org.budgetanalyzer.core.config;
 
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.boot.SpringApplication;
@@ -29,13 +30,13 @@ public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor
       return;
     }
 
-    String existing = environment.getProperty(EXPOSURE_PROPERTY);
-    Set<String> endpoints = parseEndpoints(existing);
+    var existing = environment.getProperty(EXPOSURE_PROPERTY);
+    var endpoints = parseEndpoints(existing);
     endpoints.add("prometheus");
 
-    MapPropertySource propertySource =
+    var propertySource =
         new MapPropertySource(
-            "prometheusDefaults", java.util.Map.of(EXPOSURE_PROPERTY, String.join(",", endpoints)));
+            "prometheusDefaults", Map.of(EXPOSURE_PROPERTY, String.join(",", endpoints)));
 
     environment.getPropertySources().addFirst(propertySource);
   }
@@ -50,10 +51,10 @@ public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor
   }
 
   private Set<String> parseEndpoints(String value) {
-    Set<String> endpoints = new LinkedHashSet<>();
+    var endpoints = new LinkedHashSet<String>();
     if (value != null && !value.isBlank()) {
-      for (String endpoint : value.split(",")) {
-        String trimmed = endpoint.trim();
+      for (var endpoint : value.split(",")) {
+        var trimmed = endpoint.trim();
         if (!trimmed.isEmpty()) {
           endpoints.add(trimmed);
         }

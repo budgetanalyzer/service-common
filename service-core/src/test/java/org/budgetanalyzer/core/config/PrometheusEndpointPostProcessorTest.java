@@ -1,12 +1,8 @@
 package org.budgetanalyzer.core.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,12 +30,12 @@ class PrometheusEndpointPostProcessorTest {
 
     // Assert
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    assertEquals("prometheus", result);
+    assertThat(result).isEqualTo("prometheus");
   }
 
   @Test
   void shouldMergePrometheusWithExistingConfig() {
-    // Arrange - simulate app-defined config
+    // Arrange
     environment
         .getPropertySources()
         .addFirst(
@@ -48,13 +44,9 @@ class PrometheusEndpointPostProcessorTest {
     // Act
     postProcessor.postProcessEnvironment(environment, new SpringApplication());
 
-    // Assert - prometheus should be merged AND should win (addFirst)
+    // Assert
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    Set<String> endpoints = new HashSet<>(Arrays.asList(result.split(",")));
-    assertTrue(endpoints.contains("prometheus"), "Should include prometheus");
-    assertTrue(endpoints.contains("health"), "Should preserve health");
-    assertTrue(endpoints.contains("info"), "Should preserve info");
-    assertTrue(endpoints.contains("metrics"), "Should preserve metrics");
+    assertThat(result).contains("prometheus", "health", "info", "metrics");
   }
 
   @Test
@@ -71,9 +63,8 @@ class PrometheusEndpointPostProcessorTest {
 
     // Assert
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    long prometheusCount =
-        Arrays.stream(result.split(",")).filter(e -> e.trim().equals("prometheus")).count();
-    assertEquals(1, prometheusCount, "Should not duplicate prometheus");
+    var count = result.split("prometheus", -1).length - 1;
+    assertThat(count).as("prometheus should appear exactly once").isEqualTo(1);
   }
 
   @Test
@@ -90,7 +81,6 @@ class PrometheusEndpointPostProcessorTest {
 
     // Assert
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    Set<String> endpoints = new HashSet<>(Arrays.asList(result.split(",")));
-    assertTrue(endpoints.contains("prometheus"), "Should include prometheus");
+    assertThat(result).contains("prometheus");
   }
 }
