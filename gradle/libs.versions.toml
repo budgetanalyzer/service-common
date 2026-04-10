@@ -40,6 +40,9 @@ commons-lang3 = { module = "org.apache.commons:commons-lang3" }
 opencsv = { module = "com.opencsv:opencsv", version.ref = "opencsv" }
 springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 
+# Observability (versions managed by Spring Boot BOM)
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+
 # Test dependencies
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatform" }
 mockito-core = { module = "org.mockito:mockito-core" }

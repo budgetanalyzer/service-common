@@ -13,6 +13,7 @@ dependencyManagement {
 dependencies {
     // TRANSITIVE (api) - every service gets these
     api(libs.spring.boot.starter.actuator)
+    api(libs.micrometer.registry.prometheus)
 
     // NOT TRANSITIVE (implementation) - services opt-in
     implementation(libs.jackson.databind)

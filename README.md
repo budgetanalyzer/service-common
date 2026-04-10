@@ -20,7 +20,7 @@ Service Common is a **multi-module Gradle project** that provides common functio
 - JPA entity listeners and repository utilities
 - CSV parsing capabilities (OpenCSV integration)
 - Safe logging utilities with sensitive data masking
-- Health checks and metrics (Spring Boot Actuator)
+- Health checks and metrics (Spring Boot Actuator, Prometheus)
 
 **Dependencies**: Spring Data JPA, Spring Boot Actuator, Jackson, SLF4J, OpenCSV
 
@@ -103,6 +103,7 @@ When service-core is on your classpath, you automatically get:
 - **JPA Entity Scanning** - Base entities (AuditableEntity, SoftDeletableEntity) automatically discovered
 - **JPA Auditing** - Automatic timestamps (createdAt, updatedAt) on entities
 - **CSV Parser Bean** - OpenCsvParser available for injection
+- **Prometheus Metrics** - `/actuator/prometheus` endpoint exposed automatically for scraping
 
 #### service-web (Mostly Automatic)
 When service-web is on your classpath, you automatically get:
