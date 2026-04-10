@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.servlet.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -29,12 +26,12 @@ class HttpLoggingConfigTest {
     webContextRunner.run(
         context -> {
           // Assert
-          assertTrue(
-              context.containsBean("correlationIdFilter"),
-              "Should register CorrelationIdFilter bean");
-          assertNotNull(
-              context.getBean(CorrelationIdFilter.class),
-              "Should be able to get CorrelationIdFilter bean");
+          assertThat(context.containsBean("correlationIdFilter"))
+              .as("Should register CorrelationIdFilter bean")
+              .isTrue();
+          assertThat(context.getBean(CorrelationIdFilter.class))
+              .as("Should be able to get CorrelationIdFilter bean")
+              .isNotNull();
         });
   }
 
@@ -44,9 +41,9 @@ class HttpLoggingConfigTest {
     nonWebContextRunner.run(
         context -> {
           // Assert
-          assertFalse(
-              context.containsBean("correlationIdFilter"),
-              "Should NOT register CorrelationIdFilter in non-web application");
+          assertThat(context.containsBean("correlationIdFilter"))
+              .as("Should NOT register CorrelationIdFilter in non-web application")
+              .isFalse();
         });
   }
 
@@ -58,12 +55,12 @@ class HttpLoggingConfigTest {
         .run(
             context -> {
               // Assert
-              assertTrue(
-                  context.containsBean("httpLoggingFilter"),
-                  "Should register HttpLoggingFilter when enabled");
-              assertNotNull(
-                  context.getBean(HttpLoggingFilter.class),
-                  "Should be able to get HttpLoggingFilter bean");
+              assertThat(context.containsBean("httpLoggingFilter"))
+                  .as("Should register HttpLoggingFilter when enabled")
+                  .isTrue();
+              assertThat(context.getBean(HttpLoggingFilter.class))
+                  .as("Should be able to get HttpLoggingFilter bean")
+                  .isNotNull();
             });
   }
 
@@ -75,9 +72,9 @@ class HttpLoggingConfigTest {
         .run(
             context -> {
               // Assert
-              assertFalse(
-                  context.containsBean("httpLoggingFilter"),
-                  "Should NOT register HttpLoggingFilter when disabled");
+              assertThat(context.containsBean("httpLoggingFilter"))
+                  .as("Should NOT register HttpLoggingFilter when disabled")
+                  .isFalse();
             });
   }
 
@@ -87,9 +84,9 @@ class HttpLoggingConfigTest {
     webContextRunner.run(
         context -> {
           // Assert
-          assertFalse(
-              context.containsBean("httpLoggingFilter"),
-              "Should NOT register HttpLoggingFilter when property not set (defaults to false)");
+          assertThat(context.containsBean("httpLoggingFilter"))
+              .as("Should NOT register HttpLoggingFilter when property not set (defaults to false)")
+              .isFalse();
         });
   }
 
@@ -101,17 +98,18 @@ class HttpLoggingConfigTest {
         .run(
             context -> {
               // Assert
-              assertTrue(
-                  context.containsBean("correlationIdFilter"),
-                  "Should register CorrelationIdFilter");
-              assertTrue(
-                  context.containsBean("httpLoggingFilter"), "Should register HttpLoggingFilter");
+              assertThat(context.containsBean("correlationIdFilter"))
+                  .as("Should register CorrelationIdFilter")
+                  .isTrue();
+              assertThat(context.containsBean("httpLoggingFilter"))
+                  .as("Should register HttpLoggingFilter")
+                  .isTrue();
 
-              assertEquals(
-                  2,
-                  context.getBeansOfType(CorrelationIdFilter.class).size()
-                      + context.getBeansOfType(HttpLoggingFilter.class).size(),
-                  "Should have exactly 2 filter beans registered");
+              assertThat(
+                      context.getBeansOfType(CorrelationIdFilter.class).size()
+                          + context.getBeansOfType(HttpLoggingFilter.class).size())
+                  .as("Should have exactly 2 filter beans registered")
+                  .isEqualTo(2);
             });
   }
 
@@ -123,21 +121,19 @@ class HttpLoggingConfigTest {
         .run(
             context -> {
               // Assert
-              assertTrue(
-                  context.containsBean("correlationIdFilter"),
-                  "Should register CorrelationIdFilter");
-              assertFalse(
-                  context.containsBean("httpLoggingFilter"),
-                  "Should NOT register HttpLoggingFilter");
+              assertThat(context.containsBean("correlationIdFilter"))
+                  .as("Should register CorrelationIdFilter")
+                  .isTrue();
+              assertThat(context.containsBean("httpLoggingFilter"))
+                  .as("Should NOT register HttpLoggingFilter")
+                  .isFalse();
 
-              assertEquals(
-                  1,
-                  context.getBeansOfType(CorrelationIdFilter.class).size(),
-                  "Should have exactly 1 filter bean (CorrelationIdFilter)");
-              assertEquals(
-                  0,
-                  context.getBeansOfType(HttpLoggingFilter.class).size(),
-                  "Should have 0 HttpLoggingFilter beans");
+              assertThat(context.getBeansOfType(CorrelationIdFilter.class).size())
+                  .as("Should have exactly 1 filter bean (CorrelationIdFilter)")
+                  .isEqualTo(1);
+              assertThat(context.getBeansOfType(HttpLoggingFilter.class).size())
+                  .as("Should have 0 HttpLoggingFilter beans")
+                  .isEqualTo(0);
             });
   }
 
@@ -147,9 +143,9 @@ class HttpLoggingConfigTest {
     webContextRunner.run(
         context -> {
           // Assert
-          assertNotNull(
-              context.getBean(HttpLoggingProperties.class),
-              "Should be able to get HttpLoggingProperties bean");
+          assertThat(context.getBean(HttpLoggingProperties.class))
+              .as("Should be able to get HttpLoggingProperties bean")
+              .isNotNull();
         });
   }
 
@@ -166,19 +162,21 @@ class HttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertTrue(properties.isEnabled(), "Properties should have enabled=true");
-              assertEquals(
-                  "INFO", properties.getLogLevel(), "Properties should have log-level=INFO");
-              assertEquals(
-                  5000, properties.getMaxBodySize(), "Properties should have max-body-size=5000");
-              assertFalse(
-                  properties.isIncludeRequestBody(),
-                  "Properties should have include-request-body=false");
+              assertThat(properties.isEnabled()).as("Properties should have enabled=true").isTrue();
+              assertThat(properties.getLogLevel())
+                  .as("Properties should have log-level=INFO")
+                  .isEqualTo("INFO");
+              assertThat(properties.getMaxBodySize())
+                  .as("Properties should have max-body-size=5000")
+                  .isEqualTo(5000);
+              assertThat(properties.isIncludeRequestBody())
+                  .as("Properties should have include-request-body=false")
+                  .isFalse();
 
               // Filter should be created with these properties
-              assertNotNull(
-                  context.getBean(HttpLoggingFilter.class),
-                  "HttpLoggingFilter should be created with properties");
+              assertThat(context.getBean(HttpLoggingFilter.class))
+                  .as("HttpLoggingFilter should be created with properties")
+                  .isNotNull();
             });
   }
 
@@ -195,19 +193,21 @@ class HttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertEquals(
-                  2, properties.getExcludePatterns().size(), "Should have 2 exclude patterns");
-              assertEquals(
-                  1, properties.getIncludePatterns().size(), "Should have 1 include pattern");
-              assertTrue(
-                  properties.getExcludePatterns().contains("/actuator/**"),
-                  "Should contain /actuator/** exclude pattern");
-              assertTrue(
-                  properties.getExcludePatterns().contains("/swagger-ui/**"),
-                  "Should contain /swagger-ui/** exclude pattern");
-              assertTrue(
-                  properties.getIncludePatterns().contains("/api/**"),
-                  "Should contain /api/** include pattern");
+              assertThat(properties.getExcludePatterns().size())
+                  .as("Should have 2 exclude patterns")
+                  .isEqualTo(2);
+              assertThat(properties.getIncludePatterns().size())
+                  .as("Should have 1 include pattern")
+                  .isEqualTo(1);
+              assertThat(properties.getExcludePatterns().contains("/actuator/**"))
+                  .as("Should contain /actuator/** exclude pattern")
+                  .isTrue();
+              assertThat(properties.getExcludePatterns().contains("/swagger-ui/**"))
+                  .as("Should contain /swagger-ui/** exclude pattern")
+                  .isTrue();
+              assertThat(properties.getIncludePatterns().contains("/api/**"))
+                  .as("Should contain /api/** include pattern")
+                  .isTrue();
             });
   }
 
@@ -223,14 +223,15 @@ class HttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertEquals(
-                  2, properties.getSensitiveHeaders().size(), "Should have 2 sensitive headers");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("X-Custom-Token"),
-                  "Should contain X-Custom-Token");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("X-API-Secret"),
-                  "Should contain X-API-Secret");
+              assertThat(properties.getSensitiveHeaders().size())
+                  .as("Should have 2 sensitive headers")
+                  .isEqualTo(2);
+              assertThat(properties.getSensitiveHeaders().contains("X-Custom-Token"))
+                  .as("Should contain X-Custom-Token")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("X-API-Secret"))
+                  .as("Should contain X-API-Secret")
+                  .isTrue();
             });
   }
 
@@ -245,7 +246,9 @@ class HttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertTrue(properties.isLogErrorsOnly(), "Should have log-errors-only=true");
+              assertThat(properties.isLogErrorsOnly())
+                  .as("Should have log-errors-only=true")
+                  .isTrue();
             });
   }
 
@@ -257,19 +260,18 @@ class HttpLoggingConfigTest {
         .run(
             context -> {
               // Assert - No filters should be registered in non-web application
-              assertFalse(
-                  context.containsBean("correlationIdFilter"),
-                  "Should NOT register CorrelationIdFilter in non-web application");
-              assertFalse(
-                  context.containsBean("httpLoggingFilter"),
-                  "Should NOT register HttpLoggingFilter in non-web application");
+              assertThat(context.containsBean("correlationIdFilter"))
+                  .as("Should NOT register CorrelationIdFilter in non-web application")
+                  .isFalse();
+              assertThat(context.containsBean("httpLoggingFilter"))
+                  .as("Should NOT register HttpLoggingFilter in non-web application")
+                  .isFalse();
 
               // HttpLoggingConfig is conditional on web application,
               // so properties won't be registered either
-              assertEquals(
-                  0,
-                  context.getBeansOfType(HttpLoggingProperties.class).size(),
-                  "Should NOT register HttpLoggingProperties in non-web application");
+              assertThat(context.getBeansOfType(HttpLoggingProperties.class).size())
+                  .as("Should NOT register HttpLoggingProperties in non-web application")
+                  .isEqualTo(0);
             });
   }
 
@@ -290,14 +292,14 @@ class HttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertTrue(properties.isEnabled());
-              assertTrue(properties.isIncludeRequestBody());
-              assertTrue(properties.isIncludeResponseBody());
-              assertTrue(properties.isIncludeRequestHeaders());
-              assertTrue(properties.isIncludeResponseHeaders());
-              assertTrue(properties.isIncludeQueryParams());
-              assertTrue(properties.isIncludeClientIp());
-              assertFalse(properties.isLogErrorsOnly());
+              assertThat(properties.isEnabled()).isTrue();
+              assertThat(properties.isIncludeRequestBody()).isTrue();
+              assertThat(properties.isIncludeResponseBody()).isTrue();
+              assertThat(properties.isIncludeRequestHeaders()).isTrue();
+              assertThat(properties.isIncludeResponseHeaders()).isTrue();
+              assertThat(properties.isIncludeQueryParams()).isTrue();
+              assertThat(properties.isIncludeClientIp()).isTrue();
+              assertThat(properties.isLogErrorsOnly()).isFalse();
             });
   }
 
@@ -318,18 +320,18 @@ class HttpLoggingConfigTest {
             context -> {
               // Assert - Filter should still be created even with minimal logging
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertTrue(properties.isEnabled(), "Filter should be enabled");
-              assertFalse(properties.isIncludeRequestBody());
-              assertFalse(properties.isIncludeResponseBody());
-              assertFalse(properties.isIncludeRequestHeaders());
-              assertFalse(properties.isIncludeResponseHeaders());
-              assertFalse(properties.isIncludeQueryParams());
-              assertFalse(properties.isIncludeClientIp());
-              assertTrue(properties.isLogErrorsOnly());
+              assertThat(properties.isEnabled()).as("Filter should be enabled").isTrue();
+              assertThat(properties.isIncludeRequestBody()).isFalse();
+              assertThat(properties.isIncludeResponseBody()).isFalse();
+              assertThat(properties.isIncludeRequestHeaders()).isFalse();
+              assertThat(properties.isIncludeResponseHeaders()).isFalse();
+              assertThat(properties.isIncludeQueryParams()).isFalse();
+              assertThat(properties.isIncludeClientIp()).isFalse();
+              assertThat(properties.isLogErrorsOnly()).isTrue();
 
-              assertTrue(
-                  context.containsBean("httpLoggingFilter"),
-                  "HttpLoggingFilter should be registered even with minimal config");
+              assertThat(context.containsBean("httpLoggingFilter"))
+                  .as("HttpLoggingFilter should be registered even with minimal config")
+                  .isTrue();
             });
   }
 }

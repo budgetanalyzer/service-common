@@ -1,8 +1,6 @@
 package org.budgetanalyzer.service.security;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,9 +48,9 @@ class ClaimsHeaderSecurityConfigTest {
   void shouldActivateInServletWebApplication() {
     servletContextRunner.run(
         context -> {
-          assertTrue(
-              context.containsBean("securityFilterChain"),
-              "Should register securityFilterChain bean in servlet context");
+          assertThat(context.containsBean("securityFilterChain"))
+              .as("Should register securityFilterChain bean in servlet context")
+              .isTrue();
         });
   }
 
@@ -64,12 +62,12 @@ class ClaimsHeaderSecurityConfigTest {
         .withUserConfiguration(CustomServletSecurityConfig.class)
         .run(
             context -> {
-              assertTrue(
-                  context.containsBean("customSecurityFilterChain"),
-                  "Should keep the application-defined SecurityFilterChain");
-              assertTrue(
-                  context.containsBean("securityFilterChain"),
-                  "Should register the shared claims-header chain alongside the scoped chain");
+              assertThat(context.containsBean("customSecurityFilterChain"))
+                  .as("Should keep the application-defined SecurityFilterChain")
+                  .isTrue();
+              assertThat(context.containsBean("securityFilterChain"))
+                  .as("Should register the shared claims-header chain alongside the scoped chain")
+                  .isTrue();
             });
   }
 
@@ -85,10 +83,9 @@ class ClaimsHeaderSecurityConfigTest {
           // SecurityFilterChain is a proxy — check the bean definition's method annotation instead
           var beanOrder =
               context.getBeanFactory().findAnnotationOnBean("securityFilterChain", Order.class);
-          assertEquals(
-              SecurityProperties.BASIC_AUTH_ORDER,
-              beanOrder != null ? beanOrder.value() : order != null ? order.value() : null,
-              "Shared chain should be ordered at BASIC_AUTH_ORDER");
+          assertThat(beanOrder != null ? beanOrder.value() : order != null ? order.value() : null)
+              .as("Shared chain should be ordered at BASIC_AUTH_ORDER")
+              .isEqualTo(SecurityProperties.BASIC_AUTH_ORDER);
         });
   }
 
@@ -97,9 +94,9 @@ class ClaimsHeaderSecurityConfigTest {
   void shouldNotActivateInReactiveWebApplication() {
     reactiveContextRunner.run(
         context -> {
-          assertFalse(
-              context.containsBean("securityFilterChain"),
-              "Should NOT register securityFilterChain bean in reactive context");
+          assertThat(context.containsBean("securityFilterChain"))
+              .as("Should NOT register securityFilterChain bean in reactive context")
+              .isFalse();
         });
   }
 
@@ -108,9 +105,9 @@ class ClaimsHeaderSecurityConfigTest {
   void shouldNotActivateInNonWebApplication() {
     nonWebContextRunner.run(
         context -> {
-          assertFalse(
-              context.containsBean("securityFilterChain"),
-              "Should NOT register securityFilterChain bean in non-web context");
+          assertThat(context.containsBean("securityFilterChain"))
+              .as("Should NOT register securityFilterChain bean in non-web context")
+              .isFalse();
         });
   }
 

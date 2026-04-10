@@ -1,8 +1,6 @@
 package org.budgetanalyzer.service.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,9 +22,9 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of(field, message, rejectedValue);
 
-    assertEquals(field, fieldError.getField());
-    assertEquals(message, fieldError.getMessage());
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
+    assertThat(fieldError.getField()).isEqualTo(field);
+    assertThat(fieldError.getMessage()).isEqualTo(message);
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
   @Test
@@ -37,9 +35,9 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of(field, message, null);
 
-    assertEquals(field, fieldError.getField());
-    assertEquals(message, fieldError.getMessage());
-    assertNull(fieldError.getRejectedValue());
+    assertThat(fieldError.getField()).isEqualTo(field);
+    assertThat(fieldError.getMessage()).isEqualTo(message);
+    assertThat(fieldError.getRejectedValue()).isNull();
   }
 
   @Test
@@ -50,9 +48,9 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of(null, message, rejectedValue);
 
-    assertNull(fieldError.getField());
-    assertEquals(message, fieldError.getMessage());
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
+    assertThat(fieldError.getField()).isNull();
+    assertThat(fieldError.getMessage()).isEqualTo(message);
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
   @Test
@@ -63,9 +61,9 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of(field, null, rejectedValue);
 
-    assertEquals(field, fieldError.getField());
-    assertNull(fieldError.getMessage());
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
+    assertThat(fieldError.getField()).isEqualTo(field);
+    assertThat(fieldError.getMessage()).isNull();
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
   @Test
@@ -73,9 +71,9 @@ class FieldErrorTest {
   void shouldCreateFieldErrorWithAllNullValues() {
     var fieldError = FieldError.of(null, null, null);
 
-    assertNull(fieldError.getField());
-    assertNull(fieldError.getMessage());
-    assertNull(fieldError.getRejectedValue());
+    assertThat(fieldError.getField()).isNull();
+    assertThat(fieldError.getMessage()).isNull();
+    assertThat(fieldError.getRejectedValue()).isNull();
   }
 
   @Test
@@ -85,8 +83,8 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of("username", "invalid format", rejectedValue);
 
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
-    assertEquals(String.class, fieldError.getRejectedValue().getClass());
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
+    assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(String.class);
   }
 
   @Test
@@ -96,8 +94,8 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of("age", "must be positive", rejectedValue);
 
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
-    assertEquals(Integer.class, fieldError.getRejectedValue().getClass());
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
+    assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(Integer.class);
   }
 
   @Test
@@ -107,8 +105,8 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of("id", "id too large", rejectedValue);
 
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
-    assertEquals(Long.class, fieldError.getRejectedValue().getClass());
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
+    assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(Long.class);
   }
 
   @Test
@@ -118,8 +116,8 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of("amount", "must be positive", rejectedValue);
 
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
-    assertEquals(BigDecimal.class, fieldError.getRejectedValue().getClass());
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
+    assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(BigDecimal.class);
   }
 
   @Test
@@ -129,8 +127,8 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of("active", "must be true", rejectedValue);
 
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
-    assertEquals(Boolean.class, fieldError.getRejectedValue().getClass());
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
+    assertThat(fieldError.getRejectedValue().getClass()).isEqualTo(Boolean.class);
   }
 
   @Test
@@ -140,7 +138,7 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of("tags", "too many items", rejectedValue);
 
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
   @Test
@@ -150,7 +148,7 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of("metadata", "invalid structure", rejectedValue);
 
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
   @Test
@@ -162,7 +160,7 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of("user", "age must be positive", rejectedValue);
 
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
   @Test
@@ -170,8 +168,8 @@ class FieldErrorTest {
   void shouldSupportStaticFactoryMethodPattern() {
     var fieldError = FieldError.of("email", "invalid format", "not-an-email");
 
-    assertNotNull(fieldError);
-    assertEquals("email", fieldError.getField());
+    assertThat(fieldError).isNotNull();
+    assertThat(fieldError.getField()).isEqualTo("email");
   }
 
   @Test
@@ -183,9 +181,9 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of(field, message, rejectedValue);
 
-    assertEquals(field, fieldError.getField());
-    assertEquals(message, fieldError.getMessage());
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
+    assertThat(fieldError.getField()).isEqualTo(field);
+    assertThat(fieldError.getMessage()).isEqualTo(message);
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
   @Test
@@ -197,7 +195,7 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of(field, message, rejectedValue);
 
-    assertEquals(field, fieldError.getField());
+    assertThat(fieldError.getField()).isEqualTo(field);
   }
 
   // ==================== Indexed Field Error Tests ====================
@@ -212,10 +210,10 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of(index, field, message, rejectedValue);
 
-    assertEquals(index, fieldError.getIndex());
-    assertEquals(field, fieldError.getField());
-    assertEquals(message, fieldError.getMessage());
-    assertEquals(rejectedValue, fieldError.getRejectedValue());
+    assertThat(fieldError.getIndex()).isEqualTo(index);
+    assertThat(fieldError.getField()).isEqualTo(field);
+    assertThat(fieldError.getMessage()).isEqualTo(message);
+    assertThat(fieldError.getRejectedValue()).isEqualTo(rejectedValue);
   }
 
   @Test
@@ -227,10 +225,10 @@ class FieldErrorTest {
 
     var fieldError = FieldError.of(index, field, message, null);
 
-    assertEquals(index, fieldError.getIndex());
-    assertEquals(field, fieldError.getField());
-    assertEquals(message, fieldError.getMessage());
-    assertNull(fieldError.getRejectedValue());
+    assertThat(fieldError.getIndex()).isEqualTo(index);
+    assertThat(fieldError.getField()).isEqualTo(field);
+    assertThat(fieldError.getMessage()).isEqualTo(message);
+    assertThat(fieldError.getRejectedValue()).isNull();
   }
 
   @Test
@@ -238,7 +236,7 @@ class FieldErrorTest {
   void shouldCreateIndexedFieldErrorWithZeroIndex() {
     var fieldError = FieldError.of(0, "field", "error", null);
 
-    assertEquals(0, fieldError.getIndex());
+    assertThat(fieldError.getIndex()).isEqualTo(0);
   }
 
   @Test
@@ -246,6 +244,6 @@ class FieldErrorTest {
   void nonIndexedFieldErrorShouldHaveNullIndex() {
     var fieldError = FieldError.of("email", "invalid format", "bad-email");
 
-    assertNull(fieldError.getIndex());
+    assertThat(fieldError.getIndex()).isNull();
   }
 }

@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.exception;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,8 +18,8 @@ class InvalidRequestExceptionTest {
 
     var exception = new InvalidRequestException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -33,8 +30,8 @@ class InvalidRequestExceptionTest {
 
     var exception = new InvalidRequestException(message, cause);
 
-    assertEquals(message, exception.getMessage());
-    assertSame(cause, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isSameAs(cause);
   }
 
   @Test
@@ -42,7 +39,7 @@ class InvalidRequestExceptionTest {
   void shouldExtendServiceException() {
     var exception = new InvalidRequestException("Invalid request");
 
-    assertTrue(exception instanceof ServiceException);
+    assertThat(exception).isInstanceOf(ServiceException.class);
   }
 
   @Test
@@ -50,7 +47,7 @@ class InvalidRequestExceptionTest {
   void shouldBeRuntimeException() {
     var exception = new InvalidRequestException("Invalid request");
 
-    assertTrue(exception instanceof RuntimeException);
+    assertThat(exception).isInstanceOf(RuntimeException.class);
   }
 
   @Test
@@ -58,8 +55,8 @@ class InvalidRequestExceptionTest {
   void shouldHandleNullMessage() {
     var exception = new InvalidRequestException(null);
 
-    assertNull(exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isNull();
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -69,8 +66,8 @@ class InvalidRequestExceptionTest {
 
     var exception = new InvalidRequestException(message, null);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -79,8 +76,8 @@ class InvalidRequestExceptionTest {
     var parsingError = new IllegalArgumentException("Invalid date format");
     var exception = new InvalidRequestException("Cannot parse date parameter", parsingError);
 
-    assertEquals("Cannot parse date parameter", exception.getMessage());
-    assertSame(parsingError, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo("Cannot parse date parameter");
+    assertThat(exception.getCause()).isSameAs(parsingError);
   }
 
   @Test
@@ -90,8 +87,8 @@ class InvalidRequestExceptionTest {
 
     var exception = new InvalidRequestException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertTrue(exception.getMessage().contains("userId"));
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getMessage().contains("userId")).isTrue();
   }
 
   @Test
@@ -101,6 +98,6 @@ class InvalidRequestExceptionTest {
 
     var exception = new InvalidRequestException(message);
 
-    assertEquals(message, exception.getMessage());
+    assertThat(exception.getMessage()).isEqualTo(message);
   }
 }

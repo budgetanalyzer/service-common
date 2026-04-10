@@ -1,8 +1,7 @@
 package org.budgetanalyzer.core.domain;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -51,25 +50,16 @@ class SoftDeleteListenerTest {
 
     // Act & Assert
     entityManager.getTransaction().begin();
-    var exception =
-        assertThrows(
-            UnsupportedOperationException.class,
+    assertThatThrownBy(
             () -> {
               entityManager.remove(entity);
               entityManager.flush(); // Force JPA to trigger @PreRemove callback
-            },
-            "Hard delete should throw UnsupportedOperationException");
+            })
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("Hard delete not allowed")
+        .hasMessageContaining("markDeleted(deletedBy)");
 
     entityManager.getTransaction().rollback();
-
-    // Assert exception message
-    assertNotNull(exception.getMessage(), "Exception should have a message");
-    assertTrue(
-        exception.getMessage().contains("Hard delete not allowed"),
-        "Exception message should mention hard delete not allowed");
-    assertTrue(
-        exception.getMessage().contains("markDeleted(deletedBy)"),
-        "Exception message should suggest using markDeleted(deletedBy)");
   }
 
   @Test
@@ -84,21 +74,15 @@ class SoftDeleteListenerTest {
 
     // Act & Assert
     entityManager.getTransaction().begin();
-    var exception =
-        assertThrows(
-            UnsupportedOperationException.class,
+    assertThatThrownBy(
             () -> {
               entityManager.remove(entity);
               entityManager.flush();
-            });
+            })
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("TestSoftDeletableEntity");
 
     entityManager.getTransaction().rollback();
-
-    // Assert - Exception message should include entity class name
-    assertTrue(
-        exception.getMessage().contains("TestSoftDeletableEntity")
-            || exception.getMessage().contains(entity.getClass().toString()),
-        "Exception message should include entity class name");
   }
 
   @Test
@@ -118,11 +102,11 @@ class SoftDeleteListenerTest {
     entityManager.getTransaction().commit();
 
     // Assert - Entity should be marked deleted but still in database
-    assertTrue(entity.isDeleted(), "Entity should be marked as deleted");
+    assertThat(entity.isDeleted()).isTrue();
 
     var reloadedEntity = entityManager.find(TestSoftDeletableEntity.class, entity.getId());
-    assertNotNull(reloadedEntity, "Entity should still exist in database after soft delete");
-    assertTrue(reloadedEntity.isDeleted(), "Reloaded entity should be marked as deleted");
+    assertThat(reloadedEntity).isNotNull();
+    assertThat(reloadedEntity.isDeleted()).isTrue();
   }
 
   @Test
@@ -143,13 +127,12 @@ class SoftDeleteListenerTest {
 
     // Act & Assert - Hard delete should still be prevented
     entityManager.getTransaction().begin();
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> {
-          entityManager.remove(entity);
-          entityManager.flush();
-        },
-        "Hard delete should be prevented even after soft delete");
+    assertThatThrownBy(
+            () -> {
+              entityManager.remove(entity);
+              entityManager.flush();
+            })
+        .isInstanceOf(UnsupportedOperationException.class);
 
     entityManager.getTransaction().rollback();
   }
@@ -166,7 +149,7 @@ class SoftDeleteListenerTest {
     // for entities with @EntityListeners(SoftDeleteListener.class)
 
     // This test verifies the listener can be instantiated
-    assertNotNull(listener, "SoftDeleteListener should be instantiable");
+    assertThat(listener).isNotNull();
   }
 
   // Concrete test entity for testing SoftDeleteListener

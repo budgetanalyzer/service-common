@@ -1,10 +1,6 @@
 package org.budgetanalyzer.service.exception;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 
@@ -22,8 +18,8 @@ class ServiceExceptionTest {
 
     var exception = new ServiceException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -34,8 +30,8 @@ class ServiceExceptionTest {
 
     var exception = new ServiceException(message, cause);
 
-    assertEquals(message, exception.getMessage());
-    assertSame(cause, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isSameAs(cause);
   }
 
   @Test
@@ -43,8 +39,8 @@ class ServiceExceptionTest {
   void shouldHandleNullMessage() {
     var exception = new ServiceException(null);
 
-    assertNull(exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isNull();
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -54,8 +50,8 @@ class ServiceExceptionTest {
 
     var exception = new ServiceException(null, cause);
 
-    assertNull(exception.getMessage());
-    assertSame(cause, exception.getCause());
+    assertThat(exception.getMessage()).isNull();
+    assertThat(exception.getCause()).isSameAs(cause);
   }
 
   @Test
@@ -65,8 +61,8 @@ class ServiceExceptionTest {
 
     var exception = new ServiceException(message, null);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -74,7 +70,7 @@ class ServiceExceptionTest {
   void shouldBeRuntimeException() {
     var exception = new ServiceException("Error");
 
-    assertTrue(exception instanceof RuntimeException);
+    assertThat(exception).isInstanceOf(RuntimeException.class);
   }
 
   @Test
@@ -82,8 +78,8 @@ class ServiceExceptionTest {
   void shouldPreserveStackTrace() {
     var exception = new ServiceException("Error");
 
-    assertNotNull(exception.getStackTrace());
-    assertTrue(exception.getStackTrace().length > 0);
+    assertThat(exception.getStackTrace()).isNotNull();
+    assertThat(exception.getStackTrace().length > 0).isTrue();
   }
 
   @Test
@@ -93,9 +89,9 @@ class ServiceExceptionTest {
     var intermediateCause = new IOException("IO error", rootCause);
     var exception = new ServiceException("Service error", intermediateCause);
 
-    assertEquals("Service error", exception.getMessage());
-    assertSame(intermediateCause, exception.getCause());
-    assertSame(rootCause, exception.getCause().getCause());
+    assertThat(exception.getMessage()).isEqualTo("Service error");
+    assertThat(exception.getCause()).isSameAs(intermediateCause);
+    assertThat(exception.getCause().getCause()).isSameAs(rootCause);
   }
 
   @Test
@@ -103,7 +99,7 @@ class ServiceExceptionTest {
   void shouldHandleEmptyMessage() {
     var exception = new ServiceException("");
 
-    assertEquals("", exception.getMessage());
+    assertThat(exception.getMessage()).isEqualTo("");
   }
 
   @Test
@@ -113,6 +109,6 @@ class ServiceExceptionTest {
 
     var exception = new ServiceException(message);
 
-    assertEquals(message, exception.getMessage());
+    assertThat(exception.getMessage()).isEqualTo(message);
   }
 }

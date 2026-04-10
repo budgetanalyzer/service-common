@@ -1,7 +1,6 @@
 package org.budgetanalyzer.service.reactive.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
@@ -31,7 +30,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
 
     StepVerifier.create(readBodyAsString(decorator)).expectNext(requestBody).verifyComplete();
 
-    assertEquals(requestBody, decorator.getCachedBodyAsString());
+    assertThat(decorator.getCachedBodyAsString()).isEqualTo(requestBody);
   }
 
   @Test
@@ -40,7 +39,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
     var decorator =
         new CachedBodyServerHttpRequestDecorator(originalRequest, DEFAULT_MAX_BODY_SIZE);
 
-    assertEquals("", decorator.getCachedBodyAsString());
+    assertThat(decorator.getCachedBodyAsString()).isEqualTo("");
   }
 
   @Test
@@ -57,8 +56,8 @@ class CachedBodyServerHttpRequestDecoratorTest {
 
     var headers = decorator.getHeaders();
 
-    assertEquals(MediaType.APPLICATION_JSON, headers.getContentType());
-    assertEquals("custom-value", headers.getFirst("X-Custom-Header"));
+    assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+    assertThat(headers.getFirst("X-Custom-Header")).isEqualTo("custom-value");
   }
 
   @Test
@@ -74,7 +73,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
 
     StepVerifier.create(readBodyAsString(decorator)).expectNext(requestBody).verifyComplete();
 
-    assertEquals(requestBody, decorator.getCachedBodyAsString());
+    assertThat(decorator.getCachedBodyAsString()).isEqualTo(requestBody);
   }
 
   @Test
@@ -91,7 +90,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
 
     StepVerifier.create(readBodyAsString(decorator)).expectNext(requestBody).verifyComplete();
 
-    assertEquals(requestBody, decorator.getCachedBodyAsString());
+    assertThat(decorator.getCachedBodyAsString()).isEqualTo(requestBody);
   }
 
   @Test
@@ -104,8 +103,8 @@ class CachedBodyServerHttpRequestDecoratorTest {
     StepVerifier.create(readBodyAsString(decorator)).expectNext(requestBody).verifyComplete();
 
     var cachedBody = decorator.getCachedBodyAsString();
-    assertTrue(cachedBody.startsWith("This is a "));
-    assertTrue(cachedBody.contains("TRUNCATED"));
+    assertThat(cachedBody.startsWith("This is a ")).isTrue();
+    assertThat(cachedBody.contains("TRUNCATED")).isTrue();
   }
 
   @Test
@@ -118,7 +117,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
 
     StepVerifier.create(readBodyAsString(decorator)).expectNext("Hello World").verifyComplete();
 
-    assertEquals("Hello World", decorator.getCachedBodyAsString());
+    assertThat(decorator.getCachedBodyAsString()).isEqualTo("Hello World");
   }
 
   @Test
@@ -130,7 +129,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
 
     StepVerifier.create(readBodyAsString(decorator)).expectNext(requestBody).verifyComplete();
 
-    assertTrue(decorator.getCachedBodyAsString().contains("TRUNCATED"));
+    assertThat(decorator.getCachedBodyAsString().contains("TRUNCATED")).isTrue();
   }
 
   @Test
@@ -141,7 +140,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
     var decorator =
         new CachedBodyServerHttpRequestDecorator(originalRequest, DEFAULT_MAX_BODY_SIZE);
 
-    assertEquals(originalRequest.getMethod(), decorator.getMethod());
+    assertThat(decorator.getMethod()).isEqualTo(originalRequest.getMethod());
   }
 
   @Test
@@ -153,7 +152,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
     var decorator =
         new CachedBodyServerHttpRequestDecorator(originalRequest, DEFAULT_MAX_BODY_SIZE);
 
-    assertEquals(originalRequest.getURI(), decorator.getURI());
+    assertThat(decorator.getURI()).isEqualTo(originalRequest.getURI());
   }
 
   @Test
@@ -169,7 +168,7 @@ class CachedBodyServerHttpRequestDecoratorTest {
 
     StepVerifier.create(readBodyAsString(decorator)).expectNext(requestBody).verifyComplete();
 
-    assertEquals(requestBody, decorator.getCachedBodyAsString());
+    assertThat(decorator.getCachedBodyAsString()).isEqualTo(requestBody);
   }
 
   private Mono<String> readBodyAsString(CachedBodyServerHttpRequestDecorator decorator) {

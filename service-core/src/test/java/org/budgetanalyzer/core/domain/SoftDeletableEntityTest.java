@@ -1,10 +1,7 @@
 package org.budgetanalyzer.core.domain;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -56,8 +53,8 @@ class SoftDeletableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert
-    assertFalse(entity.isDeleted(), "deleted should default to false");
-    assertNull(entity.getDeletedAt(), "deletedAt should be null by default");
+    assertThat(entity.isDeleted()).isFalse();
+    assertThat(entity.getDeletedAt()).isNull();
   }
 
   @Test
@@ -72,8 +69,8 @@ class SoftDeletableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert - Should have createdAt and updatedAt from AuditableEntity
-    assertNotNull(entity.getCreatedAt(), "Should inherit createdAt from AuditableEntity");
-    assertNotNull(entity.getUpdatedAt(), "Should inherit updatedAt from AuditableEntity");
+    assertThat(entity.getCreatedAt()).isNotNull();
+    assertThat(entity.getUpdatedAt()).isNotNull();
   }
 
   @Test
@@ -86,8 +83,8 @@ class SoftDeletableEntityTest {
     entityManager.persist(entity);
     entityManager.getTransaction().commit();
 
-    assertFalse(entity.isDeleted());
-    assertNull(entity.getDeletedAt());
+    assertThat(entity.isDeleted()).isFalse();
+    assertThat(entity.getDeletedAt()).isNull();
 
     final Instant beforeMarkDeleted = Instant.now();
 
@@ -100,12 +97,11 @@ class SoftDeletableEntityTest {
     final Instant afterMarkDeleted = Instant.now();
 
     // Assert
-    assertTrue(entity.isDeleted(), "Entity should be marked as deleted");
-    assertNotNull(entity.getDeletedAt(), "deletedAt should be set");
-    assertTrue(
-        !entity.getDeletedAt().isBefore(beforeMarkDeleted)
-            && !entity.getDeletedAt().isAfter(afterMarkDeleted),
-        "deletedAt should be within markDeleted time range");
+    assertThat(entity.isDeleted()).isTrue();
+    assertThat(entity.getDeletedAt()).isNotNull();
+    assertThat(entity.getDeletedAt())
+        .isAfterOrEqualTo(beforeMarkDeleted)
+        .isBeforeOrEqualTo(afterMarkDeleted);
   }
 
   @Test
@@ -134,15 +130,13 @@ class SoftDeletableEntityTest {
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
-    Instant secondDeletedAt = entity.getDeletedAt();
+    var secondDeletedAt = entity.getDeletedAt();
 
     // Assert - Should update timestamp (not truly idempotent, but updates deletedAt)
-    assertTrue(entity.isDeleted(), "Entity should still be deleted");
-    assertNotNull(secondDeletedAt, "deletedAt should still be set");
+    assertThat(entity.isDeleted()).isTrue();
+    assertThat(secondDeletedAt).isNotNull();
     // Note: markDeleted() will update the timestamp each time it's called
-    assertTrue(
-        secondDeletedAt.isAfter(firstDeletedAt) || secondDeletedAt.equals(firstDeletedAt),
-        "deletedAt should be updated or equal on second call");
+    assertThat(secondDeletedAt).isAfterOrEqualTo(firstDeletedAt);
   }
 
   @Test
@@ -161,8 +155,8 @@ class SoftDeletableEntityTest {
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
-    assertTrue(entity.isDeleted());
-    assertNotNull(entity.getDeletedAt());
+    assertThat(entity.isDeleted()).isTrue();
+    assertThat(entity.getDeletedAt()).isNotNull();
 
     // Act - Restore entity
     entityManager.getTransaction().begin();
@@ -171,8 +165,8 @@ class SoftDeletableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert
-    assertFalse(entity.isDeleted(), "Entity should be restored (deleted=false)");
-    assertNull(entity.getDeletedAt(), "deletedAt should be null after restore");
+    assertThat(entity.isDeleted()).isFalse();
+    assertThat(entity.getDeletedAt()).isNull();
   }
 
   @Test
@@ -185,7 +179,7 @@ class SoftDeletableEntityTest {
     entityManager.persist(entity);
     entityManager.getTransaction().commit();
 
-    assertFalse(entity.isDeleted());
+    assertThat(entity.isDeleted()).isFalse();
 
     // Act - Call restore() on non-deleted entity (should not throw exception)
     entityManager.getTransaction().begin();
@@ -194,8 +188,8 @@ class SoftDeletableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert - Should complete without errors
-    assertFalse(entity.isDeleted(), "Entity should still be not deleted");
-    assertNull(entity.getDeletedAt(), "deletedAt should still be null");
+    assertThat(entity.isDeleted()).isFalse();
+    assertThat(entity.getDeletedAt()).isNull();
   }
 
   @Test
@@ -214,7 +208,7 @@ class SoftDeletableEntityTest {
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
-    assertTrue(entity.isDeleted());
+    assertThat(entity.isDeleted()).isTrue();
     final Instant firstDeletedAt = entity.getDeletedAt();
 
     entityManager.getTransaction().begin();
@@ -222,7 +216,7 @@ class SoftDeletableEntityTest {
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
-    assertFalse(entity.isDeleted());
+    assertThat(entity.isDeleted()).isFalse();
 
     TimeUnit.MILLISECONDS.sleep(10);
 
@@ -232,7 +226,7 @@ class SoftDeletableEntityTest {
     entityManager.merge(entity);
     entityManager.getTransaction().commit();
 
-    assertTrue(entity.isDeleted());
+    assertThat(entity.isDeleted()).isTrue();
     final Instant secondDeletedAt = entity.getDeletedAt();
 
     entityManager.getTransaction().begin();
@@ -241,10 +235,9 @@ class SoftDeletableEntityTest {
     entityManager.getTransaction().commit();
 
     // Assert
-    assertFalse(entity.isDeleted(), "Entity should be restored after second cycle");
-    assertNull(entity.getDeletedAt(), "deletedAt should be null after second restore");
-    assertTrue(
-        secondDeletedAt.isAfter(firstDeletedAt), "Second deletedAt should be later than first");
+    assertThat(entity.isDeleted()).isFalse();
+    assertThat(entity.getDeletedAt()).isNull();
+    assertThat(secondDeletedAt).isAfter(firstDeletedAt);
   }
 
   @Test
@@ -269,8 +262,8 @@ class SoftDeletableEntityTest {
     var reloadedEntity = entityManager.find(TestSoftDeletableEntity.class, entityId);
 
     // Assert
-    assertTrue(reloadedEntity.isDeleted(), "Deleted state should be persisted to database");
-    assertNotNull(reloadedEntity.getDeletedAt(), "deletedAt should be persisted to database");
+    assertThat(reloadedEntity.isDeleted()).isTrue();
+    assertThat(reloadedEntity.getDeletedAt()).isNotNull();
   }
 
   @Test
@@ -300,8 +293,8 @@ class SoftDeletableEntityTest {
     var reloadedEntity = entityManager.find(TestSoftDeletableEntity.class, entityId);
 
     // Assert
-    assertFalse(reloadedEntity.isDeleted(), "Restored state should be persisted to database");
-    assertNull(reloadedEntity.getDeletedAt(), "deletedAt null should be persisted to database");
+    assertThat(reloadedEntity.isDeleted()).isFalse();
+    assertThat(reloadedEntity.getDeletedAt()).isNull();
   }
 
   @Test
@@ -316,13 +309,12 @@ class SoftDeletableEntityTest {
 
     // Act & Assert - Attempting hard delete should throw UnsupportedOperationException
     entityManager.getTransaction().begin();
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> {
-          entityManager.remove(entity);
-          entityManager.flush();
-        },
-        "Hard delete should be prevented by SoftDeleteListener");
+    assertThatThrownBy(
+            () -> {
+              entityManager.remove(entity);
+              entityManager.flush();
+            })
+        .isInstanceOf(UnsupportedOperationException.class);
     entityManager.getTransaction().rollback();
   }
 

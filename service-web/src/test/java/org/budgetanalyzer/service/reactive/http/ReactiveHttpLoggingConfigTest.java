@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.reactive.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -32,12 +29,12 @@ class ReactiveHttpLoggingConfigTest {
     reactiveContextRunner.run(
         context -> {
           // Assert
-          assertTrue(
-              context.containsBean("reactiveCorrelationIdFilter"),
-              "Should register ReactiveCorrelationIdFilter bean");
-          assertNotNull(
-              context.getBean(ReactiveCorrelationIdFilter.class),
-              "Should be able to get ReactiveCorrelationIdFilter bean");
+          assertThat(context.containsBean("reactiveCorrelationIdFilter"))
+              .as("Should register ReactiveCorrelationIdFilter bean")
+              .isTrue();
+          assertThat(context.getBean(ReactiveCorrelationIdFilter.class))
+              .as("Should be able to get ReactiveCorrelationIdFilter bean")
+              .isNotNull();
         });
   }
 
@@ -47,12 +44,12 @@ class ReactiveHttpLoggingConfigTest {
     nonWebContextRunner.run(
         context -> {
           // Assert
-          assertFalse(
-              context.containsBean("reactiveCorrelationIdFilter"),
-              "Should NOT register ReactiveCorrelationIdFilter in non-web application");
-          assertFalse(
-              context.containsBean("reactiveHttpLoggingFilter"),
-              "Should NOT register ReactiveHttpLoggingFilter in non-web application");
+          assertThat(context.containsBean("reactiveCorrelationIdFilter"))
+              .as("Should NOT register ReactiveCorrelationIdFilter in non-web application")
+              .isFalse();
+          assertThat(context.containsBean("reactiveHttpLoggingFilter"))
+              .as("Should NOT register ReactiveHttpLoggingFilter in non-web application")
+              .isFalse();
         });
   }
 
@@ -64,12 +61,12 @@ class ReactiveHttpLoggingConfigTest {
         .run(
             context -> {
               // Assert
-              assertTrue(
-                  context.containsBean("reactiveHttpLoggingFilter"),
-                  "Should register ReactiveHttpLoggingFilter when enabled");
-              assertNotNull(
-                  context.getBean(ReactiveHttpLoggingFilter.class),
-                  "Should be able to get ReactiveHttpLoggingFilter bean");
+              assertThat(context.containsBean("reactiveHttpLoggingFilter"))
+                  .as("Should register ReactiveHttpLoggingFilter when enabled")
+                  .isTrue();
+              assertThat(context.getBean(ReactiveHttpLoggingFilter.class))
+                  .as("Should be able to get ReactiveHttpLoggingFilter bean")
+                  .isNotNull();
             });
   }
 
@@ -81,9 +78,9 @@ class ReactiveHttpLoggingConfigTest {
         .run(
             context -> {
               // Assert
-              assertFalse(
-                  context.containsBean("reactiveHttpLoggingFilter"),
-                  "Should NOT register ReactiveHttpLoggingFilter when disabled");
+              assertThat(context.containsBean("reactiveHttpLoggingFilter"))
+                  .as("Should NOT register ReactiveHttpLoggingFilter when disabled")
+                  .isFalse();
             });
   }
 
@@ -93,10 +90,11 @@ class ReactiveHttpLoggingConfigTest {
     reactiveContextRunner.run(
         context -> {
           // Assert
-          assertFalse(
-              context.containsBean("reactiveHttpLoggingFilter"),
-              "Should NOT register ReactiveHttpLoggingFilter when property not set "
-                  + "(default false)");
+          assertThat(context.containsBean("reactiveHttpLoggingFilter"))
+              .as(
+                  "Should NOT register ReactiveHttpLoggingFilter when property not set "
+                      + "(default false)")
+              .isFalse();
         });
   }
 
@@ -108,18 +106,18 @@ class ReactiveHttpLoggingConfigTest {
         .run(
             context -> {
               // Assert
-              assertTrue(
-                  context.containsBean("reactiveCorrelationIdFilter"),
-                  "Should register ReactiveCorrelationIdFilter");
-              assertTrue(
-                  context.containsBean("reactiveHttpLoggingFilter"),
-                  "Should register ReactiveHttpLoggingFilter");
+              assertThat(context.containsBean("reactiveCorrelationIdFilter"))
+                  .as("Should register ReactiveCorrelationIdFilter")
+                  .isTrue();
+              assertThat(context.containsBean("reactiveHttpLoggingFilter"))
+                  .as("Should register ReactiveHttpLoggingFilter")
+                  .isTrue();
 
-              assertEquals(
-                  2,
-                  context.getBeansOfType(ReactiveCorrelationIdFilter.class).size()
-                      + context.getBeansOfType(ReactiveHttpLoggingFilter.class).size(),
-                  "Should have exactly 2 filter beans registered");
+              assertThat(
+                      context.getBeansOfType(ReactiveCorrelationIdFilter.class).size()
+                          + context.getBeansOfType(ReactiveHttpLoggingFilter.class).size())
+                  .as("Should have exactly 2 filter beans registered")
+                  .isEqualTo(2);
             });
   }
 
@@ -131,21 +129,19 @@ class ReactiveHttpLoggingConfigTest {
         .run(
             context -> {
               // Assert
-              assertTrue(
-                  context.containsBean("reactiveCorrelationIdFilter"),
-                  "Should register ReactiveCorrelationIdFilter");
-              assertFalse(
-                  context.containsBean("reactiveHttpLoggingFilter"),
-                  "Should NOT register ReactiveHttpLoggingFilter");
+              assertThat(context.containsBean("reactiveCorrelationIdFilter"))
+                  .as("Should register ReactiveCorrelationIdFilter")
+                  .isTrue();
+              assertThat(context.containsBean("reactiveHttpLoggingFilter"))
+                  .as("Should NOT register ReactiveHttpLoggingFilter")
+                  .isFalse();
 
-              assertEquals(
-                  1,
-                  context.getBeansOfType(ReactiveCorrelationIdFilter.class).size(),
-                  "Should have exactly 1 filter bean (ReactiveCorrelationIdFilter)");
-              assertEquals(
-                  0,
-                  context.getBeansOfType(ReactiveHttpLoggingFilter.class).size(),
-                  "Should have 0 ReactiveHttpLoggingFilter beans");
+              assertThat(context.getBeansOfType(ReactiveCorrelationIdFilter.class).size())
+                  .as("Should have exactly 1 filter bean (ReactiveCorrelationIdFilter)")
+                  .isEqualTo(1);
+              assertThat(context.getBeansOfType(ReactiveHttpLoggingFilter.class).size())
+                  .as("Should have 0 ReactiveHttpLoggingFilter beans")
+                  .isEqualTo(0);
             });
   }
 
@@ -155,9 +151,9 @@ class ReactiveHttpLoggingConfigTest {
     reactiveContextRunner.run(
         context -> {
           // Assert
-          assertNotNull(
-              context.getBean(HttpLoggingProperties.class),
-              "Should be able to get HttpLoggingProperties bean");
+          assertThat(context.getBean(HttpLoggingProperties.class))
+              .as("Should be able to get HttpLoggingProperties bean")
+              .isNotNull();
         });
   }
 
@@ -174,19 +170,21 @@ class ReactiveHttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertTrue(properties.isEnabled(), "Properties should have enabled=true");
-              assertEquals(
-                  "INFO", properties.getLogLevel(), "Properties should have log-level=INFO");
-              assertEquals(
-                  5000, properties.getMaxBodySize(), "Properties should have max-body-size=5000");
-              assertFalse(
-                  properties.isIncludeRequestBody(),
-                  "Properties should have include-request-body=false");
+              assertThat(properties.isEnabled()).as("Properties should have enabled=true").isTrue();
+              assertThat(properties.getLogLevel())
+                  .as("Properties should have log-level=INFO")
+                  .isEqualTo("INFO");
+              assertThat(properties.getMaxBodySize())
+                  .as("Properties should have max-body-size=5000")
+                  .isEqualTo(5000);
+              assertThat(properties.isIncludeRequestBody())
+                  .as("Properties should have include-request-body=false")
+                  .isFalse();
 
               // Filter should be created with these properties
-              assertNotNull(
-                  context.getBean(ReactiveHttpLoggingFilter.class),
-                  "ReactiveHttpLoggingFilter should be created with properties");
+              assertThat(context.getBean(ReactiveHttpLoggingFilter.class))
+                  .as("ReactiveHttpLoggingFilter should be created with properties")
+                  .isNotNull();
             });
   }
 
@@ -203,19 +201,21 @@ class ReactiveHttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertEquals(
-                  2, properties.getExcludePatterns().size(), "Should have 2 exclude patterns");
-              assertEquals(
-                  1, properties.getIncludePatterns().size(), "Should have 1 include pattern");
-              assertTrue(
-                  properties.getExcludePatterns().contains("/actuator/**"),
-                  "Should contain /actuator/** exclude pattern");
-              assertTrue(
-                  properties.getExcludePatterns().contains("/swagger-ui/**"),
-                  "Should contain /swagger-ui/** exclude pattern");
-              assertTrue(
-                  properties.getIncludePatterns().contains("/api/**"),
-                  "Should contain /api/** include pattern");
+              assertThat(properties.getExcludePatterns().size())
+                  .as("Should have 2 exclude patterns")
+                  .isEqualTo(2);
+              assertThat(properties.getIncludePatterns().size())
+                  .as("Should have 1 include pattern")
+                  .isEqualTo(1);
+              assertThat(properties.getExcludePatterns().contains("/actuator/**"))
+                  .as("Should contain /actuator/** exclude pattern")
+                  .isTrue();
+              assertThat(properties.getExcludePatterns().contains("/swagger-ui/**"))
+                  .as("Should contain /swagger-ui/** exclude pattern")
+                  .isTrue();
+              assertThat(properties.getIncludePatterns().contains("/api/**"))
+                  .as("Should contain /api/** include pattern")
+                  .isTrue();
             });
   }
 
@@ -231,14 +231,15 @@ class ReactiveHttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertEquals(
-                  2, properties.getSensitiveHeaders().size(), "Should have 2 sensitive headers");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("X-Custom-Token"),
-                  "Should contain X-Custom-Token");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("X-API-Secret"),
-                  "Should contain X-API-Secret");
+              assertThat(properties.getSensitiveHeaders().size())
+                  .as("Should have 2 sensitive headers")
+                  .isEqualTo(2);
+              assertThat(properties.getSensitiveHeaders().contains("X-Custom-Token"))
+                  .as("Should contain X-Custom-Token")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("X-API-Secret"))
+                  .as("Should contain X-API-Secret")
+                  .isTrue();
             });
   }
 
@@ -253,7 +254,9 @@ class ReactiveHttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertTrue(properties.isLogErrorsOnly(), "Should have log-errors-only=true");
+              assertThat(properties.isLogErrorsOnly())
+                  .as("Should have log-errors-only=true")
+                  .isTrue();
             });
   }
 
@@ -265,12 +268,12 @@ class ReactiveHttpLoggingConfigTest {
         .run(
             context -> {
               // Assert - No filters should be registered in non-web application
-              assertFalse(
-                  context.containsBean("reactiveCorrelationIdFilter"),
-                  "Should NOT register ReactiveCorrelationIdFilter in non-web application");
-              assertFalse(
-                  context.containsBean("reactiveHttpLoggingFilter"),
-                  "Should NOT register ReactiveHttpLoggingFilter in non-web application");
+              assertThat(context.containsBean("reactiveCorrelationIdFilter"))
+                  .as("Should NOT register ReactiveCorrelationIdFilter in non-web application")
+                  .isFalse();
+              assertThat(context.containsBean("reactiveHttpLoggingFilter"))
+                  .as("Should NOT register ReactiveHttpLoggingFilter in non-web application")
+                  .isFalse();
 
               // ReactiveHttpLoggingConfig is conditional on web application,
               // so properties won't be registered by reactive config
@@ -295,14 +298,14 @@ class ReactiveHttpLoggingConfigTest {
             context -> {
               // Assert
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertTrue(properties.isEnabled());
-              assertTrue(properties.isIncludeRequestBody());
-              assertTrue(properties.isIncludeResponseBody());
-              assertTrue(properties.isIncludeRequestHeaders());
-              assertTrue(properties.isIncludeResponseHeaders());
-              assertTrue(properties.isIncludeQueryParams());
-              assertTrue(properties.isIncludeClientIp());
-              assertFalse(properties.isLogErrorsOnly());
+              assertThat(properties.isEnabled()).isTrue();
+              assertThat(properties.isIncludeRequestBody()).isTrue();
+              assertThat(properties.isIncludeResponseBody()).isTrue();
+              assertThat(properties.isIncludeRequestHeaders()).isTrue();
+              assertThat(properties.isIncludeResponseHeaders()).isTrue();
+              assertThat(properties.isIncludeQueryParams()).isTrue();
+              assertThat(properties.isIncludeClientIp()).isTrue();
+              assertThat(properties.isLogErrorsOnly()).isFalse();
             });
   }
 
@@ -323,18 +326,18 @@ class ReactiveHttpLoggingConfigTest {
             context -> {
               // Assert - Filter should still be created even with minimal logging
               var properties = context.getBean(HttpLoggingProperties.class);
-              assertTrue(properties.isEnabled(), "Filter should be enabled");
-              assertFalse(properties.isIncludeRequestBody());
-              assertFalse(properties.isIncludeResponseBody());
-              assertFalse(properties.isIncludeRequestHeaders());
-              assertFalse(properties.isIncludeResponseHeaders());
-              assertFalse(properties.isIncludeQueryParams());
-              assertFalse(properties.isIncludeClientIp());
-              assertTrue(properties.isLogErrorsOnly());
+              assertThat(properties.isEnabled()).as("Filter should be enabled").isTrue();
+              assertThat(properties.isIncludeRequestBody()).isFalse();
+              assertThat(properties.isIncludeResponseBody()).isFalse();
+              assertThat(properties.isIncludeRequestHeaders()).isFalse();
+              assertThat(properties.isIncludeResponseHeaders()).isFalse();
+              assertThat(properties.isIncludeQueryParams()).isFalse();
+              assertThat(properties.isIncludeClientIp()).isFalse();
+              assertThat(properties.isLogErrorsOnly()).isTrue();
 
-              assertTrue(
-                  context.containsBean("reactiveHttpLoggingFilter"),
-                  "ReactiveHttpLoggingFilter should be registered even with minimal config");
+              assertThat(context.containsBean("reactiveHttpLoggingFilter"))
+                  .as("ReactiveHttpLoggingFilter should be registered even with minimal config")
+                  .isTrue();
             });
   }
 }

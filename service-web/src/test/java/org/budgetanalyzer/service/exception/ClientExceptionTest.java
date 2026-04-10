@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.exception;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 
@@ -21,8 +18,8 @@ class ClientExceptionTest {
 
     var exception = new ClientException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -33,8 +30,8 @@ class ClientExceptionTest {
 
     var exception = new ClientException(message, cause);
 
-    assertEquals(message, exception.getMessage());
-    assertSame(cause, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isSameAs(cause);
   }
 
   @Test
@@ -42,7 +39,7 @@ class ClientExceptionTest {
   void shouldExtendServiceException() {
     var exception = new ClientException("Error");
 
-    assertTrue(exception instanceof ServiceException);
+    assertThat(exception).isInstanceOf(ServiceException.class);
   }
 
   @Test
@@ -50,7 +47,7 @@ class ClientExceptionTest {
   void shouldBeRuntimeException() {
     var exception = new ClientException("Error");
 
-    assertTrue(exception instanceof RuntimeException);
+    assertThat(exception).isInstanceOf(RuntimeException.class);
   }
 
   @Test
@@ -58,8 +55,8 @@ class ClientExceptionTest {
   void shouldHandleNullMessage() {
     var exception = new ClientException(null);
 
-    assertNull(exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isNull();
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -69,8 +66,8 @@ class ClientExceptionTest {
 
     var exception = new ClientException(message, null);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -79,8 +76,8 @@ class ClientExceptionTest {
     var httpException = new RuntimeException("HTTP 503 Service Unavailable");
     var exception = new ClientException("External service unavailable", httpException);
 
-    assertEquals("External service unavailable", exception.getMessage());
-    assertSame(httpException, exception.getCause());
-    assertEquals("HTTP 503 Service Unavailable", exception.getCause().getMessage());
+    assertThat(exception.getMessage()).isEqualTo("External service unavailable");
+    assertThat(exception.getCause()).isSameAs(httpException);
+    assertThat(exception.getCause().getMessage()).isEqualTo("HTTP 503 Service Unavailable");
   }
 }

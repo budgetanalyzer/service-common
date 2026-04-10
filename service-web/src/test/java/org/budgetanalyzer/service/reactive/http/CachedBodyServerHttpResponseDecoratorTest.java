@@ -1,7 +1,6 @@
 package org.budgetanalyzer.service.reactive.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
@@ -31,7 +30,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     StepVerifier.create(writeResult).verifyComplete();
 
     var cachedBody = decorator.getCachedBody();
-    assertEquals(responseBody, cachedBody);
+    assertThat(cachedBody).isEqualTo(responseBody);
   }
 
   @Test
@@ -47,7 +46,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert
-    assertEquals(responseBody, cachedBody);
+    assertThat(cachedBody).isEqualTo(responseBody);
   }
 
   @Test
@@ -60,7 +59,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert - Should return empty string
-    assertEquals("", cachedBody);
+    assertThat(cachedBody).isEqualTo("");
   }
 
   @Test
@@ -77,8 +76,8 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert - Should be truncated
-    assertTrue(cachedBody.length() >= maxSize);
-    assertTrue(cachedBody.contains("TRUNCATED"));
+    assertThat(cachedBody.length() >= maxSize).isTrue();
+    assertThat(cachedBody.contains("TRUNCATED")).isTrue();
   }
 
   @Test
@@ -95,8 +94,8 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert - Should be truncated at maxSize
-    assertTrue(cachedBody.endsWith("... [TRUNCATED]"));
-    assertTrue(cachedBody.length() <= maxSize + 20); // Accounting for truncation message
+    assertThat(cachedBody.endsWith("... [TRUNCATED]")).isTrue();
+    assertThat(cachedBody.length() <= maxSize + 20).isTrue(); // Accounting for truncation message
   }
 
   @Test
@@ -113,7 +112,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert - Should concatenate all parts
-    assertEquals("Hello World", cachedBody);
+    assertThat(cachedBody).isEqualTo("Hello World");
   }
 
   @Test
@@ -129,7 +128,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert
-    assertEquals(jsonResponse, cachedBody);
+    assertThat(cachedBody).isEqualTo(jsonResponse);
   }
 
   @Test
@@ -145,7 +144,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert
-    assertEquals(responseBody, cachedBody);
+    assertThat(cachedBody).isEqualTo(responseBody);
   }
 
   @Test
@@ -164,8 +163,8 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert - Should only cache first part
-    assertTrue(cachedBody.startsWith("12345"));
-    assertTrue(cachedBody.contains("TRUNCATED"));
+    assertThat(cachedBody.startsWith("12345")).isTrue();
+    assertThat(cachedBody.contains("TRUNCATED")).isTrue();
   }
 
   @Test
@@ -198,7 +197,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert
-    assertEquals("Part 1. Part 2. Part 3.", cachedBody);
+    assertThat(cachedBody).isEqualTo("Part 1. Part 2. Part 3.");
   }
 
   @Test
@@ -221,7 +220,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert
-    assertEquals(jsonResponse, cachedBody);
+    assertThat(cachedBody).isEqualTo(jsonResponse);
   }
 
   @Test
@@ -237,7 +236,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert - Should return truncated message immediately
-    assertTrue(cachedBody.contains("TRUNCATED") || cachedBody.isEmpty());
+    assertThat(cachedBody.contains("TRUNCATED") || cachedBody.isEmpty()).isTrue();
   }
 
   @Test
@@ -255,7 +254,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     StepVerifier.create(writeResult).verifyComplete();
 
     // Cached body should be available
-    assertEquals(responseBody, decorator.getCachedBody());
+    assertThat(decorator.getCachedBody()).isEqualTo(responseBody);
   }
 
   @Test
@@ -272,7 +271,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert - Should NOT be truncated since it's exactly max size in bytes
-    assertEquals(responseBody, cachedBody);
+    assertThat(cachedBody).isEqualTo(responseBody);
   }
 
   @Test
@@ -287,7 +286,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var cachedBody = decorator.getCachedBody();
 
     // Assert
-    assertEquals("", cachedBody);
+    assertThat(cachedBody).isEqualTo("");
   }
 
   @Test
@@ -299,7 +298,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     var decorator = new CachedBodyServerHttpResponseDecorator(originalResponse, 1000);
 
     // Act & Assert - Headers should be accessible through decorator
-    assertEquals("custom-value", decorator.getHeaders().getFirst("X-Custom-Header"));
+    assertThat(decorator.getHeaders().getFirst("X-Custom-Header")).isEqualTo("custom-value");
   }
 
   @Test
@@ -314,7 +313,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     decorator.writeWith(Flux.just(bodyBuffer)).block();
 
     // Assert
-    assertEquals(responseBody.length(), decorator.getCachedBodySize());
+    assertThat(decorator.getCachedBodySize()).isEqualTo(responseBody.length());
   }
 
   @Test
@@ -327,8 +326,8 @@ class CachedBodyServerHttpResponseDecoratorTest {
 
     decorator.writeWith(Flux.just(bodyBuffer)).block();
 
-    assertEquals(responseBody, decorator.getCachedBody());
-    assertEquals(maxSize, decorator.getCachedBodySize());
+    assertThat(decorator.getCachedBody()).isEqualTo(responseBody);
+    assertThat(decorator.getCachedBodySize()).isEqualTo(maxSize);
   }
 
   @Test
@@ -341,9 +340,9 @@ class CachedBodyServerHttpResponseDecoratorTest {
     decorator.writeWith(Flux.just(bodyBuffer)).block();
 
     var cachedBody = decorator.getCachedBody();
-    assertTrue(cachedBody.startsWith("éé"));
-    assertTrue(cachedBody.contains("TRUNCATED"));
-    assertEquals(5, decorator.getCachedBodySize());
+    assertThat(cachedBody.startsWith("éé")).isTrue();
+    assertThat(cachedBody.contains("TRUNCATED")).isTrue();
+    assertThat(decorator.getCachedBodySize()).isEqualTo(5);
   }
 
   @Test
@@ -355,7 +354,7 @@ class CachedBodyServerHttpResponseDecoratorTest {
     // Act - Don't write anything
 
     // Assert
-    assertEquals(0, decorator.getCachedBodySize());
+    assertThat(decorator.getCachedBodySize()).isEqualTo(0);
   }
 
   @Test
@@ -371,6 +370,6 @@ class CachedBodyServerHttpResponseDecoratorTest {
     decorator.writeWith(Flux.just(bodyBuffer)).block();
 
     // Assert - Size should be capped at maxSize
-    assertEquals(maxSize, decorator.getCachedBodySize());
+    assertThat(decorator.getCachedBodySize()).isEqualTo(maxSize);
   }
 }

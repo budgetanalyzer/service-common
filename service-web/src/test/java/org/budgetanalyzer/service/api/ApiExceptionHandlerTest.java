@@ -1,8 +1,6 @@
 package org.budgetanalyzer.service.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Set;
@@ -33,9 +31,9 @@ class ApiExceptionHandlerTest {
         apiExceptionHandler.resolveCommonException(
             new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
 
-    assertEquals(HttpStatus.NOT_FOUND, resolvedError.statusCode());
-    assertEquals(ApiErrorType.NOT_FOUND, resolvedError.response().getType());
-    assertEquals("Resource not found", resolvedError.response().getMessage());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.NOT_FOUND);
+    assertThat(resolvedError.response().getMessage()).isEqualTo("Resource not found");
   }
 
   @Test
@@ -45,9 +43,9 @@ class ApiExceptionHandlerTest {
         apiExceptionHandler.resolveCommonException(
             new ResponseStatusException(HttpStatus.UNAUTHORIZED, "API key expired"));
 
-    assertEquals(HttpStatus.UNAUTHORIZED, resolvedError.statusCode());
-    assertEquals(ApiErrorType.UNAUTHORIZED, resolvedError.response().getType());
-    assertEquals("Authentication required", resolvedError.response().getMessage());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.UNAUTHORIZED);
+    assertThat(resolvedError.response().getMessage()).isEqualTo("Authentication required");
   }
 
   @Test
@@ -58,8 +56,9 @@ class ApiExceptionHandlerTest {
             new MethodNotAllowedException(
                 HttpMethod.POST, List.of(HttpMethod.GET, HttpMethod.PUT)));
 
-    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, resolvedError.statusCode());
-    assertEquals(Set.of(HttpMethod.GET, HttpMethod.PUT), resolvedError.headers().getAllow());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+    assertThat(resolvedError.headers().getAllow())
+        .isEqualTo(Set.of(HttpMethod.GET, HttpMethod.PUT));
   }
 
   @Test
@@ -69,9 +68,9 @@ class ApiExceptionHandlerTest {
         apiExceptionHandler.resolveCommonException(
             new BusinessException("Budget exceeded", "BUDGET_EXCEEDED"));
 
-    assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, resolvedError.statusCode());
-    assertEquals(ApiErrorType.APPLICATION_ERROR, resolvedError.response().getType());
-    assertEquals("BUDGET_EXCEEDED", resolvedError.response().getCode());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
+    assertThat(resolvedError.response().getCode()).isEqualTo("BUDGET_EXCEEDED");
   }
 
   @Test
@@ -80,9 +79,9 @@ class ApiExceptionHandlerTest {
     var resolvedError =
         apiExceptionHandler.resolveCommonException(new ClientException("Downstream failure"));
 
-    assertEquals(HttpStatus.SERVICE_UNAVAILABLE, resolvedError.statusCode());
-    assertEquals(ApiErrorType.SERVICE_UNAVAILABLE, resolvedError.response().getType());
-    assertEquals("Downstream failure", resolvedError.response().getMessage());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
+    assertThat(resolvedError.response().getMessage()).isEqualTo("Downstream failure");
   }
 
   @Test
@@ -92,9 +91,9 @@ class ApiExceptionHandlerTest {
         apiExceptionHandler.resolveCommonException(
             new ServiceUnavailableException("Database unavailable"));
 
-    assertEquals(HttpStatus.SERVICE_UNAVAILABLE, resolvedError.statusCode());
-    assertEquals(ApiErrorType.SERVICE_UNAVAILABLE, resolvedError.response().getType());
-    assertEquals("Database unavailable", resolvedError.response().getMessage());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.SERVICE_UNAVAILABLE);
+    assertThat(resolvedError.response().getMessage()).isEqualTo("Database unavailable");
   }
 
   @Test
@@ -103,9 +102,9 @@ class ApiExceptionHandlerTest {
     var resolvedError =
         apiExceptionHandler.resolveCommonException(new IllegalStateException("Unexpected"));
 
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, resolvedError.statusCode());
-    assertEquals(ApiErrorType.INTERNAL_ERROR, resolvedError.response().getType());
-    assertEquals("An unexpected error occurred", resolvedError.response().getMessage());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
+    assertThat(resolvedError.response().getMessage()).isEqualTo("An unexpected error occurred");
   }
 
   @Test
@@ -114,9 +113,9 @@ class ApiExceptionHandlerTest {
     var resolvedError =
         apiExceptionHandler.resolveCommonException(new BadCredentialsException("Bad credentials"));
 
-    assertEquals(HttpStatus.UNAUTHORIZED, resolvedError.statusCode());
-    assertEquals(ApiErrorType.UNAUTHORIZED, resolvedError.response().getType());
-    assertEquals("Authentication required", resolvedError.response().getMessage());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.UNAUTHORIZED);
+    assertThat(resolvedError.response().getMessage()).isEqualTo("Authentication required");
   }
 
   @Test
@@ -132,17 +131,18 @@ class ApiExceptionHandlerTest {
 
     var resolvedError = apiExceptionHandler.resolveValidationFailure(bindingResult);
 
-    assertEquals(HttpStatus.BAD_REQUEST, resolvedError.statusCode());
-    assertEquals(ApiErrorType.VALIDATION_ERROR, resolvedError.response().getType());
-    assertNotNull(resolvedError.response().getFieldErrors());
-    assertEquals(2, resolvedError.response().getFieldErrors().size());
-    assertEquals("name", resolvedError.response().getFieldErrors().get(0).getField());
-    assertEquals(
-        "must not be blank", resolvedError.response().getFieldErrors().get(0).getMessage());
-    assertEquals("", resolvedError.response().getFieldErrors().get(0).getRejectedValue());
-    assertEquals("age", resolvedError.response().getFieldErrors().get(1).getField());
-    assertEquals("must be positive", resolvedError.response().getFieldErrors().get(1).getMessage());
-    assertEquals(-1, resolvedError.response().getFieldErrors().get(1).getRejectedValue());
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.VALIDATION_ERROR);
+    assertThat(resolvedError.response().getFieldErrors()).isNotNull();
+    assertThat(resolvedError.response().getFieldErrors().size()).isEqualTo(2);
+    assertThat(resolvedError.response().getFieldErrors().get(0).getField()).isEqualTo("name");
+    assertThat(resolvedError.response().getFieldErrors().get(0).getMessage())
+        .isEqualTo("must not be blank");
+    assertThat(resolvedError.response().getFieldErrors().get(0).getRejectedValue()).isEqualTo("");
+    assertThat(resolvedError.response().getFieldErrors().get(1).getField()).isEqualTo("age");
+    assertThat(resolvedError.response().getFieldErrors().get(1).getMessage())
+        .isEqualTo("must be positive");
+    assertThat(resolvedError.response().getFieldErrors().get(1).getRejectedValue()).isEqualTo(-1);
   }
 
   @Test
@@ -154,11 +154,11 @@ class ApiExceptionHandlerTest {
 
     var responseEntity = apiExceptionHandler.toResponseEntity(resolvedError);
 
-    assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
-    assertNotNull(responseEntity.getBody());
-    assertEquals(ApiErrorType.NOT_FOUND, responseEntity.getBody().getType());
-    assertEquals("Missing resource", responseEntity.getBody().getMessage());
-    assertNull(responseEntity.getBody().getCode());
+    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(responseEntity.getBody()).isNotNull();
+    assertThat(responseEntity.getBody().getType()).isEqualTo(ApiErrorType.NOT_FOUND);
+    assertThat(responseEntity.getBody().getMessage()).isEqualTo("Missing resource");
+    assertThat(responseEntity.getBody().getCode()).isNull();
   }
 
   @Test
@@ -171,10 +171,11 @@ class ApiExceptionHandlerTest {
 
     var responseEntity = apiExceptionHandler.toResponseEntity(resolvedError);
 
-    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, responseEntity.getStatusCode());
-    assertEquals(Set.of(HttpMethod.GET, HttpMethod.PUT), responseEntity.getHeaders().getAllow());
-    assertNotNull(responseEntity.getBody());
-    assertEquals(ApiErrorType.INVALID_REQUEST, responseEntity.getBody().getType());
+    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+    assertThat(responseEntity.getHeaders().getAllow())
+        .isEqualTo(Set.of(HttpMethod.GET, HttpMethod.PUT));
+    assertThat(responseEntity.getBody()).isNotNull();
+    assertThat(responseEntity.getBody().getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
   }
 
   private record TestPayload(String name, int age) {}

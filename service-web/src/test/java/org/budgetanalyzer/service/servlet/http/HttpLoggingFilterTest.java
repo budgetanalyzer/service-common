@@ -1,9 +1,7 @@
 package org.budgetanalyzer.service.servlet.http;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.reset;
@@ -177,12 +175,12 @@ class HttpLoggingFilterTest {
         response,
         (req, res) -> {
           // Assert - Request and response should be wrapped
-          assertTrue(
-              req instanceof org.springframework.web.util.ContentCachingRequestWrapper,
-              "Request should be wrapped with ContentCachingRequestWrapper");
-          assertTrue(
-              res instanceof org.springframework.web.util.ContentCachingResponseWrapper,
-              "Response should be wrapped with ContentCachingResponseWrapper");
+          assertThat(req)
+              .as("Request should be wrapped with ContentCachingRequestWrapper")
+              .isInstanceOf(org.springframework.web.util.ContentCachingRequestWrapper.class);
+          assertThat(res)
+              .as("Response should be wrapped with ContentCachingResponseWrapper")
+              .isInstanceOf(org.springframework.web.util.ContentCachingResponseWrapper.class);
         });
   }
 
@@ -214,7 +212,8 @@ class HttpLoggingFilterTest {
     var response = new MockHttpServletResponse();
 
     // Act - Should not throw even if internal logging fails
-    assertDoesNotThrow(() -> httpLoggingFilter.doFilterInternal(request, response, filterChain));
+    assertThatCode(() -> httpLoggingFilter.doFilterInternal(request, response, filterChain))
+        .doesNotThrowAnyException();
 
     // Assert
     verify(filterChain).doFilter(any(), any());
@@ -243,7 +242,7 @@ class HttpLoggingFilterTest {
 
     // Assert - Response should contain the body
     var actualResponseBody = response.getContentAsString();
-    assertEquals(responseBody, actualResponseBody);
+    assertThat(actualResponseBody).isEqualTo(responseBody);
   }
 
   @Test
@@ -277,9 +276,9 @@ class HttpLoggingFilterTest {
               .map(ILoggingEvent::getFormattedMessage)
               .collect(Collectors.joining("\n"));
 
-      assertTrue(logOutput.contains("code=***&state=***"));
-      assertFalse(logOutput.contains("authcode123"));
-      assertFalse(logOutput.contains("csrfstate456"));
+      assertThat(logOutput.contains("code=***&state=***")).isTrue();
+      assertThat(logOutput.contains("authcode123")).isFalse();
+      assertThat(logOutput.contains("csrfstate456")).isFalse();
     } finally {
       logger.detachAppender(listAppender);
       listAppender.stop();
@@ -319,11 +318,11 @@ class HttpLoggingFilterTest {
               .map(ILoggingEvent::getFormattedMessage)
               .collect(Collectors.joining("\n"));
 
-      assertTrue(logOutput.contains("custom_key=***"));
-      assertTrue(logOutput.contains("code=***"));
-      assertTrue(logOutput.contains("page=1"));
-      assertFalse(logOutput.contains("secret"));
-      assertFalse(logOutput.contains("auth123"));
+      assertThat(logOutput.contains("custom_key=***")).isTrue();
+      assertThat(logOutput.contains("code=***")).isTrue();
+      assertThat(logOutput.contains("page=1")).isTrue();
+      assertThat(logOutput.contains("secret")).isFalse();
+      assertThat(logOutput.contains("auth123")).isFalse();
     } finally {
       logger.detachAppender(listAppender);
       listAppender.stop();

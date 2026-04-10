@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.exception;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -23,8 +20,8 @@ class ServiceUnavailableExceptionTest {
 
     var exception = new ServiceUnavailableException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -35,8 +32,8 @@ class ServiceUnavailableExceptionTest {
 
     var exception = new ServiceUnavailableException(message, cause);
 
-    assertEquals(message, exception.getMessage());
-    assertSame(cause, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isSameAs(cause);
   }
 
   @Test
@@ -44,7 +41,7 @@ class ServiceUnavailableExceptionTest {
   void shouldExtendServiceException() {
     var exception = new ServiceUnavailableException("Service unavailable");
 
-    assertTrue(exception instanceof ServiceException);
+    assertThat(exception).isInstanceOf(ServiceException.class);
   }
 
   @Test
@@ -52,7 +49,7 @@ class ServiceUnavailableExceptionTest {
   void shouldBeRuntimeException() {
     var exception = new ServiceUnavailableException("Service unavailable");
 
-    assertTrue(exception instanceof RuntimeException);
+    assertThat(exception).isInstanceOf(RuntimeException.class);
   }
 
   @Test
@@ -60,8 +57,8 @@ class ServiceUnavailableExceptionTest {
   void shouldHandleNullMessage() {
     var exception = new ServiceUnavailableException(null);
 
-    assertNull(exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isNull();
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -71,8 +68,8 @@ class ServiceUnavailableExceptionTest {
 
     var exception = new ServiceUnavailableException(message, null);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -81,8 +78,8 @@ class ServiceUnavailableExceptionTest {
     var sqlException = new RuntimeException("Database connection timeout");
     var exception = new ServiceUnavailableException("Cannot connect to database", sqlException);
 
-    assertEquals("Cannot connect to database", exception.getMessage());
-    assertSame(sqlException, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo("Cannot connect to database");
+    assertThat(exception.getCause()).isSameAs(sqlException);
   }
 
   @Test
@@ -91,8 +88,8 @@ class ServiceUnavailableExceptionTest {
     var timeoutException = new TimeoutException("Request timeout after 30s");
     var exception = new ServiceUnavailableException("Currency API timeout", timeoutException);
 
-    assertEquals("Currency API timeout", exception.getMessage());
-    assertSame(timeoutException, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo("Currency API timeout");
+    assertThat(exception.getCause()).isSameAs(timeoutException);
   }
 
   @Test
@@ -102,8 +99,8 @@ class ServiceUnavailableExceptionTest {
     var exception =
         new ServiceUnavailableException("Failed to reach payment gateway", networkException);
 
-    assertEquals("Failed to reach payment gateway", exception.getMessage());
-    assertSame(networkException, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo("Failed to reach payment gateway");
+    assertThat(exception.getCause()).isSameAs(networkException);
   }
 
   @Test
@@ -113,8 +110,8 @@ class ServiceUnavailableExceptionTest {
 
     var exception = new ServiceUnavailableException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertTrue(exception.getMessage().contains("down"));
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getMessage().contains("down")).isTrue();
   }
 
   @Test
@@ -124,7 +121,7 @@ class ServiceUnavailableExceptionTest {
 
     var exception = new ServiceUnavailableException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertTrue(exception.getMessage().contains("Circuit breaker"));
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getMessage().contains("Circuit breaker")).isTrue();
   }
 }

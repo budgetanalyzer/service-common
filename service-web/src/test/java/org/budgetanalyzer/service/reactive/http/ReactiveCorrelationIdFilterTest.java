@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.reactive.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -49,11 +46,12 @@ class ReactiveCorrelationIdFilterTest {
         .expectAccessibleContext()
         .assertThat(
             context -> {
-              assertTrue(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY));
+              assertThat(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY))
+                  .isTrue();
               String correlationId =
                   context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
-              assertNotNull(correlationId);
-              assertTrue(correlationId.startsWith("req_"));
+              assertThat(correlationId).isNotNull();
+              assertThat(correlationId.startsWith("req_")).isTrue();
             })
         .then()
         .verifyComplete();
@@ -61,8 +59,8 @@ class ReactiveCorrelationIdFilterTest {
     // Verify response header
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
-    assertNotNull(correlationId);
-    assertTrue(correlationId.startsWith("req_"));
+    assertThat(correlationId).isNotNull();
+    assertThat(correlationId.startsWith("req_")).isTrue();
   }
 
   @Test
@@ -83,10 +81,11 @@ class ReactiveCorrelationIdFilterTest {
         .expectAccessibleContext()
         .assertThat(
             context -> {
-              assertTrue(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY));
+              assertThat(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY))
+                  .isTrue();
               String correlationId =
                   context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
-              assertEquals(existingCorrelationId, correlationId);
+              assertThat(correlationId).isEqualTo(existingCorrelationId);
             })
         .then()
         .verifyComplete();
@@ -94,7 +93,7 @@ class ReactiveCorrelationIdFilterTest {
     // Verify response header
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
-    assertEquals(existingCorrelationId, correlationId);
+    assertThat(correlationId).isEqualTo(existingCorrelationId);
   }
 
   @Test
@@ -111,17 +110,18 @@ class ReactiveCorrelationIdFilterTest {
         .expectAccessibleContext()
         .assertThat(
             context -> {
-              assertTrue(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY));
+              assertThat(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY))
+                  .isTrue();
               String correlationId =
                   context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
-              assertEquals("req_trimmed-123", correlationId);
+              assertThat(correlationId).isEqualTo("req_trimmed-123");
             })
         .then()
         .verifyComplete();
 
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
-    assertEquals("req_trimmed-123", correlationId);
+    assertThat(correlationId).isEqualTo("req_trimmed-123");
   }
 
   @Test
@@ -138,10 +138,11 @@ class ReactiveCorrelationIdFilterTest {
         .expectAccessibleContext()
         .assertThat(
             context -> {
-              assertTrue(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY));
+              assertThat(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY))
+                  .isTrue();
               String correlationId =
                   context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
-              assertNotNull(correlationId);
+              assertThat(correlationId).isNotNull();
             })
         .then()
         .verifyComplete();
@@ -163,7 +164,7 @@ class ReactiveCorrelationIdFilterTest {
     // Assert
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
-    assertEquals(existingCorrelationId, correlationId);
+    assertThat(correlationId).isEqualTo(existingCorrelationId);
   }
 
   @Test
@@ -190,8 +191,8 @@ class ReactiveCorrelationIdFilterTest {
     // Assert
     StepVerifier.create(result).verifyComplete();
 
-    assertNotNull(capturedCorrelationId[0]);
-    assertTrue(capturedCorrelationId[0].startsWith("req_"));
+    assertThat(capturedCorrelationId[0]).isNotNull();
+    assertThat(capturedCorrelationId[0].startsWith("req_")).isTrue();
   }
 
   @Test
@@ -208,7 +209,8 @@ class ReactiveCorrelationIdFilterTest {
         .expectAccessibleContext()
         .assertThat(
             context -> {
-              assertTrue(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY));
+              assertThat(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY))
+                  .isTrue();
             })
         .then()
         .verifyComplete();
@@ -232,7 +234,8 @@ class ReactiveCorrelationIdFilterTest {
         .expectAccessibleContext()
         .assertThat(
             context -> {
-              assertTrue(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY));
+              assertThat(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY))
+                  .isTrue();
             })
         .then()
         .expectError(RuntimeException.class)
@@ -263,7 +266,7 @@ class ReactiveCorrelationIdFilterTest {
     }
 
     // Assert - All should be unique
-    assertEquals(10, correlationIds.size());
+    assertThat(correlationIds.size()).isEqualTo(10);
   }
 
   @Test
@@ -285,8 +288,8 @@ class ReactiveCorrelationIdFilterTest {
             context -> {
               String correlationId =
                   context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
-              assertNotNull(correlationId);
-              assertTrue(correlationId.startsWith("req_"));
+              assertThat(correlationId).isNotNull();
+              assertThat(correlationId.startsWith("req_")).isTrue();
             })
         .then()
         .verifyComplete();
@@ -294,7 +297,7 @@ class ReactiveCorrelationIdFilterTest {
     // Verify response header
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
-    assertTrue(correlationId.startsWith("req_"));
+    assertThat(correlationId.startsWith("req_")).isTrue();
   }
 
   @Test
@@ -313,16 +316,16 @@ class ReactiveCorrelationIdFilterTest {
             context -> {
               String correlationId =
                   context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
-              assertNotNull(correlationId);
-              assertTrue(correlationId.startsWith("req_"));
-              assertEquals(36, correlationId.length());
+              assertThat(correlationId).isNotNull();
+              assertThat(correlationId.startsWith("req_")).isTrue();
+              assertThat(correlationId.length()).isEqualTo(36);
             })
         .then()
         .verifyComplete();
 
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
-    assertTrue(correlationId.startsWith("req_"));
+    assertThat(correlationId.startsWith("req_")).isTrue();
   }
 
   @Test
@@ -337,9 +340,9 @@ class ReactiveCorrelationIdFilterTest {
 
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
-    assertNotNull(correlationId);
-    assertTrue(correlationId.startsWith("req_"));
-    assertEquals(36, correlationId.length());
+    assertThat(correlationId).isNotNull();
+    assertThat(correlationId.startsWith("req_")).isTrue();
+    assertThat(correlationId.length()).isEqualTo(36);
   }
 
   @Test
@@ -360,12 +363,12 @@ class ReactiveCorrelationIdFilterTest {
                   context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
 
               // Assert format: req_<32 hex chars>
-              assertNotNull(correlationId);
-              assertTrue(correlationId.startsWith("req_"));
-              assertEquals(36, correlationId.length()); // "req_" (4) + 32 hex chars
-              assertTrue(
-                  correlationId.substring(4).matches("[0-9a-f]{32}"),
-                  "Correlation ID should contain 32 hexadecimal characters");
+              assertThat(correlationId).isNotNull();
+              assertThat(correlationId.startsWith("req_")).isTrue();
+              assertThat(correlationId.length()).isEqualTo(36); // "req_" (4) + 32 hex chars
+              assertThat(correlationId.substring(4).matches("[0-9a-f]{32}"))
+                  .as("Correlation ID should contain 32 hexadecimal characters")
+                  .isTrue();
             })
         .then()
         .verifyComplete();
@@ -387,11 +390,12 @@ class ReactiveCorrelationIdFilterTest {
         .expectAccessibleContext()
         .assertThat(
             context -> {
-              assertTrue(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY));
+              assertThat(context.hasKey(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY))
+                  .isTrue();
               String correlationId =
                   context.get(ReactiveCorrelationIdFilter.CORRELATION_ID_CONTEXT_KEY);
-              assertNotNull(correlationId);
-              assertTrue(correlationId.startsWith("req_"));
+              assertThat(correlationId).isNotNull();
+              assertThat(correlationId.startsWith("req_")).isTrue();
             })
         .then()
         .verifyComplete();
@@ -409,9 +413,10 @@ class ReactiveCorrelationIdFilterTest {
 
     // Assert - Custom header should still exist alongside correlation ID
     var responseHeaders = exchange.getResponse().getHeaders();
-    assertNotNull(responseHeaders.getFirst("X-Custom-Header"));
-    assertEquals("custom-value", responseHeaders.getFirst("X-Custom-Header"));
-    assertNotNull(responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER));
+    assertThat(responseHeaders.getFirst("X-Custom-Header")).isNotNull();
+    assertThat(responseHeaders.getFirst("X-Custom-Header")).isEqualTo("custom-value");
+    assertThat(responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER))
+        .isNotNull();
   }
 
   @Test
@@ -430,7 +435,8 @@ class ReactiveCorrelationIdFilterTest {
     // Assert - Should use the existing correlation ID from request
     var responseHeaders = exchange.getResponse().getHeaders();
     var correlationId = responseHeaders.getFirst(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER);
-    assertEquals(existingCorrelationId, correlationId);
-    assertFalse(responseHeaders.get(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER).size() > 1);
+    assertThat(correlationId).isEqualTo(existingCorrelationId);
+    assertThat(responseHeaders.get(ReactiveCorrelationIdFilter.CORRELATION_ID_HEADER).size() > 1)
+        .isFalse();
   }
 }
