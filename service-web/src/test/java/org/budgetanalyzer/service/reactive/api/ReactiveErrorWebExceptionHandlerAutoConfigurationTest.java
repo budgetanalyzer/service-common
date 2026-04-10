@@ -1,10 +1,6 @@
 package org.budgetanalyzer.service.reactive.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 
@@ -41,18 +37,19 @@ class ReactiveErrorWebExceptionHandlerAutoConfigurationTest {
         context -> {
           var errorWebExceptionHandlerBeans =
               context.getBeanNamesForType(ErrorWebExceptionHandler.class);
-          assertTrue(
-              context.getBeanNamesForType(ReactiveErrorWebExceptionHandler.class).length == 1,
-              "Should register exactly one ReactiveErrorWebExceptionHandler bean; actual "
-                  + "ErrorWebExceptionHandler beans: "
-                  + Arrays.toString(errorWebExceptionHandlerBeans));
-          assertNotNull(
-              context.getBean(ReactiveErrorWebExceptionHandler.class),
-              "Should expose ReactiveErrorWebExceptionHandler bean");
-          assertEquals(
-              1,
-              context.getBeansOfType(ErrorWebExceptionHandler.class).size(),
-              "Should register exactly one ErrorWebExceptionHandler");
+          assertThat(
+                  context.getBeanNamesForType(ReactiveErrorWebExceptionHandler.class).length == 1)
+              .as(
+                  "Should register exactly one ReactiveErrorWebExceptionHandler bean; actual "
+                      + "ErrorWebExceptionHandler beans: "
+                      + Arrays.toString(errorWebExceptionHandlerBeans))
+              .isTrue();
+          assertThat(context.getBean(ReactiveErrorWebExceptionHandler.class))
+              .as("Should expose ReactiveErrorWebExceptionHandler bean")
+              .isNotNull();
+          assertThat(context.getBeansOfType(ErrorWebExceptionHandler.class).size())
+              .as("Should register exactly one ErrorWebExceptionHandler")
+              .isEqualTo(1);
         });
   }
 
@@ -61,9 +58,10 @@ class ReactiveErrorWebExceptionHandlerAutoConfigurationTest {
   void shouldNotRegisterReactiveFallbackErrorHandlerOutsideReactiveWebApplications() {
     applicationContextRunner.run(
         context ->
-            assertFalse(
-                context.getBeanNamesForType(ReactiveErrorWebExceptionHandler.class).length > 0,
-                "Should NOT register ReactiveErrorWebExceptionHandler in non-web context"));
+            assertThat(
+                    context.getBeanNamesForType(ReactiveErrorWebExceptionHandler.class).length > 0)
+                .as("Should NOT register ReactiveErrorWebExceptionHandler in non-web context")
+                .isFalse());
   }
 
   @Test
@@ -76,20 +74,20 @@ class ReactiveErrorWebExceptionHandlerAutoConfigurationTest {
             () -> (exchange, throwable) -> Mono.error(throwable))
         .run(
             context -> {
-              assertTrue(
-                  context.containsBean("customErrorWebExceptionHandler"),
-                  "Should keep the application-defined ErrorWebExceptionHandler");
-              assertFalse(
-                  context.getBeanNamesForType(ReactiveErrorWebExceptionHandler.class).length > 0,
-                  "Should back off shared reactive fallback handler when custom handler exists");
-              assertEquals(
-                  1,
-                  context.getBeansOfType(ErrorWebExceptionHandler.class).size(),
-                  "Should expose only the custom ErrorWebExceptionHandler");
-              assertSame(
-                  context.getBean("customErrorWebExceptionHandler"),
-                  context.getBean(ErrorWebExceptionHandler.class),
-                  "Primary ErrorWebExceptionHandler should be the custom bean");
+              assertThat(context.containsBean("customErrorWebExceptionHandler"))
+                  .as("Should keep the application-defined ErrorWebExceptionHandler")
+                  .isTrue();
+              assertThat(
+                      context.getBeanNamesForType(ReactiveErrorWebExceptionHandler.class).length
+                          > 0)
+                  .as("Should back off shared reactive fallback handler when custom handler exists")
+                  .isFalse();
+              assertThat(context.getBeansOfType(ErrorWebExceptionHandler.class).size())
+                  .as("Should expose only the custom ErrorWebExceptionHandler")
+                  .isEqualTo(1);
+              assertThat(context.getBean(ErrorWebExceptionHandler.class))
+                  .as("Primary ErrorWebExceptionHandler should be the custom bean")
+                  .isSameAs(context.getBean("customErrorWebExceptionHandler"));
             });
   }
 }

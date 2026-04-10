@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 
@@ -40,11 +37,13 @@ class BaseOpenApiConfigTest {
     // Arrange & Act
     try (var context = new AnnotationConfigApplicationContext(TestOpenApiConfig.class)) {
       // Assert
-      assertTrue(
-          context.containsBean("springDocConfigProperties"),
-          "Should register SpringDocConfigProperties bean");
+      assertThat(context.containsBean("springDocConfigProperties"))
+          .as("Should register SpringDocConfigProperties bean")
+          .isTrue();
       var springDocConfigProperties = context.getBean("springDocConfigProperties");
-      assertNotNull(springDocConfigProperties, "SpringDocConfigProperties should not be null");
+      assertThat(springDocConfigProperties)
+          .as("SpringDocConfigProperties should not be null")
+          .isNotNull();
     }
   }
 
@@ -53,11 +52,11 @@ class BaseOpenApiConfigTest {
     // Arrange & Act
     try (var context = new AnnotationConfigApplicationContext(TestOpenApiConfig.class)) {
       // Assert
-      assertTrue(
-          context.containsBean("globalResponseCustomizer"),
-          "Should register globalResponseCustomizer bean");
+      assertThat(context.containsBean("globalResponseCustomizer"))
+          .as("Should register globalResponseCustomizer bean")
+          .isTrue();
       var customizer = context.getBean("globalResponseCustomizer", OpenApiCustomizer.class);
-      assertNotNull(customizer, "OpenApiCustomizer should not be null");
+      assertThat(customizer).as("OpenApiCustomizer should not be null").isNotNull();
     }
   }
 
@@ -66,11 +65,11 @@ class BaseOpenApiConfigTest {
     // Arrange & Act
     try (var context = new AnnotationConfigApplicationContext(TestOpenApiConfig.class)) {
       // Assert
-      assertTrue(
-          context.containsBean("addApiErrorResponseSchemas"),
-          "Should register addApiErrorResponseSchemas bean");
+      assertThat(context.containsBean("addApiErrorResponseSchemas"))
+          .as("Should register addApiErrorResponseSchemas bean")
+          .isTrue();
       var customizer = context.getBean("addApiErrorResponseSchemas", OpenApiCustomizer.class);
-      assertNotNull(customizer, "Schema customizer should not be null");
+      assertThat(customizer).as("Schema customizer should not be null").isNotNull();
     }
   }
 
@@ -83,11 +82,13 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertNotNull(openApi.getComponents(), "Components should not be null");
+    assertThat(openApi.getComponents()).as("Components should not be null").isNotNull();
     var schemas = openApi.getComponents().getSchemas();
-    assertNotNull(schemas, "Schemas should not be null");
-    assertTrue(schemas.containsKey("ApiErrorResponse"), "Should contain ApiErrorResponse schema");
-    assertTrue(schemas.containsKey("FieldError"), "Should contain FieldError schema");
+    assertThat(schemas).as("Schemas should not be null").isNotNull();
+    assertThat(schemas.containsKey("ApiErrorResponse"))
+        .as("Should contain ApiErrorResponse schema")
+        .isTrue();
+    assertThat(schemas.containsKey("FieldError")).as("Should contain FieldError schema").isTrue();
   }
 
   @Test
@@ -100,11 +101,13 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertNotNull(openApi.getComponents(), "Components should be created");
+    assertThat(openApi.getComponents()).as("Components should be created").isNotNull();
     var schemas = openApi.getComponents().getSchemas();
-    assertNotNull(schemas, "Schemas should not be null");
-    assertTrue(schemas.containsKey("ApiErrorResponse"), "Should contain ApiErrorResponse schema");
-    assertTrue(schemas.containsKey("FieldError"), "Should contain FieldError schema");
+    assertThat(schemas).as("Schemas should not be null").isNotNull();
+    assertThat(schemas.containsKey("ApiErrorResponse"))
+        .as("Should contain ApiErrorResponse schema")
+        .isTrue();
+    assertThat(schemas.containsKey("FieldError")).as("Should contain FieldError schema").isTrue();
   }
 
   @Test
@@ -118,10 +121,18 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertTrue(operation.getResponses().containsKey("400"), "POST should have 400 response");
-    assertTrue(operation.getResponses().containsKey("500"), "POST should have 500 response");
-    assertTrue(operation.getResponses().containsKey("503"), "POST should have 503 response");
-    assertFalse(operation.getResponses().containsKey("404"), "POST should NOT have 404 response");
+    assertThat(operation.getResponses().containsKey("400"))
+        .as("POST should have 400 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("500"))
+        .as("POST should have 500 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("503"))
+        .as("POST should have 503 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("404"))
+        .as("POST should NOT have 404 response")
+        .isFalse();
   }
 
   @Test
@@ -135,10 +146,18 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertTrue(operation.getResponses().containsKey("400"), "PUT should have 400 response");
-    assertTrue(operation.getResponses().containsKey("404"), "PUT should have 404 response");
-    assertTrue(operation.getResponses().containsKey("500"), "PUT should have 500 response");
-    assertTrue(operation.getResponses().containsKey("503"), "PUT should have 503 response");
+    assertThat(operation.getResponses().containsKey("400"))
+        .as("PUT should have 400 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("404"))
+        .as("PUT should have 404 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("500"))
+        .as("PUT should have 500 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("503"))
+        .as("PUT should have 503 response")
+        .isTrue();
   }
 
   @Test
@@ -152,10 +171,18 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertTrue(operation.getResponses().containsKey("400"), "PATCH should have 400 response");
-    assertTrue(operation.getResponses().containsKey("404"), "PATCH should have 404 response");
-    assertTrue(operation.getResponses().containsKey("500"), "PATCH should have 500 response");
-    assertTrue(operation.getResponses().containsKey("503"), "PATCH should have 503 response");
+    assertThat(operation.getResponses().containsKey("400"))
+        .as("PATCH should have 400 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("404"))
+        .as("PATCH should have 404 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("500"))
+        .as("PATCH should have 500 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("503"))
+        .as("PATCH should have 503 response")
+        .isTrue();
   }
 
   @Test
@@ -169,16 +196,18 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertTrue(
-        operation.getResponses().containsKey("404"),
-        "GET with path param should have 404 response");
-    assertTrue(
-        operation.getResponses().containsKey("500"),
-        "GET with path param should have 500 response");
-    assertTrue(
-        operation.getResponses().containsKey("503"),
-        "GET with path param should have 503 response");
-    assertFalse(operation.getResponses().containsKey("400"), "GET should NOT have 400 response");
+    assertThat(operation.getResponses().containsKey("404"))
+        .as("GET with path param should have 404 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("500"))
+        .as("GET with path param should have 500 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("503"))
+        .as("GET with path param should have 503 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("400"))
+        .as("GET should NOT have 400 response")
+        .isFalse();
   }
 
   @Test
@@ -192,12 +221,18 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertFalse(
-        operation.getResponses().containsKey("404"),
-        "GET without path param should NOT have 404 response");
-    assertTrue(operation.getResponses().containsKey("500"), "GET should have 500 response");
-    assertTrue(operation.getResponses().containsKey("503"), "GET should have 503 response");
-    assertFalse(operation.getResponses().containsKey("400"), "GET should NOT have 400 response");
+    assertThat(operation.getResponses().containsKey("404"))
+        .as("GET without path param should NOT have 404 response")
+        .isFalse();
+    assertThat(operation.getResponses().containsKey("500"))
+        .as("GET should have 500 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("503"))
+        .as("GET should have 503 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("400"))
+        .as("GET should NOT have 400 response")
+        .isFalse();
   }
 
   @Test
@@ -211,12 +246,18 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertTrue(
-        operation.getResponses().containsKey("404"),
-        "DELETE with path param should have 404 response");
-    assertTrue(operation.getResponses().containsKey("500"), "DELETE should have 500 response");
-    assertTrue(operation.getResponses().containsKey("503"), "DELETE should have 503 response");
-    assertFalse(operation.getResponses().containsKey("400"), "DELETE should NOT have 400 response");
+    assertThat(operation.getResponses().containsKey("404"))
+        .as("DELETE with path param should have 404 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("500"))
+        .as("DELETE should have 500 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("503"))
+        .as("DELETE should have 503 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("400"))
+        .as("DELETE should NOT have 400 response")
+        .isFalse();
   }
 
   @Test
@@ -230,11 +271,15 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert
-    assertFalse(
-        operation.getResponses().containsKey("404"),
-        "DELETE without path param should NOT have 404 response");
-    assertTrue(operation.getResponses().containsKey("500"), "DELETE should have 500 response");
-    assertTrue(operation.getResponses().containsKey("503"), "DELETE should have 503 response");
+    assertThat(operation.getResponses().containsKey("404"))
+        .as("DELETE without path param should NOT have 404 response")
+        .isFalse();
+    assertThat(operation.getResponses().containsKey("500"))
+        .as("DELETE should have 500 response")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("503"))
+        .as("DELETE should have 503 response")
+        .isTrue();
   }
 
   @Test
@@ -256,17 +301,17 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert - All operations should have 500 and 503
-    assertTrue(getOp.getResponses().containsKey("500"), "GET should have 500");
-    assertTrue(getOp.getResponses().containsKey("503"), "GET should have 503");
+    assertThat(getOp.getResponses().containsKey("500")).as("GET should have 500").isTrue();
+    assertThat(getOp.getResponses().containsKey("503")).as("GET should have 503").isTrue();
 
-    assertTrue(postOp.getResponses().containsKey("500"), "POST should have 500");
-    assertTrue(postOp.getResponses().containsKey("503"), "POST should have 503");
+    assertThat(postOp.getResponses().containsKey("500")).as("POST should have 500").isTrue();
+    assertThat(postOp.getResponses().containsKey("503")).as("POST should have 503").isTrue();
 
-    assertTrue(putOp.getResponses().containsKey("500"), "PUT should have 500");
-    assertTrue(putOp.getResponses().containsKey("503"), "PUT should have 503");
+    assertThat(putOp.getResponses().containsKey("500")).as("PUT should have 500").isTrue();
+    assertThat(putOp.getResponses().containsKey("503")).as("PUT should have 503").isTrue();
 
-    assertTrue(deleteOp.getResponses().containsKey("500"), "DELETE should have 500");
-    assertTrue(deleteOp.getResponses().containsKey("503"), "DELETE should have 503");
+    assertThat(deleteOp.getResponses().containsKey("500")).as("DELETE should have 500").isTrue();
+    assertThat(deleteOp.getResponses().containsKey("503")).as("DELETE should have 503").isTrue();
   }
 
   @Test
@@ -281,23 +326,24 @@ class BaseOpenApiConfigTest {
 
     // Assert
     var response = operation.getResponses().get("400");
-    assertNotNull(response, "400 response should exist");
-    assertEquals("Bad Request", response.getDescription());
+    assertThat(response).as("400 response should exist").isNotNull();
+    assertThat(response.getDescription()).isEqualTo("Bad Request");
 
     var content = response.getContent();
-    assertNotNull(content, "Response content should not be null");
-    assertTrue(content.containsKey("application/json"), "Should have application/json media type");
+    assertThat(content).as("Response content should not be null").isNotNull();
+    assertThat(content.containsKey("application/json"))
+        .as("Should have application/json media type")
+        .isTrue();
 
     var mediaType = content.get("application/json");
     var schema = mediaType.getSchema();
-    assertNotNull(schema, "Schema should not be null");
-    assertEquals(
-        "#/components/schemas/ApiErrorResponse",
-        schema.get$ref(),
-        "Should reference ApiErrorResponse schema");
+    assertThat(schema).as("Schema should not be null").isNotNull();
+    assertThat(schema.get$ref())
+        .as("Should reference ApiErrorResponse schema")
+        .isEqualTo("#/components/schemas/ApiErrorResponse");
 
     var example = mediaType.getExample();
-    assertNotNull(example, "Should have example");
+    assertThat(example).as("Should have example").isNotNull();
   }
 
   @Test
@@ -312,20 +358,21 @@ class BaseOpenApiConfigTest {
 
     // Assert
     var response = operation.getResponses().get("404");
-    assertNotNull(response, "404 response should exist");
-    assertEquals("Not Found", response.getDescription());
+    assertThat(response).as("404 response should exist").isNotNull();
+    assertThat(response.getDescription()).isEqualTo("Not Found");
 
     var content = response.getContent();
-    assertNotNull(content, "Response content should not be null");
-    assertTrue(content.containsKey("application/json"), "Should have application/json media type");
+    assertThat(content).as("Response content should not be null").isNotNull();
+    assertThat(content.containsKey("application/json"))
+        .as("Should have application/json media type")
+        .isTrue();
 
     var mediaType = content.get("application/json");
     var schema = mediaType.getSchema();
-    assertNotNull(schema, "Schema should not be null");
-    assertEquals(
-        "#/components/schemas/ApiErrorResponse",
-        schema.get$ref(),
-        "Should reference ApiErrorResponse schema");
+    assertThat(schema).as("Schema should not be null").isNotNull();
+    assertThat(schema.get$ref())
+        .as("Should reference ApiErrorResponse schema")
+        .isEqualTo("#/components/schemas/ApiErrorResponse");
   }
 
   @Test
@@ -350,12 +397,12 @@ class BaseOpenApiConfigTest {
     customizer.customise(openApi);
 
     // Assert - Should add standard error responses
-    assertTrue(
-        operation.getResponses().containsKey("500"),
-        "Should add 500 response to operation without responses");
-    assertTrue(
-        operation.getResponses().containsKey("503"),
-        "Should add 503 response to operation without responses");
+    assertThat(operation.getResponses().containsKey("500"))
+        .as("Should add 500 response to operation without responses")
+        .isTrue();
+    assertThat(operation.getResponses().containsKey("503"))
+        .as("Should add 503 response to operation without responses")
+        .isTrue();
   }
 
   @Test
@@ -367,7 +414,7 @@ class BaseOpenApiConfigTest {
     boolean hasPathParams = testOpenApiConfig.hasPathParameters(operation);
 
     // Assert
-    assertTrue(hasPathParams, "Should detect path parameter");
+    assertThat(hasPathParams).as("Should detect path parameter").isTrue();
   }
 
   @Test
@@ -379,7 +426,7 @@ class BaseOpenApiConfigTest {
     boolean hasPathParams = testOpenApiConfig.hasPathParameters(operation);
 
     // Assert
-    assertFalse(hasPathParams, "Should detect no path parameters");
+    assertThat(hasPathParams).as("Should detect no path parameters").isFalse();
   }
 
   @Test
@@ -395,7 +442,9 @@ class BaseOpenApiConfigTest {
     boolean hasPathParams = testOpenApiConfig.hasPathParameters(operation);
 
     // Assert
-    assertFalse(hasPathParams, "Query parameter should not be detected as path parameter");
+    assertThat(hasPathParams)
+        .as("Query parameter should not be detected as path parameter")
+        .isFalse();
   }
 
   @Test
@@ -418,7 +467,7 @@ class BaseOpenApiConfigTest {
     boolean hasPathParams = testOpenApiConfig.hasPathParameters(operation);
 
     // Assert
-    assertTrue(hasPathParams, "Should detect path parameter among mixed parameters");
+    assertThat(hasPathParams).as("Should detect path parameter among mixed parameters").isTrue();
   }
 
   @Test
@@ -429,17 +478,17 @@ class BaseOpenApiConfigTest {
             HttpStatus.NOT_FOUND, "Resource not found", "RESOURCE_001");
 
     // Assert
-    assertNotNull(response, "Response should not be null");
-    assertEquals("Not Found", response.getDescription());
+    assertThat(response).as("Response should not be null").isNotNull();
+    assertThat(response.getDescription()).isEqualTo("Not Found");
 
     var content = response.getContent();
-    assertNotNull(content, "Content should not be null");
+    assertThat(content).as("Content should not be null").isNotNull();
 
     var mediaType = content.get("application/json");
-    assertNotNull(mediaType, "Media type should not be null");
+    assertThat(mediaType).as("Media type should not be null").isNotNull();
 
     var example = mediaType.getExample();
-    assertNotNull(example, "Example should not be null");
+    assertThat(example).as("Example should not be null").isNotNull();
   }
 
   @Test
@@ -469,20 +518,26 @@ class BaseOpenApiConfigTest {
 
     // Assert - Verify all operations have appropriate error responses
     var usersPath = openApi.getPaths().get("/api/users");
-    assertTrue(usersPath.getGet().getResponses().containsKey("500"), "GET /users should have 500");
-    assertTrue(
-        usersPath.getPost().getResponses().containsKey("400"), "POST /users should have 400");
+    assertThat(usersPath.getGet().getResponses().containsKey("500"))
+        .as("GET /users should have 500")
+        .isTrue();
+    assertThat(usersPath.getPost().getResponses().containsKey("400"))
+        .as("POST /users should have 400")
+        .isTrue();
 
     var usersIdPath = openApi.getPaths().get("/api/users/{id}");
-    assertTrue(
-        usersIdPath.getGet().getResponses().containsKey("404"), "GET /users/{id} should have 404");
-    assertTrue(
-        usersIdPath.getPut().getResponses().containsKey("400"), "PUT /users/{id} should have 400");
-    assertTrue(
-        usersIdPath.getPut().getResponses().containsKey("404"), "PUT /users/{id} should have 404");
-    assertTrue(
-        usersIdPath.getDelete().getResponses().containsKey("404"),
-        "DELETE /users/{id} should have 404");
+    assertThat(usersIdPath.getGet().getResponses().containsKey("404"))
+        .as("GET /users/{id} should have 404")
+        .isTrue();
+    assertThat(usersIdPath.getPut().getResponses().containsKey("400"))
+        .as("PUT /users/{id} should have 400")
+        .isTrue();
+    assertThat(usersIdPath.getPut().getResponses().containsKey("404"))
+        .as("PUT /users/{id} should have 404")
+        .isTrue();
+    assertThat(usersIdPath.getDelete().getResponses().containsKey("404"))
+        .as("DELETE /users/{id} should have 404")
+        .isTrue();
   }
 
   private Operation createOperation() {

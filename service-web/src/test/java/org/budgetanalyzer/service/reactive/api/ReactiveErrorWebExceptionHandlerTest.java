@@ -1,7 +1,6 @@
 package org.budgetanalyzer.service.reactive.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Set;
@@ -54,9 +53,9 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exchange.getResponse().getStatusCode());
-    assertEquals(ApiErrorType.INTERNAL_ERROR.name(), responseBody.path("type").asText());
-    assertEquals("An unexpected error occurred", responseBody.path("message").asText());
+    assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.INTERNAL_ERROR.name());
+    assertThat(responseBody.path("message").asText()).isEqualTo("An unexpected error occurred");
   }
 
   @Test
@@ -71,9 +70,9 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
-    assertEquals(HttpStatus.NOT_FOUND, exchange.getResponse().getStatusCode());
-    assertEquals(ApiErrorType.NOT_FOUND.name(), responseBody.path("type").asText());
-    assertEquals("Missing resource", responseBody.path("message").asText());
+    assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.NOT_FOUND.name());
+    assertThat(responseBody.path("message").asText()).isEqualTo("Missing resource");
   }
 
   @Test
@@ -88,10 +87,10 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
-    assertEquals(HttpStatus.METHOD_NOT_ALLOWED, exchange.getResponse().getStatusCode());
-    assertEquals(
-        Set.of(HttpMethod.GET, HttpMethod.PUT), exchange.getResponse().getHeaders().getAllow());
-    assertEquals(ApiErrorType.INVALID_REQUEST.name(), responseBody.path("type").asText());
+    assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+    assertThat(exchange.getResponse().getHeaders().getAllow())
+        .isEqualTo(Set.of(HttpMethod.GET, HttpMethod.PUT));
+    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.INVALID_REQUEST.name());
   }
 
   @Test
@@ -106,9 +105,9 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
-    assertEquals(HttpStatus.UNAUTHORIZED, exchange.getResponse().getStatusCode());
-    assertEquals(ApiErrorType.UNAUTHORIZED.name(), responseBody.path("type").asText());
-    assertEquals("Authentication required", responseBody.path("message").asText());
+    assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.UNAUTHORIZED.name());
+    assertThat(responseBody.path("message").asText()).isEqualTo("Authentication required");
   }
 
   @Test
@@ -123,10 +122,10 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
-    assertEquals(HttpStatus.FORBIDDEN, exchange.getResponse().getStatusCode());
-    assertEquals(ApiErrorType.FORBIDDEN.name(), responseBody.path("type").asText());
-    assertEquals(
-        "You do not have permission to perform this action", responseBody.path("message").asText());
+    assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.FORBIDDEN.name());
+    assertThat(responseBody.path("message").asText())
+        .isEqualTo("You do not have permission to perform this action");
   }
 
   @Test
@@ -148,12 +147,12 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
-    assertEquals(HttpStatus.BAD_REQUEST, exchange.getResponse().getStatusCode());
-    assertEquals(ApiErrorType.VALIDATION_ERROR.name(), responseBody.path("type").asText());
-    assertEquals("Validation failed for 2 field(s)", responseBody.path("message").asText());
-    assertEquals(2, responseBody.path("fieldErrors").size());
-    assertEquals("name", responseBody.path("fieldErrors").get(0).path("field").asText());
-    assertEquals("age", responseBody.path("fieldErrors").get(1).path("field").asText());
+    assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.VALIDATION_ERROR.name());
+    assertThat(responseBody.path("message").asText()).isEqualTo("Validation failed for 2 field(s)");
+    assertThat(responseBody.path("fieldErrors").size()).isEqualTo(2);
+    assertThat(responseBody.path("fieldErrors").get(0).path("field").asText()).isEqualTo("name");
+    assertThat(responseBody.path("fieldErrors").get(1).path("field").asText()).isEqualTo("age");
   }
 
   @Test
@@ -165,7 +164,7 @@ class ReactiveErrorWebExceptionHandlerTest {
     StepVerifier.create(exchange.getResponse().setComplete()).verifyComplete();
 
     StepVerifier.create(reactiveErrorWebExceptionHandler.handle(exchange, exception))
-        .expectErrorSatisfies(throwable -> assertSame(exception, throwable))
+        .expectErrorSatisfies(throwable -> assertThat(throwable).isSameAs(exception))
         .verify();
   }
 
@@ -178,13 +177,14 @@ class ReactiveErrorWebExceptionHandlerTest {
             reactiveErrorWebExceptionHandler.handle(exchange, new IllegalArgumentException("Bad")))
         .verifyComplete();
 
-    assertEquals(MediaType.APPLICATION_JSON, exchange.getResponse().getHeaders().getContentType());
+    assertThat(exchange.getResponse().getHeaders().getContentType())
+        .isEqualTo(MediaType.APPLICATION_JSON);
   }
 
   @Test
   @DisplayName("Should use order negative one")
   void shouldUseOrderNegativeOne() {
-    assertEquals(-1, reactiveErrorWebExceptionHandler.getOrder());
+    assertThat(reactiveErrorWebExceptionHandler.getOrder()).isEqualTo(-1);
   }
 
   @Test
@@ -199,7 +199,8 @@ class ReactiveErrorWebExceptionHandlerTest {
             reactiveErrorWebExceptionHandler.handle(exchange, new IllegalArgumentException("Bad")))
         .verifyComplete();
 
-    assertEquals(MediaType.APPLICATION_JSON, exchange.getResponse().getHeaders().getContentType());
+    assertThat(exchange.getResponse().getHeaders().getContentType())
+        .isEqualTo(MediaType.APPLICATION_JSON);
   }
 
   private record TestRequest(String name, int age) {}

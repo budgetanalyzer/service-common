@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
@@ -22,10 +19,10 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(type).message(message).build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
-    assertNull(response.getCode());
-    assertNull(response.getFieldErrors());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
+    assertThat(response.getCode()).isNull();
+    assertThat(response.getFieldErrors()).isNull();
   }
 
   @Test
@@ -47,11 +44,11 @@ class ApiErrorResponseTest {
             .fieldErrors(fieldErrors)
             .build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
-    assertEquals(code, response.getCode());
-    assertEquals(fieldErrors, response.getFieldErrors());
-    assertEquals(2, response.getFieldErrors().size());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
+    assertThat(response.getCode()).isEqualTo(code);
+    assertThat(response.getFieldErrors()).isEqualTo(fieldErrors);
+    assertThat(response.getFieldErrors().size()).isEqualTo(2);
   }
 
   @Test
@@ -63,10 +60,10 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(type).message(message).code(code).build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
-    assertEquals(code, response.getCode());
-    assertNull(response.getFieldErrors());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
+    assertThat(response.getCode()).isEqualTo(code);
+    assertThat(response.getFieldErrors()).isNull();
   }
 
   @Test
@@ -79,10 +76,10 @@ class ApiErrorResponseTest {
     var response =
         ApiErrorResponse.builder().type(type).message(message).fieldErrors(fieldErrors).build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
-    assertNotNull(response.getFieldErrors());
-    assertEquals(1, response.getFieldErrors().size());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
+    assertThat(response.getFieldErrors()).isNotNull();
+    assertThat(response.getFieldErrors().size()).isEqualTo(1);
   }
 
   @Test
@@ -93,8 +90,8 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(type).message(message).build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
   }
 
   @Test
@@ -105,8 +102,8 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(type).message(message).build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
   }
 
   @Test
@@ -117,8 +114,8 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(type).message(message).build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
   }
 
   @Test
@@ -128,8 +125,8 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(null).message(message).build();
 
-    assertNull(response.getType());
-    assertEquals(message, response.getMessage());
+    assertThat(response.getType()).isNull();
+    assertThat(response.getMessage()).isEqualTo(message);
   }
 
   @Test
@@ -139,8 +136,8 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(type).message(null).build();
 
-    assertEquals(type, response.getType());
-    assertNull(response.getMessage());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isNull();
   }
 
   @Test
@@ -151,9 +148,9 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(type).message(message).code(null).build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
-    assertNull(response.getCode());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
+    assertThat(response.getCode()).isNull();
   }
 
   @Test
@@ -164,9 +161,9 @@ class ApiErrorResponseTest {
 
     var response = ApiErrorResponse.builder().type(type).message(message).fieldErrors(null).build();
 
-    assertEquals(type, response.getType());
-    assertEquals(message, response.getMessage());
-    assertNull(response.getFieldErrors());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getMessage()).isEqualTo(message);
+    assertThat(response.getFieldErrors()).isNull();
   }
 
   @Test
@@ -179,9 +176,9 @@ class ApiErrorResponseTest {
     var response =
         ApiErrorResponse.builder().type(type).message(message).fieldErrors(fieldErrors).build();
 
-    assertEquals(type, response.getType());
-    assertNotNull(response.getFieldErrors());
-    assertTrue(response.getFieldErrors().isEmpty());
+    assertThat(response.getType()).isEqualTo(type);
+    assertThat(response.getFieldErrors()).isNotNull();
+    assertThat(response.getFieldErrors()).isEmpty();
   }
 
   @Test
@@ -194,8 +191,8 @@ class ApiErrorResponseTest {
             .code("BIZ_001")
             .build();
 
-    assertNotNull(response);
-    assertEquals(ApiErrorType.APPLICATION_ERROR, response.getType());
+    assertThat(response).isNotNull();
+    assertThat(response.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
   }
 
   @Test
@@ -214,7 +211,7 @@ class ApiErrorResponseTest {
             .fieldErrors(fieldErrors)
             .build();
 
-    assertEquals(3, response.getFieldErrors().size());
+    assertThat(response.getFieldErrors().size()).isEqualTo(3);
   }
 
   @Test
@@ -222,10 +219,10 @@ class ApiErrorResponseTest {
   void shouldAllowBuildingMinimalErrorResponse() {
     var response = ApiErrorResponse.builder().build();
 
-    assertNull(response.getType());
-    assertNull(response.getMessage());
-    assertNull(response.getCode());
-    assertNull(response.getFieldErrors());
+    assertThat(response.getType()).isNull();
+    assertThat(response.getMessage()).isNull();
+    assertThat(response.getCode()).isNull();
+    assertThat(response.getFieldErrors()).isNull();
   }
 
   @Test
@@ -239,8 +236,8 @@ class ApiErrorResponseTest {
             .message("Second message") // Overwrite
             .build();
 
-    assertEquals(ApiErrorType.INTERNAL_ERROR, response.getType());
-    assertEquals("Second message", response.getMessage());
+    assertThat(response.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
+    assertThat(response.getMessage()).isEqualTo("Second message");
   }
 
   @Test
@@ -255,7 +252,7 @@ class ApiErrorResponseTest {
             .message("Internal error")
             .build();
 
-    assertEquals(ApiErrorType.NOT_FOUND, response1.getType());
-    assertEquals(ApiErrorType.INTERNAL_ERROR, response2.getType());
+    assertThat(response1.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
+    assertThat(response2.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
   }
 }

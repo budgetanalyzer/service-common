@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.servlet.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,58 +23,81 @@ class HttpLoggingPropertiesTest {
     var properties = new HttpLoggingProperties();
 
     // Assert
-    assertFalse(properties.isEnabled(), "Default enabled should be false");
-    assertEquals("DEBUG", properties.getLogLevel(), "Default log level should be DEBUG");
-    assertFalse(properties.isIncludeRequestBody(), "Default includeRequestBody should be false");
-    assertFalse(properties.isIncludeResponseBody(), "Default includeResponseBody should be false");
-    assertTrue(
-        properties.isIncludeRequestHeaders(), "Default includeRequestHeaders should be true");
-    assertTrue(
-        properties.isIncludeResponseHeaders(), "Default includeResponseHeaders should be true");
-    assertFalse(properties.isIncludeQueryParams(), "Default includeQueryParams should be false");
-    assertTrue(properties.isIncludeClientIp(), "Default includeClientIp should be true");
-    assertEquals(10000, properties.getMaxBodySize(), "Default maxBodySize should be 10000");
-    assertNotNull(properties.getExcludePatterns(), "Default excludePatterns should not be null");
-    assertEquals(
-        3, properties.getExcludePatterns().size(), "Default excludePatterns should have 3 entries");
-    assertTrue(
-        properties.getExcludePatterns().contains("/actuator/**"), "Should contain /actuator/**");
-    assertTrue(
-        properties.getExcludePatterns().contains("/swagger-ui/**"),
-        "Should contain /swagger-ui/**");
-    assertTrue(
-        properties.getExcludePatterns().contains("/v3/api-docs/**"),
-        "Should contain /v3/api-docs/**");
-    assertNotNull(properties.getIncludePatterns(), "Default includePatterns should not be null");
-    assertTrue(
-        properties.getIncludePatterns().isEmpty(), "Default includePatterns should be empty");
-    assertNotNull(properties.getSensitiveHeaders(), "Default sensitiveHeaders should not be null");
-    assertEquals(
-        7,
-        properties.getSensitiveHeaders().size(),
-        "Default sensitiveHeaders should have 7 entries");
-    assertTrue(
-        properties.getSensitiveHeaders().contains("Authorization"), "Should contain Authorization");
-    assertTrue(properties.getSensitiveHeaders().contains("Cookie"), "Should contain Cookie");
-    assertFalse(properties.isLogErrorsOnly(), "Default logErrorsOnly should be false");
-    assertTrue(
-        properties.isSkipHealthCheckAgents(), "Default skipHealthCheckAgents should be true");
-    assertNotNull(
-        properties.getHealthCheckUserAgentPrefixes(),
-        "Default healthCheckUserAgentPrefixes should not be null");
-    assertEquals(
-        3,
-        properties.getHealthCheckUserAgentPrefixes().size(),
-        "Default healthCheckUserAgentPrefixes should have 3 entries");
-    assertTrue(
-        properties.getHealthCheckUserAgentPrefixes().contains("kube-probe"),
-        "Should contain kube-probe");
-    assertTrue(
-        properties.getHealthCheckUserAgentPrefixes().contains("ELB-HealthChecker"),
-        "Should contain ELB-HealthChecker");
-    assertTrue(
-        properties.getHealthCheckUserAgentPrefixes().contains("GoogleHC"),
-        "Should contain GoogleHC");
+    assertThat(properties.isEnabled()).as("Default enabled should be false").isFalse();
+    assertThat(properties.getLogLevel()).as("Default log level should be DEBUG").isEqualTo("DEBUG");
+    assertThat(properties.isIncludeRequestBody())
+        .as("Default includeRequestBody should be false")
+        .isFalse();
+    assertThat(properties.isIncludeResponseBody())
+        .as("Default includeResponseBody should be false")
+        .isFalse();
+    assertThat(properties.isIncludeRequestHeaders())
+        .as("Default includeRequestHeaders should be true")
+        .isTrue();
+    assertThat(properties.isIncludeResponseHeaders())
+        .as("Default includeResponseHeaders should be true")
+        .isTrue();
+    assertThat(properties.isIncludeQueryParams())
+        .as("Default includeQueryParams should be false")
+        .isFalse();
+    assertThat(properties.isIncludeClientIp())
+        .as("Default includeClientIp should be true")
+        .isTrue();
+    assertThat(properties.getMaxBodySize())
+        .as("Default maxBodySize should be 10000")
+        .isEqualTo(10000);
+    assertThat(properties.getExcludePatterns())
+        .as("Default excludePatterns should not be null")
+        .isNotNull();
+    assertThat(properties.getExcludePatterns().size())
+        .as("Default excludePatterns should have 3 entries")
+        .isEqualTo(3);
+    assertThat(properties.getExcludePatterns().contains("/actuator/**"))
+        .as("Should contain /actuator/**")
+        .isTrue();
+    assertThat(properties.getExcludePatterns().contains("/swagger-ui/**"))
+        .as("Should contain /swagger-ui/**")
+        .isTrue();
+    assertThat(properties.getExcludePatterns().contains("/v3/api-docs/**"))
+        .as("Should contain /v3/api-docs/**")
+        .isTrue();
+    assertThat(properties.getIncludePatterns())
+        .as("Default includePatterns should not be null")
+        .isNotNull();
+    assertThat(properties.getIncludePatterns())
+        .as("Default includePatterns should be empty")
+        .isEmpty();
+    assertThat(properties.getSensitiveHeaders())
+        .as("Default sensitiveHeaders should not be null")
+        .isNotNull();
+    assertThat(properties.getSensitiveHeaders().size())
+        .as("Default sensitiveHeaders should have 7 entries")
+        .isEqualTo(7);
+    assertThat(properties.getSensitiveHeaders().contains("Authorization"))
+        .as("Should contain Authorization")
+        .isTrue();
+    assertThat(properties.getSensitiveHeaders().contains("Cookie"))
+        .as("Should contain Cookie")
+        .isTrue();
+    assertThat(properties.isLogErrorsOnly()).as("Default logErrorsOnly should be false").isFalse();
+    assertThat(properties.isSkipHealthCheckAgents())
+        .as("Default skipHealthCheckAgents should be true")
+        .isTrue();
+    assertThat(properties.getHealthCheckUserAgentPrefixes())
+        .as("Default healthCheckUserAgentPrefixes should not be null")
+        .isNotNull();
+    assertThat(properties.getHealthCheckUserAgentPrefixes().size())
+        .as("Default healthCheckUserAgentPrefixes should have 3 entries")
+        .isEqualTo(3);
+    assertThat(properties.getHealthCheckUserAgentPrefixes().contains("kube-probe"))
+        .as("Should contain kube-probe")
+        .isTrue();
+    assertThat(properties.getHealthCheckUserAgentPrefixes().contains("ELB-HealthChecker"))
+        .as("Should contain ELB-HealthChecker")
+        .isTrue();
+    assertThat(properties.getHealthCheckUserAgentPrefixes().contains("GoogleHC"))
+        .as("Should contain GoogleHC")
+        .isTrue();
   }
 
   @Test
@@ -100,18 +120,28 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert
-              assertTrue(properties.isEnabled(), "Should bind enabled property");
-              assertEquals("INFO", properties.getLogLevel(), "Should bind log level");
-              assertFalse(properties.isIncludeRequestBody(), "Should bind includeRequestBody");
-              assertFalse(properties.isIncludeResponseBody(), "Should bind includeResponseBody");
-              assertFalse(
-                  properties.isIncludeRequestHeaders(), "Should bind includeRequestHeaders");
-              assertFalse(
-                  properties.isIncludeResponseHeaders(), "Should bind includeResponseHeaders");
-              assertFalse(properties.isIncludeQueryParams(), "Should bind includeQueryParams");
-              assertFalse(properties.isIncludeClientIp(), "Should bind includeClientIp");
-              assertEquals(5000, properties.getMaxBodySize(), "Should bind maxBodySize");
-              assertTrue(properties.isLogErrorsOnly(), "Should bind logErrorsOnly");
+              assertThat(properties.isEnabled()).as("Should bind enabled property").isTrue();
+              assertThat(properties.getLogLevel()).as("Should bind log level").isEqualTo("INFO");
+              assertThat(properties.isIncludeRequestBody())
+                  .as("Should bind includeRequestBody")
+                  .isFalse();
+              assertThat(properties.isIncludeResponseBody())
+                  .as("Should bind includeResponseBody")
+                  .isFalse();
+              assertThat(properties.isIncludeRequestHeaders())
+                  .as("Should bind includeRequestHeaders")
+                  .isFalse();
+              assertThat(properties.isIncludeResponseHeaders())
+                  .as("Should bind includeResponseHeaders")
+                  .isFalse();
+              assertThat(properties.isIncludeQueryParams())
+                  .as("Should bind includeQueryParams")
+                  .isFalse();
+              assertThat(properties.isIncludeClientIp())
+                  .as("Should bind includeClientIp")
+                  .isFalse();
+              assertThat(properties.getMaxBodySize()).as("Should bind maxBodySize").isEqualTo(5000);
+              assertThat(properties.isLogErrorsOnly()).as("Should bind logErrorsOnly").isTrue();
             });
   }
 
@@ -132,34 +162,38 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert
-              assertEquals(
-                  3, properties.getExcludePatterns().size(), "Should bind 3 exclude patterns");
-              assertTrue(
-                  properties.getExcludePatterns().contains("/actuator/**"),
-                  "Should contain /actuator/**");
-              assertTrue(
-                  properties.getExcludePatterns().contains("/swagger-ui/**"),
-                  "Should contain /swagger-ui/**");
-              assertTrue(
-                  properties.getExcludePatterns().contains("/v3/api-docs/**"),
-                  "Should contain /v3/api-docs/**");
+              assertThat(properties.getExcludePatterns().size())
+                  .as("Should bind 3 exclude patterns")
+                  .isEqualTo(3);
+              assertThat(properties.getExcludePatterns().contains("/actuator/**"))
+                  .as("Should contain /actuator/**")
+                  .isTrue();
+              assertThat(properties.getExcludePatterns().contains("/swagger-ui/**"))
+                  .as("Should contain /swagger-ui/**")
+                  .isTrue();
+              assertThat(properties.getExcludePatterns().contains("/v3/api-docs/**"))
+                  .as("Should contain /v3/api-docs/**")
+                  .isTrue();
 
-              assertEquals(
-                  2, properties.getIncludePatterns().size(), "Should bind 2 include patterns");
-              assertTrue(
-                  properties.getIncludePatterns().contains("/api/**"), "Should contain /api/**");
-              assertTrue(
-                  properties.getIncludePatterns().contains("/admin/**"),
-                  "Should contain /admin/**");
+              assertThat(properties.getIncludePatterns().size())
+                  .as("Should bind 2 include patterns")
+                  .isEqualTo(2);
+              assertThat(properties.getIncludePatterns().contains("/api/**"))
+                  .as("Should contain /api/**")
+                  .isTrue();
+              assertThat(properties.getIncludePatterns().contains("/admin/**"))
+                  .as("Should contain /admin/**")
+                  .isTrue();
 
-              assertEquals(
-                  2, properties.getSensitiveHeaders().size(), "Should bind 2 sensitive headers");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("Authorization"),
-                  "Should contain Authorization");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("X-Custom-Token"),
-                  "Should contain X-Custom-Token");
+              assertThat(properties.getSensitiveHeaders().size())
+                  .as("Should bind 2 sensitive headers")
+                  .isEqualTo(2);
+              assertThat(properties.getSensitiveHeaders().contains("Authorization"))
+                  .as("Should contain Authorization")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("X-Custom-Token"))
+                  .as("Should contain X-Custom-Token")
+                  .isTrue();
             });
   }
 
@@ -177,10 +211,15 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert
-              assertNotNull(properties.getExcludePatterns(), "excludePatterns should not be null");
-              assertNotNull(properties.getIncludePatterns(), "includePatterns should not be null");
-              assertNotNull(
-                  properties.getSensitiveHeaders(), "sensitiveHeaders should not be null");
+              assertThat(properties.getExcludePatterns())
+                  .as("excludePatterns should not be null")
+                  .isNotNull();
+              assertThat(properties.getIncludePatterns())
+                  .as("includePatterns should not be null")
+                  .isNotNull();
+              assertThat(properties.getSensitiveHeaders())
+                  .as("sensitiveHeaders should not be null")
+                  .isNotNull();
             });
   }
 
@@ -213,27 +252,46 @@ class HttpLoggingPropertiesTest {
     properties.setSensitiveHeaders(sensitiveHeaders);
 
     // Assert
-    assertTrue(properties.isEnabled(), "Should update enabled");
-    assertEquals("WARN", properties.getLogLevel(), "Should update log level");
-    assertFalse(properties.isIncludeRequestBody(), "Should update includeRequestBody");
-    assertFalse(properties.isIncludeResponseBody(), "Should update includeResponseBody");
-    assertFalse(properties.isIncludeRequestHeaders(), "Should update includeRequestHeaders");
-    assertFalse(properties.isIncludeResponseHeaders(), "Should update includeResponseHeaders");
-    assertFalse(properties.isIncludeQueryParams(), "Should update includeQueryParams");
-    assertFalse(properties.isIncludeClientIp(), "Should update includeClientIp");
-    assertEquals(20000, properties.getMaxBodySize(), "Should update maxBodySize");
-    assertTrue(properties.isLogErrorsOnly(), "Should update logErrorsOnly");
+    assertThat(properties.isEnabled()).as("Should update enabled").isTrue();
+    assertThat(properties.getLogLevel()).as("Should update log level").isEqualTo("WARN");
+    assertThat(properties.isIncludeRequestBody()).as("Should update includeRequestBody").isFalse();
+    assertThat(properties.isIncludeResponseBody())
+        .as("Should update includeResponseBody")
+        .isFalse();
+    assertThat(properties.isIncludeRequestHeaders())
+        .as("Should update includeRequestHeaders")
+        .isFalse();
+    assertThat(properties.isIncludeResponseHeaders())
+        .as("Should update includeResponseHeaders")
+        .isFalse();
+    assertThat(properties.isIncludeQueryParams()).as("Should update includeQueryParams").isFalse();
+    assertThat(properties.isIncludeClientIp()).as("Should update includeClientIp").isFalse();
+    assertThat(properties.getMaxBodySize()).as("Should update maxBodySize").isEqualTo(20000);
+    assertThat(properties.isLogErrorsOnly()).as("Should update logErrorsOnly").isTrue();
 
-    assertEquals(1, properties.getExcludePatterns().size(), "Should have 1 exclude pattern");
-    assertTrue(properties.getExcludePatterns().contains("/health/**"), "Should contain /health/**");
+    assertThat(properties.getExcludePatterns().size())
+        .as("Should have 1 exclude pattern")
+        .isEqualTo(1);
+    assertThat(properties.getExcludePatterns().contains("/health/**"))
+        .as("Should contain /health/**")
+        .isTrue();
 
-    assertEquals(1, properties.getIncludePatterns().size(), "Should have 1 include pattern");
-    assertTrue(properties.getIncludePatterns().contains("/api/**"), "Should contain /api/**");
+    assertThat(properties.getIncludePatterns().size())
+        .as("Should have 1 include pattern")
+        .isEqualTo(1);
+    assertThat(properties.getIncludePatterns().contains("/api/**"))
+        .as("Should contain /api/**")
+        .isTrue();
 
-    assertEquals(2, properties.getSensitiveHeaders().size(), "Should have 2 sensitive headers");
-    assertTrue(properties.getSensitiveHeaders().contains("X-API-Key"), "Should contain X-API-Key");
-    assertTrue(
-        properties.getSensitiveHeaders().contains("X-Auth-Token"), "Should contain X-Auth-Token");
+    assertThat(properties.getSensitiveHeaders().size())
+        .as("Should have 2 sensitive headers")
+        .isEqualTo(2);
+    assertThat(properties.getSensitiveHeaders().contains("X-API-Key"))
+        .as("Should contain X-API-Key")
+        .isTrue();
+    assertThat(properties.getSensitiveHeaders().contains("X-Auth-Token"))
+        .as("Should contain X-Auth-Token")
+        .isTrue();
   }
 
   @Test
@@ -248,10 +306,9 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert
-              assertEquals(
-                  0,
-                  properties.getMaxBodySize(),
-                  "Should clamp negative max-body-size values to zero");
+              assertThat(properties.getMaxBodySize())
+                  .as("Should clamp negative max-body-size values to zero")
+                  .isEqualTo(0);
             });
   }
 
@@ -267,8 +324,9 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert
-              assertEquals(
-                  0, properties.getMaxBodySize(), "Should bind zero value (means no body logging)");
+              assertThat(properties.getMaxBodySize())
+                  .as("Should bind zero value (means no body logging)")
+                  .isEqualTo(0);
             });
   }
 
@@ -281,7 +339,9 @@ class HttpLoggingPropertiesTest {
     properties.setMaxBodySize(-25);
 
     // Assert
-    assertEquals(0, properties.getMaxBodySize(), "Setter should clamp negative values to zero");
+    assertThat(properties.getMaxBodySize())
+        .as("Setter should clamp negative values to zero")
+        .isEqualTo(0);
   }
 
   @Test
@@ -296,7 +356,9 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert
-              assertEquals(1000000, properties.getMaxBodySize(), "Should bind large value");
+              assertThat(properties.getMaxBodySize())
+                  .as("Should bind large value")
+                  .isEqualTo(1000000);
             });
   }
 
@@ -315,7 +377,9 @@ class HttpLoggingPropertiesTest {
                 var properties = context.getBean(HttpLoggingProperties.class);
 
                 // Assert
-                assertEquals(level, properties.getLogLevel(), "Should bind log level: " + level);
+                assertThat(properties.getLogLevel())
+                    .as("Should bind log level: " + level)
+                    .isEqualTo(level);
               });
     }
   }
@@ -332,10 +396,9 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert - Spring Boot will bind the value, validation should be done elsewhere
-              assertEquals(
-                  "INVALID",
-                  properties.getLogLevel(),
-                  "Should bind invalid value (validation should be done in filter)");
+              assertThat(properties.getLogLevel())
+                  .as("Should bind invalid value (validation should be done in filter)")
+                  .isEqualTo("INVALID");
             });
   }
 
@@ -349,27 +412,27 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert - Should have default sensitive headers
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("Authorization"),
-                  "Should have default Authorization header");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("Cookie"),
-                  "Should have default Cookie header");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("Set-Cookie"),
-                  "Should have default Set-Cookie header");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("X-API-Key"),
-                  "Should have default X-API-Key header");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("X-Auth-Token"),
-                  "Should have default X-Auth-Token header");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("Proxy-Authorization"),
-                  "Should have default Proxy-Authorization header");
-              assertTrue(
-                  properties.getSensitiveHeaders().contains("WWW-Authenticate"),
-                  "Should have default WWW-Authenticate header");
+              assertThat(properties.getSensitiveHeaders().contains("Authorization"))
+                  .as("Should have default Authorization header")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("Cookie"))
+                  .as("Should have default Cookie header")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("Set-Cookie"))
+                  .as("Should have default Set-Cookie header")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("X-API-Key"))
+                  .as("Should have default X-API-Key header")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("X-Auth-Token"))
+                  .as("Should have default X-Auth-Token header")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("Proxy-Authorization"))
+                  .as("Should have default Proxy-Authorization header")
+                  .isTrue();
+              assertThat(properties.getSensitiveHeaders().contains("WWW-Authenticate"))
+                  .as("Should have default WWW-Authenticate header")
+                  .isTrue();
             });
   }
 
@@ -379,11 +442,15 @@ class HttpLoggingPropertiesTest {
     var properties = new HttpLoggingProperties();
 
     // Act & Assert - Various Kubernetes probe user agents
-    assertTrue(properties.isHealthCheckAgent("kube-probe/1.34"), "Should detect kube-probe/1.34");
-    assertTrue(properties.isHealthCheckAgent("kube-probe/1.22"), "Should detect kube-probe/1.22");
-    assertTrue(
-        properties.isHealthCheckAgent("kube-probe/1.12+"),
-        "Should detect kube-probe with version suffix");
+    assertThat(properties.isHealthCheckAgent("kube-probe/1.34"))
+        .as("Should detect kube-probe/1.34")
+        .isTrue();
+    assertThat(properties.isHealthCheckAgent("kube-probe/1.22"))
+        .as("Should detect kube-probe/1.22")
+        .isTrue();
+    assertThat(properties.isHealthCheckAgent("kube-probe/1.12+"))
+        .as("Should detect kube-probe with version suffix")
+        .isTrue();
   }
 
   @Test
@@ -392,12 +459,12 @@ class HttpLoggingPropertiesTest {
     var properties = new HttpLoggingProperties();
 
     // Act & Assert - AWS ELB user agents
-    assertTrue(
-        properties.isHealthCheckAgent("ELB-HealthChecker/2.0"),
-        "Should detect ELB-HealthChecker/2.0 (ALB)");
-    assertTrue(
-        properties.isHealthCheckAgent("ELB-HealthChecker/1.0"),
-        "Should detect ELB-HealthChecker/1.0 (CLB)");
+    assertThat(properties.isHealthCheckAgent("ELB-HealthChecker/2.0"))
+        .as("Should detect ELB-HealthChecker/2.0 (ALB)")
+        .isTrue();
+    assertThat(properties.isHealthCheckAgent("ELB-HealthChecker/1.0"))
+        .as("Should detect ELB-HealthChecker/1.0 (CLB)")
+        .isTrue();
   }
 
   @Test
@@ -406,7 +473,9 @@ class HttpLoggingPropertiesTest {
     var properties = new HttpLoggingProperties();
 
     // Act & Assert - GCP health check user agent
-    assertTrue(properties.isHealthCheckAgent("GoogleHC/1.0"), "Should detect GoogleHC/1.0");
+    assertThat(properties.isHealthCheckAgent("GoogleHC/1.0"))
+        .as("Should detect GoogleHC/1.0")
+        .isTrue();
   }
 
   @Test
@@ -415,14 +484,16 @@ class HttpLoggingPropertiesTest {
     var properties = new HttpLoggingProperties();
 
     // Act & Assert - Regular user agents should not be detected
-    assertFalse(
-        properties.isHealthCheckAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)"),
-        "Should not detect Mozilla browser");
-    assertFalse(properties.isHealthCheckAgent("curl/7.64.1"), "Should not detect curl");
-    assertFalse(
-        properties.isHealthCheckAgent("PostmanRuntime/7.26.8"), "Should not detect Postman");
-    assertFalse(
-        properties.isHealthCheckAgent("Go-http-client/1.1"), "Should not detect Go HTTP client");
+    assertThat(properties.isHealthCheckAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)"))
+        .as("Should not detect Mozilla browser")
+        .isFalse();
+    assertThat(properties.isHealthCheckAgent("curl/7.64.1")).as("Should not detect curl").isFalse();
+    assertThat(properties.isHealthCheckAgent("PostmanRuntime/7.26.8"))
+        .as("Should not detect Postman")
+        .isFalse();
+    assertThat(properties.isHealthCheckAgent("Go-http-client/1.1"))
+        .as("Should not detect Go HTTP client")
+        .isFalse();
   }
 
   @Test
@@ -431,8 +502,12 @@ class HttpLoggingPropertiesTest {
     var properties = new HttpLoggingProperties();
 
     // Act & Assert
-    assertFalse(properties.isHealthCheckAgent(null), "Should return false for null user agent");
-    assertFalse(properties.isHealthCheckAgent(""), "Should return false for empty user agent");
+    assertThat(properties.isHealthCheckAgent(null))
+        .as("Should return false for null user agent")
+        .isFalse();
+    assertThat(properties.isHealthCheckAgent(""))
+        .as("Should return false for empty user agent")
+        .isFalse();
   }
 
   @Test
@@ -442,9 +517,9 @@ class HttpLoggingPropertiesTest {
     properties.setSkipHealthCheckAgents(false);
 
     // Act & Assert - Should not detect when disabled
-    assertFalse(
-        properties.isHealthCheckAgent("kube-probe/1.34"),
-        "Should not detect when skipHealthCheckAgents is false");
+    assertThat(properties.isHealthCheckAgent("kube-probe/1.34"))
+        .as("Should not detect when skipHealthCheckAgents is false")
+        .isFalse();
   }
 
   @Test
@@ -453,14 +528,18 @@ class HttpLoggingPropertiesTest {
     var properties = new HttpLoggingProperties();
 
     // Act & Assert - Should match regardless of case
-    assertTrue(
-        properties.isHealthCheckAgent("KUBE-PROBE/1.34"), "Should match uppercase KUBE-PROBE");
-    assertTrue(
-        properties.isHealthCheckAgent("Kube-Probe/1.34"), "Should match mixed case Kube-Probe");
-    assertTrue(
-        properties.isHealthCheckAgent("elb-healthchecker/2.0"),
-        "Should match lowercase elb-healthchecker");
-    assertTrue(properties.isHealthCheckAgent("googlehc/1.0"), "Should match lowercase googlehc");
+    assertThat(properties.isHealthCheckAgent("KUBE-PROBE/1.34"))
+        .as("Should match uppercase KUBE-PROBE")
+        .isTrue();
+    assertThat(properties.isHealthCheckAgent("Kube-Probe/1.34"))
+        .as("Should match mixed case Kube-Probe")
+        .isTrue();
+    assertThat(properties.isHealthCheckAgent("elb-healthchecker/2.0"))
+        .as("Should match lowercase elb-healthchecker")
+        .isTrue();
+    assertThat(properties.isHealthCheckAgent("googlehc/1.0"))
+        .as("Should match lowercase googlehc")
+        .isTrue();
   }
 
   @Test
@@ -470,12 +549,15 @@ class HttpLoggingPropertiesTest {
     properties.setHealthCheckUserAgentPrefixes(List.of("CustomProbe", "MyHealthCheck"));
 
     // Act & Assert
-    assertTrue(properties.isHealthCheckAgent("CustomProbe/1.0"), "Should detect custom prefix");
-    assertTrue(
-        properties.isHealthCheckAgent("MyHealthCheck-Agent"),
-        "Should detect custom prefix with suffix");
-    assertFalse(
-        properties.isHealthCheckAgent("kube-probe/1.34"), "Should not detect removed default");
+    assertThat(properties.isHealthCheckAgent("CustomProbe/1.0"))
+        .as("Should detect custom prefix")
+        .isTrue();
+    assertThat(properties.isHealthCheckAgent("MyHealthCheck-Agent"))
+        .as("Should detect custom prefix with suffix")
+        .isTrue();
+    assertThat(properties.isHealthCheckAgent("kube-probe/1.34"))
+        .as("Should not detect removed default")
+        .isFalse();
   }
 
   @Test
@@ -491,18 +573,18 @@ class HttpLoggingPropertiesTest {
               var properties = context.getBean(HttpLoggingProperties.class);
 
               // Assert
-              assertFalse(
-                  properties.isSkipHealthCheckAgents(), "Should bind skipHealthCheckAgents");
-              assertEquals(
-                  2,
-                  properties.getHealthCheckUserAgentPrefixes().size(),
-                  "Should bind 2 health check prefixes");
-              assertTrue(
-                  properties.getHealthCheckUserAgentPrefixes().contains("CustomAgent"),
-                  "Should contain CustomAgent");
-              assertTrue(
-                  properties.getHealthCheckUserAgentPrefixes().contains("AnotherAgent"),
-                  "Should contain AnotherAgent");
+              assertThat(properties.isSkipHealthCheckAgents())
+                  .as("Should bind skipHealthCheckAgents")
+                  .isFalse();
+              assertThat(properties.getHealthCheckUserAgentPrefixes().size())
+                  .as("Should bind 2 health check prefixes")
+                  .isEqualTo(2);
+              assertThat(properties.getHealthCheckUserAgentPrefixes().contains("CustomAgent"))
+                  .as("Should contain CustomAgent")
+                  .isTrue();
+              assertThat(properties.getHealthCheckUserAgentPrefixes().contains("AnotherAgent"))
+                  .as("Should contain AnotherAgent")
+                  .isTrue();
             });
   }
 

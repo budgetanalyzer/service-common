@@ -1,10 +1,7 @@
 package org.budgetanalyzer.service.exception;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 
@@ -25,9 +22,9 @@ class BusinessExceptionTest {
 
     var exception = new BusinessException(message, code);
 
-    assertEquals(message, exception.getMessage());
-    assertEquals(code, exception.getCode());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCode()).isEqualTo(code);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -39,9 +36,9 @@ class BusinessExceptionTest {
 
     var exception = new BusinessException(message, code, cause);
 
-    assertEquals(message, exception.getMessage());
-    assertEquals(code, exception.getCode());
-    assertSame(cause, exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCode()).isEqualTo(code);
+    assertThat(exception.getCause()).isSameAs(cause);
   }
 
   @Test
@@ -49,7 +46,7 @@ class BusinessExceptionTest {
   void shouldExtendServiceException() {
     var exception = new BusinessException("Error", "ERROR_CODE");
 
-    assertTrue(exception instanceof ServiceException);
+    assertThat(exception).isInstanceOf(ServiceException.class);
   }
 
   @Test
@@ -57,7 +54,7 @@ class BusinessExceptionTest {
   void shouldBeRuntimeException() {
     var exception = new BusinessException("Error", "ERROR_CODE");
 
-    assertTrue(exception instanceof RuntimeException);
+    assertThat(exception).isInstanceOf(RuntimeException.class);
   }
 
   @Test
@@ -67,8 +64,8 @@ class BusinessExceptionTest {
 
     var exception = new BusinessException(null, code);
 
-    assertNull(exception.getMessage());
-    assertEquals(code, exception.getCode());
+    assertThat(exception.getMessage()).isNull();
+    assertThat(exception.getCode()).isEqualTo(code);
   }
 
   @Test
@@ -78,8 +75,8 @@ class BusinessExceptionTest {
 
     var exception = new BusinessException(message, null);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCode());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCode()).isNull();
   }
 
   @Test
@@ -90,9 +87,9 @@ class BusinessExceptionTest {
 
     var exception = new BusinessException(message, code, (Throwable) null);
 
-    assertEquals(message, exception.getMessage());
-    assertEquals(code, exception.getCode());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCode()).isEqualTo(code);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -100,9 +97,9 @@ class BusinessExceptionTest {
   void shouldHandleAllNullValuesWithCauseConstructor() {
     var exception = new BusinessException(null, null, (Throwable) null);
 
-    assertNull(exception.getMessage());
-    assertNull(exception.getCode());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isNull();
+    assertThat(exception.getCode()).isNull();
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -110,8 +107,8 @@ class BusinessExceptionTest {
   void shouldPreserveErrorCodeForNegativeAmount() {
     var exception = new BusinessException("Amount cannot be negative", "NEGATIVE_AMOUNT");
 
-    assertEquals("NEGATIVE_AMOUNT", exception.getCode());
-    assertTrue(exception.getMessage().contains("negative"));
+    assertThat(exception.getCode()).isEqualTo("NEGATIVE_AMOUNT");
+    assertThat(exception.getMessage().contains("negative")).isTrue();
   }
 
   @Test
@@ -119,8 +116,8 @@ class BusinessExceptionTest {
   void shouldPreserveErrorCodeForBudgetExceeded() {
     var exception = new BusinessException("Budget limit of $1000 exceeded", "BUDGET_EXCEEDED");
 
-    assertEquals("BUDGET_EXCEEDED", exception.getCode());
-    assertTrue(exception.getMessage().contains("Budget"));
+    assertThat(exception.getCode()).isEqualTo("BUDGET_EXCEEDED");
+    assertThat(exception.getMessage().contains("Budget")).isTrue();
   }
 
   @Test
@@ -129,8 +126,8 @@ class BusinessExceptionTest {
     var exception =
         new BusinessException("Duplicate transaction detected", "DUPLICATE_TRANSACTION");
 
-    assertEquals("DUPLICATE_TRANSACTION", exception.getCode());
-    assertTrue(exception.getMessage().contains("Duplicate"));
+    assertThat(exception.getCode()).isEqualTo("DUPLICATE_TRANSACTION");
+    assertThat(exception.getMessage().contains("Duplicate")).isTrue();
   }
 
   @Test
@@ -138,7 +135,7 @@ class BusinessExceptionTest {
   void shouldHandleSnakeCaseErrorCodes() {
     var exception = new BusinessException("Invalid state transition", "INVALID_STATE_TRANSITION");
 
-    assertEquals("INVALID_STATE_TRANSITION", exception.getCode());
+    assertThat(exception.getCode()).isEqualTo("INVALID_STATE_TRANSITION");
   }
 
   @Test
@@ -146,7 +143,7 @@ class BusinessExceptionTest {
   void shouldHandleDotNotationErrorCodes() {
     var exception = new BusinessException("Validation failed", "validation.amount.negative");
 
-    assertEquals("validation.amount.negative", exception.getCode());
+    assertThat(exception.getCode()).isEqualTo("validation.amount.negative");
   }
 
   @Test
@@ -154,7 +151,7 @@ class BusinessExceptionTest {
   void shouldHandleNumericErrorCodes() {
     var exception = new BusinessException("Application error", "ERR_1001");
 
-    assertEquals("ERR_1001", exception.getCode());
+    assertThat(exception.getCode()).isEqualTo("ERR_1001");
   }
 
   // ==================== Field Errors Tests ====================
@@ -170,12 +167,12 @@ class BusinessExceptionTest {
     var exception =
         new BusinessException("Batch validation failed", "BATCH_VALIDATION_FAILED", fieldErrors);
 
-    assertEquals("Batch validation failed", exception.getMessage());
-    assertEquals("BATCH_VALIDATION_FAILED", exception.getCode());
-    assertTrue(exception.hasFieldErrors());
-    assertEquals(2, exception.getFieldErrors().size());
-    assertEquals(0, exception.getFieldErrors().get(0).getIndex());
-    assertEquals("amount", exception.getFieldErrors().get(0).getField());
+    assertThat(exception.getMessage()).isEqualTo("Batch validation failed");
+    assertThat(exception.getCode()).isEqualTo("BATCH_VALIDATION_FAILED");
+    assertThat(exception.hasFieldErrors()).isTrue();
+    assertThat(exception.getFieldErrors().size()).isEqualTo(2);
+    assertThat(exception.getFieldErrors().get(0).getIndex()).isEqualTo(0);
+    assertThat(exception.getFieldErrors().get(0).getField()).isEqualTo("amount");
   }
 
   @Test
@@ -183,8 +180,8 @@ class BusinessExceptionTest {
   void shouldHaveEmptyFieldErrorsByDefault() {
     var exception = new BusinessException("Error", "CODE");
 
-    assertFalse(exception.hasFieldErrors());
-    assertTrue(exception.getFieldErrors().isEmpty());
+    assertThat(exception.hasFieldErrors()).isFalse();
+    assertThat(exception.getFieldErrors()).isEmpty();
   }
 
   @Test
@@ -192,8 +189,8 @@ class BusinessExceptionTest {
   void shouldHaveEmptyFieldErrorsWithCauseConstructor() {
     var exception = new BusinessException("Error", "CODE", new RuntimeException("cause"));
 
-    assertFalse(exception.hasFieldErrors());
-    assertTrue(exception.getFieldErrors().isEmpty());
+    assertThat(exception.hasFieldErrors()).isFalse();
+    assertThat(exception.getFieldErrors()).isEmpty();
   }
 
   @Test
@@ -204,9 +201,8 @@ class BusinessExceptionTest {
     var exception = new BusinessException("Error", "CODE", fieldErrors);
 
     var returnedErrors = exception.getFieldErrors();
-    org.junit.jupiter.api.Assertions.assertThrows(
-        UnsupportedOperationException.class,
-        () -> returnedErrors.add(FieldError.of(1, "other", "error", null)));
+    assertThatThrownBy(() -> returnedErrors.add(FieldError.of(1, "other", "error", null)))
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 
   @Test
@@ -214,7 +210,7 @@ class BusinessExceptionTest {
   void shouldHandleNullFieldErrorsList() {
     var exception = new BusinessException("Error", "CODE", (List<FieldError>) null);
 
-    assertFalse(exception.hasFieldErrors());
-    assertTrue(exception.getFieldErrors().isEmpty());
+    assertThat(exception.hasFieldErrors()).isFalse();
+    assertThat(exception.getFieldErrors()).isEmpty();
   }
 }

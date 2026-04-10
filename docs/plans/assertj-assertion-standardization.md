@@ -6,7 +6,7 @@ Approved. In progress.
 
 Implementation status as of 2026-04-10:
 - PR 1 (`service-core`) implemented and verified.
-- PR 2 (`service-web`) pending.
+- PR 2 (`service-web`) implemented and verified.
 - PR 3 (documentation update) pending.
 
 ## Problem Statement

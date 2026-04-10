@@ -1,7 +1,6 @@
 package org.budgetanalyzer.service.reactive.http;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -152,8 +151,8 @@ class ReactiveHttpLoggingFilterTest {
     StepVerifier.create(result).verifyComplete();
 
     var logOutput = loggedMessages();
-    assertTrue(logOutput.contains("\"password\":\"***MASKED***\""));
-    assertFalse(logOutput.contains("\"password\":\"secret\""));
+    assertThat(logOutput.contains("\"password\":\"***MASKED***\"")).isTrue();
+    assertThat(logOutput.contains("\"password\":\"secret\"")).isFalse();
   }
 
   @Test
@@ -182,8 +181,9 @@ class ReactiveHttpLoggingFilterTest {
     StepVerifier.create(result).verifyComplete();
 
     var logOutput = loggedMessages();
-    assertTrue(logOutput.contains("[multipart content omitted: multipart/form-data, 19 bytes]"));
-    assertFalse(logOutput.contains(requestBody));
+    assertThat(logOutput.contains("[multipart content omitted: multipart/form-data, 19 bytes]"))
+        .isTrue();
+    assertThat(logOutput.contains(requestBody)).isFalse();
   }
 
   @Test
@@ -209,7 +209,8 @@ class ReactiveHttpLoggingFilterTest {
     StepVerifier.create(result).verifyComplete();
 
     var logOutput = loggedMessages();
-    assertTrue(logOutput.contains("[binary content omitted: application/octet-stream, 3 bytes]"));
+    assertThat(logOutput.contains("[binary content omitted: application/octet-stream, 3 bytes]"))
+        .isTrue();
   }
 
   @Test
@@ -226,8 +227,8 @@ class ReactiveHttpLoggingFilterTest {
               var request = decoratedExchange.getRequest();
               var response = decoratedExchange.getResponse();
 
-              assertTrue(request instanceof CachedBodyServerHttpRequestDecorator);
-              assertTrue(response instanceof CachedBodyServerHttpResponseDecorator);
+              assertThat(request).isInstanceOf(CachedBodyServerHttpRequestDecorator.class);
+              assertThat(response).isInstanceOf(CachedBodyServerHttpResponseDecorator.class);
               return Mono.empty();
             });
 
@@ -250,10 +251,14 @@ class ReactiveHttpLoggingFilterTest {
         .thenAnswer(
             invocation -> {
               var decoratedExchange = (ServerWebExchange) invocation.getArgument(0);
-              assertFalse(
-                  decoratedExchange.getRequest() instanceof CachedBodyServerHttpRequestDecorator);
-              assertFalse(
-                  decoratedExchange.getResponse() instanceof CachedBodyServerHttpResponseDecorator);
+              assertThat(
+                      decoratedExchange.getRequest()
+                          instanceof CachedBodyServerHttpRequestDecorator)
+                  .isFalse();
+              assertThat(
+                      decoratedExchange.getResponse()
+                          instanceof CachedBodyServerHttpResponseDecorator)
+                  .isFalse();
               decoratedExchange.getResponse().setStatusCode(HttpStatus.OK);
               return decoratedExchange.getResponse().setComplete();
             });
@@ -285,10 +290,10 @@ class ReactiveHttpLoggingFilterTest {
     StepVerifier.create(result).verifyComplete();
 
     var logOutput = loggedMessages();
-    assertTrue(logOutput.contains("***MASKED***"));
-    assertTrue(logOutput.contains("custom-value"));
-    assertFalse(logOutput.contains("Bearer secret-token"));
-    assertFalse(logOutput.contains("session=top-secret"));
+    assertThat(logOutput.contains("***MASKED***")).isTrue();
+    assertThat(logOutput.contains("custom-value")).isTrue();
+    assertThat(logOutput.contains("Bearer secret-token")).isFalse();
+    assertThat(logOutput.contains("session=top-secret")).isFalse();
   }
 
   @Test
@@ -313,10 +318,10 @@ class ReactiveHttpLoggingFilterTest {
     StepVerifier.create(result).verifyComplete();
 
     var logOutput = loggedMessages();
-    assertTrue(logOutput.contains("/api/users"));
-    assertFalse(logOutput.contains("token=secret"));
-    assertFalse(logOutput.contains("page=1"));
-    assertFalse(logOutput.contains("search=john"));
+    assertThat(logOutput.contains("/api/users")).isTrue();
+    assertThat(logOutput.contains("token=secret")).isFalse();
+    assertThat(logOutput.contains("page=1")).isFalse();
+    assertThat(logOutput.contains("search=john")).isFalse();
   }
 
   @Test
@@ -804,9 +809,9 @@ class ReactiveHttpLoggingFilterTest {
     StepVerifier.create(result).verifyComplete();
 
     var logOutput = loggedMessages();
-    assertTrue(logOutput.contains("code=***&state=***"));
-    assertFalse(logOutput.contains("authcode123"));
-    assertFalse(logOutput.contains("csrfstate456"));
+    assertThat(logOutput.contains("code=***&state=***")).isTrue();
+    assertThat(logOutput.contains("authcode123")).isFalse();
+    assertThat(logOutput.contains("csrfstate456")).isFalse();
   }
 
   @Test
@@ -835,11 +840,11 @@ class ReactiveHttpLoggingFilterTest {
     StepVerifier.create(result).verifyComplete();
 
     var logOutput = loggedMessages();
-    assertTrue(logOutput.contains("custom_key=***"));
-    assertTrue(logOutput.contains("code=***"));
-    assertTrue(logOutput.contains("page=1"));
-    assertFalse(logOutput.contains("secret"));
-    assertFalse(logOutput.contains("auth123"));
+    assertThat(logOutput.contains("custom_key=***")).isTrue();
+    assertThat(logOutput.contains("code=***")).isTrue();
+    assertThat(logOutput.contains("page=1")).isTrue();
+    assertThat(logOutput.contains("secret")).isFalse();
+    assertThat(logOutput.contains("auth123")).isFalse();
   }
 
   private String loggedMessages() {

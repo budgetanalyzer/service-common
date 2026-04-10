@@ -1,7 +1,6 @@
 package org.budgetanalyzer.service.security;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,9 +40,9 @@ class ReactiveClaimsHeaderSecurityConfigTest {
   void shouldActivateInReactiveWebApplication() {
     reactiveContextRunner.run(
         context -> {
-          assertTrue(
-              context.containsBean("securityWebFilterChain"),
-              "Should register securityWebFilterChain bean in reactive context");
+          assertThat(context.containsBean("securityWebFilterChain"))
+              .as("Should register securityWebFilterChain bean in reactive context")
+              .isTrue();
         });
   }
 
@@ -53,10 +52,10 @@ class ReactiveClaimsHeaderSecurityConfigTest {
     var annotation =
         ReactiveClaimsHeaderSecurityConfig.class.getAnnotation(EnableReactiveMethodSecurity.class);
 
-    assertTrue(annotation != null, "Should enable reactive method security");
-    assertTrue(
-        annotation.useAuthorizationManager(),
-        "Should use authorization-manager-based reactive method security");
+    assertThat(annotation != null).as("Should enable reactive method security").isTrue();
+    assertThat(annotation.useAuthorizationManager())
+        .as("Should use authorization-manager-based reactive method security")
+        .isTrue();
   }
 
   @Test
@@ -66,12 +65,12 @@ class ReactiveClaimsHeaderSecurityConfigTest {
         .withUserConfiguration(CustomReactiveSecurityConfig.class)
         .run(
             context -> {
-              assertTrue(
-                  context.containsBean("customSecurityWebFilterChain"),
-                  "Should keep the application-defined SecurityWebFilterChain");
-              assertFalse(
-                  context.containsBean("securityWebFilterChain"),
-                  "Should back off shared reactive claims security when a custom chain exists");
+              assertThat(context.containsBean("customSecurityWebFilterChain"))
+                  .as("Should keep the application-defined SecurityWebFilterChain")
+                  .isTrue();
+              assertThat(context.containsBean("securityWebFilterChain"))
+                  .as("Should back off shared reactive claims security when a custom chain exists")
+                  .isFalse();
             });
   }
 
@@ -80,9 +79,9 @@ class ReactiveClaimsHeaderSecurityConfigTest {
   void shouldNotActivateInNonWebApplication() {
     nonWebContextRunner.run(
         context -> {
-          assertFalse(
-              context.containsBean("securityWebFilterChain"),
-              "Should NOT register securityWebFilterChain bean in non-web context");
+          assertThat(context.containsBean("securityWebFilterChain"))
+              .as("Should NOT register securityWebFilterChain bean in non-web context")
+              .isFalse();
         });
   }
 

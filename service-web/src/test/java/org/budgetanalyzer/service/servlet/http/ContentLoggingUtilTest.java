@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.servlet.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -66,10 +63,10 @@ class ContentLoggingUtilTest {
             request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
-    assertEquals("GET", details.get("method"));
-    assertEquals("/api/users", details.get("uri"));
-    assertEquals("page=1&size=10", details.get("queryString"));
-    assertEquals("192.168.1.1", details.get("clientIp"));
+    assertThat(details.get("method")).isEqualTo("GET");
+    assertThat(details.get("uri")).isEqualTo("/api/users");
+    assertThat(details.get("queryString")).isEqualTo("page=1&size=10");
+    assertThat(details.get("clientIp")).isEqualTo("192.168.1.1");
   }
 
   @Test
@@ -94,9 +91,9 @@ class ContentLoggingUtilTest {
     // Assert
     @SuppressWarnings("unchecked")
     var headers = (Map<String, String>) details.get("headers");
-    assertEquals("***MASKED***", headers.get("Authorization"));
-    assertEquals("application/json", headers.get("Content-Type"));
-    assertEquals("***MASKED***", headers.get("X-API-Key"));
+    assertThat(headers.get("Authorization")).isEqualTo("***MASKED***");
+    assertThat(headers.get("Content-Type")).isEqualTo("application/json");
+    assertThat(headers.get("X-API-Key")).isEqualTo("***MASKED***");
   }
 
   @Test
@@ -114,7 +111,7 @@ class ContentLoggingUtilTest {
             request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert - Should use first IP from X-Forwarded-For
-    assertEquals("203.0.113.1", details.get("clientIp"));
+    assertThat(details.get("clientIp")).isEqualTo("203.0.113.1");
   }
 
   @Test
@@ -127,7 +124,7 @@ class ContentLoggingUtilTest {
     var details = ContentLoggingUtil.extractResponseDetails(response, httpLoggingProperties);
 
     // Assert
-    assertEquals(200, details.get("status"));
+    assertThat(details.get("status")).isEqualTo(200);
   }
 
   @Test
@@ -144,8 +141,8 @@ class ContentLoggingUtilTest {
     // Assert
     @SuppressWarnings("unchecked")
     var headers = (Map<String, String>) details.get("headers");
-    assertEquals("***MASKED***", headers.get("Set-Cookie"));
-    assertEquals("application/json", headers.get("Content-Type"));
+    assertThat(headers.get("Set-Cookie")).isEqualTo("***MASKED***");
+    assertThat(headers.get("Content-Type")).isEqualTo("application/json");
   }
 
   @Test
@@ -162,7 +159,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
 
     // Assert
-    assertEquals("{\"username\":\"john\",\"password\":\"***MASKED***\"}", extractedBody);
+    assertThat(extractedBody).isEqualTo("{\"username\":\"john\",\"password\":\"***MASKED***\"}");
   }
 
   @Test
@@ -178,9 +175,9 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 50);
 
     // Assert
-    assertTrue(extractedBody.startsWith("A".repeat(50)));
-    assertTrue(extractedBody.contains("TRUNCATED"));
-    assertTrue(extractedBody.contains("50 bytes omitted"));
+    assertThat(extractedBody.startsWith("A".repeat(50))).isTrue();
+    assertThat(extractedBody.contains("TRUNCATED")).isTrue();
+    assertThat(extractedBody.contains("50 bytes omitted")).isTrue();
   }
 
   @Test
@@ -192,7 +189,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
 
     // Assert
-    assertNull(extractedBody);
+    assertThat(extractedBody).isNull();
   }
 
   @Test
@@ -209,7 +206,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals(responseBody, extractedBody);
+    assertThat(extractedBody).isEqualTo(responseBody);
   }
 
   @Test
@@ -225,9 +222,9 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 100);
 
     // Assert
-    assertTrue(extractedBody.startsWith("B".repeat(100)));
-    assertTrue(extractedBody.contains("TRUNCATED"));
-    assertTrue(extractedBody.contains("100 bytes omitted"));
+    assertThat(extractedBody.startsWith("B".repeat(100))).isTrue();
+    assertThat(extractedBody.contains("TRUNCATED")).isTrue();
+    assertThat(extractedBody.contains("100 bytes omitted")).isTrue();
   }
 
   @Test
@@ -240,12 +237,12 @@ class ContentLoggingUtilTest {
     var logMessage = ContentLoggingUtil.formatLogMessage("HTTP Request", details, body);
 
     // Assert
-    assertTrue(logMessage.contains("HTTP Request"));
-    assertTrue(logMessage.contains("POST"));
-    assertTrue(logMessage.contains("/api/users"));
-    assertTrue(logMessage.contains("Details:"));
-    assertTrue(logMessage.contains("Body:"));
-    assertTrue(logMessage.contains("John Doe"));
+    assertThat(logMessage.contains("HTTP Request")).isTrue();
+    assertThat(logMessage.contains("POST")).isTrue();
+    assertThat(logMessage.contains("/api/users")).isTrue();
+    assertThat(logMessage.contains("Details:")).isTrue();
+    assertThat(logMessage.contains("Body:")).isTrue();
+    assertThat(logMessage.contains("John Doe")).isTrue();
   }
 
   @Test
@@ -257,10 +254,10 @@ class ContentLoggingUtilTest {
     var logMessage = ContentLoggingUtil.formatLogMessage("HTTP Request", details, null);
 
     // Assert
-    assertTrue(logMessage.contains("HTTP Request"));
-    assertTrue(logMessage.contains("GET"));
-    assertTrue(logMessage.contains("/api/users"));
-    assertFalse(logMessage.contains("Body:"));
+    assertThat(logMessage.contains("HTTP Request")).isTrue();
+    assertThat(logMessage.contains("GET")).isTrue();
+    assertThat(logMessage.contains("/api/users")).isTrue();
+    assertThat(logMessage.contains("Body:")).isFalse();
   }
 
   @Test
@@ -277,7 +274,7 @@ class ContentLoggingUtilTest {
             request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
-    assertFalse(details.containsKey("queryString"));
+    assertThat(details.containsKey("queryString")).isFalse();
   }
 
   @Test
@@ -293,7 +290,7 @@ class ContentLoggingUtilTest {
             request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
-    assertFalse(details.containsKey("clientIp"));
+    assertThat(details.containsKey("clientIp")).isFalse();
   }
 
   @Test
@@ -309,7 +306,7 @@ class ContentLoggingUtilTest {
             request, httpLoggingProperties, queryParamSanitizer);
 
     // Assert
-    assertFalse(details.containsKey("headers"));
+    assertThat(details.containsKey("headers")).isFalse();
   }
 
   @Test
@@ -324,7 +321,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[compressed content omitted: gzip, 4 bytes]", extractedBody);
+    assertThat(extractedBody).isEqualTo("[compressed content omitted: gzip, 4 bytes]");
   }
 
   @Test
@@ -339,7 +336,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[compressed content omitted: deflate, 100 bytes]", extractedBody);
+    assertThat(extractedBody).isEqualTo("[compressed content omitted: deflate, 100 bytes]");
   }
 
   @Test
@@ -354,7 +351,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[compressed content omitted: br, 250 bytes]", extractedBody);
+    assertThat(extractedBody).isEqualTo("[compressed content omitted: br, 250 bytes]");
   }
 
   @Test
@@ -369,7 +366,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[compressed content omitted: gzip, deflate, 500 bytes]", extractedBody);
+    assertThat(extractedBody).isEqualTo("[compressed content omitted: gzip, deflate, 500 bytes]");
   }
 
   @Test
@@ -387,7 +384,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals(responseBody, extractedBody);
+    assertThat(extractedBody).isEqualTo(responseBody);
   }
 
   @Test
@@ -405,7 +402,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals(responseBody, extractedBody);
+    assertThat(extractedBody).isEqualTo(responseBody);
   }
 
   @Test
@@ -422,7 +419,8 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractRequestBody(requestWrapper, 1000);
 
     // Assert
-    assertEquals("[multipart content omitted: multipart/form-data, 19 bytes]", extractedBody);
+    assertThat(extractedBody)
+        .isEqualTo("[multipart content omitted: multipart/form-data, 19 bytes]");
   }
 
   @Test
@@ -438,6 +436,7 @@ class ContentLoggingUtilTest {
     var extractedBody = ContentLoggingUtil.extractResponseBody(responseWrapper, 1000);
 
     // Assert
-    assertEquals("[binary content omitted: application/octet-stream, 3 bytes]", extractedBody);
+    assertThat(extractedBody)
+        .isEqualTo("[binary content omitted: application/octet-stream, 3 bytes]");
   }
 }

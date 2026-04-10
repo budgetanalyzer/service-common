@@ -1,8 +1,6 @@
 package org.budgetanalyzer.service.exception;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,8 +16,8 @@ class ResourceNotFoundExceptionTest {
 
     var exception = new ResourceNotFoundException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertNull(exception.getCause());
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getCause()).isNull();
   }
 
   @Test
@@ -27,7 +25,7 @@ class ResourceNotFoundExceptionTest {
   void shouldExtendServiceException() {
     var exception = new ResourceNotFoundException("Not found");
 
-    assertTrue(exception instanceof ServiceException);
+    assertThat(exception).isInstanceOf(ServiceException.class);
   }
 
   @Test
@@ -35,7 +33,7 @@ class ResourceNotFoundExceptionTest {
   void shouldBeRuntimeException() {
     var exception = new ResourceNotFoundException("Not found");
 
-    assertTrue(exception instanceof RuntimeException);
+    assertThat(exception).isInstanceOf(RuntimeException.class);
   }
 
   @Test
@@ -43,7 +41,7 @@ class ResourceNotFoundExceptionTest {
   void shouldHandleNullMessage() {
     var exception = new ResourceNotFoundException(null);
 
-    assertNull(exception.getMessage());
+    assertThat(exception.getMessage()).isNull();
   }
 
   @Test
@@ -54,8 +52,8 @@ class ResourceNotFoundExceptionTest {
 
     var exception = new ResourceNotFoundException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertTrue(exception.getMessage().contains("12345"));
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception.getMessage().contains("12345")).isTrue();
   }
 
   @Test
@@ -67,7 +65,7 @@ class ResourceNotFoundExceptionTest {
 
     var exception = new ResourceNotFoundException(message);
 
-    assertEquals("Budget not found with id: abc-123", exception.getMessage());
+    assertThat(exception.getMessage()).isEqualTo("Budget not found with id: abc-123");
   }
 
   @Test
@@ -78,7 +76,7 @@ class ResourceNotFoundExceptionTest {
 
     var exception = new ResourceNotFoundException(message);
 
-    assertEquals(message, exception.getMessage());
-    assertTrue(exception instanceof RuntimeException);
+    assertThat(exception.getMessage()).isEqualTo(message);
+    assertThat(exception).isInstanceOf(RuntimeException.class);
   }
 }

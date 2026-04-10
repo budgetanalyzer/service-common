@@ -1,9 +1,6 @@
 package org.budgetanalyzer.service.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
@@ -28,14 +25,14 @@ class PagedResponseTest {
 
     var response = PagedResponse.from(page);
 
-    assertTrue(response.content().isEmpty());
-    assertEquals(0, response.metadata().page());
-    assertEquals(50, response.metadata().size());
-    assertEquals(0, response.metadata().numberOfElements());
-    assertEquals(0L, response.metadata().totalElements());
-    assertEquals(0, response.metadata().totalPages());
-    assertTrue(response.metadata().first());
-    assertTrue(response.metadata().last());
+    assertThat(response.content()).isEmpty();
+    assertThat(response.metadata().page()).isEqualTo(0);
+    assertThat(response.metadata().size()).isEqualTo(50);
+    assertThat(response.metadata().numberOfElements()).isEqualTo(0);
+    assertThat(response.metadata().totalElements()).isEqualTo(0L);
+    assertThat(response.metadata().totalPages()).isEqualTo(0);
+    assertThat(response.metadata().first()).isTrue();
+    assertThat(response.metadata().last()).isTrue();
   }
 
   @Test
@@ -45,14 +42,14 @@ class PagedResponseTest {
 
     var response = PagedResponse.from(page);
 
-    assertIterableEquals(List.of("txn_1", "txn_2"), response.content());
-    assertEquals(0, response.metadata().page());
-    assertEquals(10, response.metadata().size());
-    assertEquals(2, response.metadata().numberOfElements());
-    assertEquals(2L, response.metadata().totalElements());
-    assertEquals(1, response.metadata().totalPages());
-    assertTrue(response.metadata().first());
-    assertTrue(response.metadata().last());
+    assertThat(response.content()).containsExactlyElementsOf(List.of("txn_1", "txn_2"));
+    assertThat(response.metadata().page()).isEqualTo(0);
+    assertThat(response.metadata().size()).isEqualTo(10);
+    assertThat(response.metadata().numberOfElements()).isEqualTo(2);
+    assertThat(response.metadata().totalElements()).isEqualTo(2L);
+    assertThat(response.metadata().totalPages()).isEqualTo(1);
+    assertThat(response.metadata().first()).isTrue();
+    assertThat(response.metadata().last()).isTrue();
   }
 
   @Test
@@ -64,13 +61,13 @@ class PagedResponseTest {
 
     var response = PagedResponse.from(page);
 
-    assertEquals(1, response.metadata().page());
-    assertEquals(5, response.metadata().size());
-    assertEquals(5, response.metadata().numberOfElements());
-    assertEquals(13L, response.metadata().totalElements());
-    assertEquals(3, response.metadata().totalPages());
-    assertFalse(response.metadata().first());
-    assertFalse(response.metadata().last());
+    assertThat(response.metadata().page()).isEqualTo(1);
+    assertThat(response.metadata().size()).isEqualTo(5);
+    assertThat(response.metadata().numberOfElements()).isEqualTo(5);
+    assertThat(response.metadata().totalElements()).isEqualTo(13L);
+    assertThat(response.metadata().totalPages()).isEqualTo(3);
+    assertThat(response.metadata().first()).isFalse();
+    assertThat(response.metadata().last()).isFalse();
   }
 
   @Test
@@ -80,8 +77,8 @@ class PagedResponseTest {
 
     var response = PagedResponse.from(page, value -> "txn_" + value);
 
-    assertIterableEquals(List.of("txn_101", "txn_102"), response.content());
-    assertEquals(2, response.metadata().numberOfElements());
+    assertThat(response.content()).containsExactlyElementsOf(List.of("txn_101", "txn_102"));
+    assertThat(response.metadata().numberOfElements()).isEqualTo(2);
   }
 
   @Test
@@ -93,10 +90,10 @@ class PagedResponseTest {
 
     var json = objectMapper.writeValueAsString(response);
 
-    assertEquals(
-        "{\"content\":[\"txn_1\",\"txn_2\"],"
-            + "\"metadata\":{\"page\":1,\"size\":2,\"numberOfElements\":2,"
-            + "\"totalElements\":5,\"totalPages\":3,\"first\":false,\"last\":false}}",
-        json);
+    assertThat(json)
+        .isEqualTo(
+            "{\"content\":[\"txn_1\",\"txn_2\"],"
+                + "\"metadata\":{\"page\":1,\"size\":2,\"numberOfElements\":2,"
+                + "\"totalElements\":5,\"totalPages\":3,\"first\":false,\"last\":false}}");
   }
 }

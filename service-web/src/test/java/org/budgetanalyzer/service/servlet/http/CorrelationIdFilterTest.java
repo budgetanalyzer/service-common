@@ -1,10 +1,7 @@
 package org.budgetanalyzer.service.servlet.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.startsWith;
@@ -98,12 +95,12 @@ class CorrelationIdFilterTest {
         (req, res) -> {
           // Verify MDC is set during filter chain execution
           String mdcValue = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
-          assertNotNull(mdcValue);
-          assertTrue(mdcValue.startsWith("req_"));
+          assertThat(mdcValue).isNotNull();
+          assertThat(mdcValue.startsWith("req_")).isTrue();
         });
 
     // Assert - MDC should be cleared after filter execution
-    assertNull(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY));
+    assertThat(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY)).isNull();
   }
 
   @Test
@@ -115,7 +112,7 @@ class CorrelationIdFilterTest {
     correlationIdFilter.doFilterInternal(request, response, filterChain);
 
     // Assert
-    assertNull(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY));
+    assertThat(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY)).isNull();
   }
 
   @Test
@@ -125,12 +122,11 @@ class CorrelationIdFilterTest {
     doThrow(new RuntimeException("Simulated error")).when(filterChain).doFilter(request, response);
 
     // Act & Assert
-    assertThrows(
-        RuntimeException.class,
-        () -> correlationIdFilter.doFilterInternal(request, response, filterChain));
+    assertThatThrownBy(() -> correlationIdFilter.doFilterInternal(request, response, filterChain))
+        .isInstanceOf(RuntimeException.class);
 
     // MDC should still be cleared
-    assertNull(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY));
+    assertThat(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY)).isNull();
   }
 
   @Test
@@ -151,7 +147,7 @@ class CorrelationIdFilterTest {
     }
 
     // Assert - All should be unique
-    assertEquals(10, Arrays.stream(correlationIds).distinct().count());
+    assertThat(Arrays.stream(correlationIds).distinct().count()).isEqualTo(10);
   }
 
   @Test
@@ -175,9 +171,9 @@ class CorrelationIdFilterTest {
         response,
         (req, res) -> {
           var correlationId = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
-          assertNotNull(correlationId);
-          assertTrue(correlationId.startsWith("req_"));
-          assertEquals(36, correlationId.length());
+          assertThat(correlationId).isNotNull();
+          assertThat(correlationId.startsWith("req_")).isTrue();
+          assertThat(correlationId.length()).isEqualTo(36);
         });
 
     verify(response).setHeader(eq(CorrelationIdFilter.CORRELATION_ID_HEADER), startsWith("req_"));
@@ -205,12 +201,12 @@ class CorrelationIdFilterTest {
           String correlationId = MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY);
 
           // Assert format: req_<32 hex chars>
-          assertNotNull(correlationId);
-          assertTrue(correlationId.startsWith("req_"));
-          assertEquals(36, correlationId.length()); // "req_" (4) + 32 hex chars
-          assertTrue(
-              correlationId.substring(4).matches("[0-9a-f]{32}"),
-              "Correlation ID should contain 32 hexadecimal characters");
+          assertThat(correlationId).isNotNull();
+          assertThat(correlationId.startsWith("req_")).isTrue();
+          assertThat(correlationId.length()).isEqualTo(36); // "req_" (4) + 32 hex chars
+          assertThat(correlationId.substring(4).matches("[0-9a-f]{32}"))
+              .as("Correlation ID should contain 32 hexadecimal characters")
+              .isTrue();
         });
   }
 }

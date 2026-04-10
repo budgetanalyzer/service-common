@@ -1,7 +1,6 @@
 package org.budgetanalyzer.service.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,8 +14,8 @@ class ApiErrorTypeTest {
   void shouldHaveInvalidRequestType() {
     var type = ApiErrorType.INVALID_REQUEST;
 
-    assertNotNull(type);
-    assertEquals("INVALID_REQUEST", type.name());
+    assertThat(type).isNotNull();
+    assertThat(type.name()).isEqualTo("INVALID_REQUEST");
   }
 
   @Test
@@ -24,8 +23,8 @@ class ApiErrorTypeTest {
   void shouldHaveValidationErrorType() {
     var type = ApiErrorType.VALIDATION_ERROR;
 
-    assertNotNull(type);
-    assertEquals("VALIDATION_ERROR", type.name());
+    assertThat(type).isNotNull();
+    assertThat(type.name()).isEqualTo("VALIDATION_ERROR");
   }
 
   @Test
@@ -33,8 +32,8 @@ class ApiErrorTypeTest {
   void shouldHaveNotFoundType() {
     var type = ApiErrorType.NOT_FOUND;
 
-    assertNotNull(type);
-    assertEquals("NOT_FOUND", type.name());
+    assertThat(type).isNotNull();
+    assertThat(type.name()).isEqualTo("NOT_FOUND");
   }
 
   @Test
@@ -42,8 +41,8 @@ class ApiErrorTypeTest {
   void shouldHaveApplicationErrorType() {
     var type = ApiErrorType.APPLICATION_ERROR;
 
-    assertNotNull(type);
-    assertEquals("APPLICATION_ERROR", type.name());
+    assertThat(type).isNotNull();
+    assertThat(type.name()).isEqualTo("APPLICATION_ERROR");
   }
 
   @Test
@@ -51,8 +50,8 @@ class ApiErrorTypeTest {
   void shouldHaveServiceUnavailableType() {
     var type = ApiErrorType.SERVICE_UNAVAILABLE;
 
-    assertNotNull(type);
-    assertEquals("SERVICE_UNAVAILABLE", type.name());
+    assertThat(type).isNotNull();
+    assertThat(type.name()).isEqualTo("SERVICE_UNAVAILABLE");
   }
 
   @Test
@@ -60,8 +59,8 @@ class ApiErrorTypeTest {
   void shouldHaveInternalErrorType() {
     var type = ApiErrorType.INTERNAL_ERROR;
 
-    assertNotNull(type);
-    assertEquals("INTERNAL_ERROR", type.name());
+    assertThat(type).isNotNull();
+    assertThat(type.name()).isEqualTo("INTERNAL_ERROR");
   }
 
   @Test
@@ -69,8 +68,8 @@ class ApiErrorTypeTest {
   void shouldHaveUnauthorizedType() {
     var type = ApiErrorType.UNAUTHORIZED;
 
-    assertNotNull(type);
-    assertEquals("UNAUTHORIZED", type.name());
+    assertThat(type).isNotNull();
+    assertThat(type.name()).isEqualTo("UNAUTHORIZED");
   }
 
   @Test
@@ -78,8 +77,8 @@ class ApiErrorTypeTest {
   void shouldHavePermissionDeniedType() {
     var type = ApiErrorType.FORBIDDEN;
 
-    assertNotNull(type);
-    assertEquals("FORBIDDEN", type.name());
+    assertThat(type).isNotNull();
+    assertThat(type.name()).isEqualTo("FORBIDDEN");
   }
 
   @Test
@@ -87,7 +86,7 @@ class ApiErrorTypeTest {
   void shouldHaveExactlyEightErrorTypes() {
     var values = ApiErrorType.values();
 
-    assertEquals(8, values.length);
+    assertThat(values.length).isEqualTo(8);
   }
 
   @Test
@@ -95,7 +94,7 @@ class ApiErrorTypeTest {
   void shouldSupportValueOfConversion() {
     var type = ApiErrorType.valueOf("VALIDATION_ERROR");
 
-    assertEquals(ApiErrorType.VALIDATION_ERROR, type);
+    assertThat(type).isEqualTo(ApiErrorType.VALIDATION_ERROR);
   }
 
   @Test
@@ -103,6 +102,6 @@ class ApiErrorTypeTest {
   void shouldBeSerializableToString() {
     var type = ApiErrorType.APPLICATION_ERROR;
 
-    assertEquals("APPLICATION_ERROR", type.toString());
+    assertThat(type.toString()).isEqualTo("APPLICATION_ERROR");
   }
 }
