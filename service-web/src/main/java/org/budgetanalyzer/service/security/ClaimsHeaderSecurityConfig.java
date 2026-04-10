@@ -58,7 +58,7 @@ public class ClaimsHeaderSecurityConfig {
    * <p>Security policy:
    *
    * <ul>
-   *   <li>Actuator health endpoints: Permit all (for load balancer health checks)
+   *   <li>Actuator health and prometheus endpoints: Permit all (infrastructure scraping)
    *   <li>OpenAPI documentation endpoints: Permit all (for API docs generation)
    *   <li>All other endpoints: Require authentication
    * </ul>
@@ -83,7 +83,11 @@ public class ClaimsHeaderSecurityConfig {
         .authorizeHttpRequests(
             authorize ->
                 authorize
-                    .requestMatchers("/actuator/health", "/actuator/health/**")
+                    .requestMatchers(
+                        "/actuator/health",
+                        "/actuator/health/**",
+                        "/actuator/prometheus",
+                        "/actuator/prometheus/**")
                     .permitAll()
                     .requestMatchers(
                         "/v3/api-docs",

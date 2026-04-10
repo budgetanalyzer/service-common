@@ -11,13 +11,15 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
 /**
- * Ensures the Prometheus actuator endpoint is always exposed.
+ * Provides default Prometheus actuator endpoint exposure.
  *
- * <p>This post-processor adds "prometheus" to the list of exposed web endpoints, merging with any
- * existing configuration. Services cannot opt out of prometheus exposure via endpoint config.
+ * <p>This post-processor adds a low-priority property source containing "health,prometheus" (or
+ * merges "prometheus" into an existing list). Because the source is added via {@code addLast}, any
+ * explicit {@code management.endpoints.web.exposure.include} set by a consumer service takes
+ * precedence.
  *
  * <p>Downstream services automatically get Prometheus metrics at /actuator/prometheus without any
- * configuration changes.
+ * configuration changes, but can override the full exposure list when needed.
  */
 public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor, Ordered {
 
@@ -32,13 +34,16 @@ public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor
 
     var existing = environment.getProperty(EXPOSURE_PROPERTY);
     var endpoints = parseEndpoints(existing);
+    if (endpoints.isEmpty()) {
+      endpoints.add("health");
+    }
     endpoints.add("prometheus");
 
     var propertySource =
         new MapPropertySource(
             "prometheusDefaults", Map.of(EXPOSURE_PROPERTY, String.join(",", endpoints)));
 
-    environment.getPropertySources().addFirst(propertySource);
+    environment.getPropertySources().addLast(propertySource);
   }
 
   private boolean isPrometheusOnClasspath() {
