@@ -13,6 +13,8 @@ import org.springframework.mock.env.MockEnvironment;
 class PrometheusEndpointPostProcessorTest {
 
   private static final String EXPOSURE_PROPERTY = "management.endpoints.web.exposure.include";
+  private static final String PROMETHEUS_EXPORT_ENABLED =
+      "management.prometheus.metrics.export.enabled";
 
   private PrometheusEndpointPostProcessor postProcessor;
   private MockEnvironment environment;
@@ -31,6 +33,16 @@ class PrometheusEndpointPostProcessorTest {
     // Assert
     var result = environment.getProperty(EXPOSURE_PROPERTY);
     assertThat(result).isEqualTo("health,prometheus");
+  }
+
+  @Test
+  void shouldEnablePrometheusMetricsExport() {
+    // Act
+    postProcessor.postProcessEnvironment(environment, new SpringApplication());
+
+    // Assert
+    var result = environment.getProperty(PROMETHEUS_EXPORT_ENABLED);
+    assertThat(result).isEqualTo("true");
   }
 
   @Test

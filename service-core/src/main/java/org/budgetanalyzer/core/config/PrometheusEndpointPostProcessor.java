@@ -11,19 +11,28 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
 /**
- * Provides default Prometheus actuator endpoint exposure.
+ * Provides default Prometheus actuator endpoint exposure and metrics export.
  *
- * <p>This post-processor adds a low-priority property source containing "health,prometheus" (or
- * merges "prometheus" into an existing list). Because the source is added via {@code addLast}, any
- * explicit {@code management.endpoints.web.exposure.include} set by a consumer service takes
- * precedence.
+ * <p>This post-processor adds a low-priority property source that:
+ *
+ * <ol>
+ *   <li>Includes "prometheus" in {@code management.endpoints.web.exposure.include} (merged with
+ *       "health" as the baseline when no existing value is set).
+ *   <li>Enables Prometheus metrics export via {@code
+ *       management.prometheus.metrics.export.enabled=true}.
+ * </ol>
+ *
+ * <p>Because the source is added via {@code addLast}, any explicit properties set by a consumer
+ * service take precedence.
  *
  * <p>Downstream services automatically get Prometheus metrics at /actuator/prometheus without any
- * configuration changes, but can override the full exposure list when needed.
+ * configuration changes, but can override both the exposure list and the export flag when needed.
  */
 public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor, Ordered {
 
   private static final String EXPOSURE_PROPERTY = "management.endpoints.web.exposure.include";
+  private static final String PROMETHEUS_EXPORT_ENABLED =
+      "management.prometheus.metrics.export.enabled";
 
   @Override
   public void postProcessEnvironment(
@@ -41,7 +50,9 @@ public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor
 
     var propertySource =
         new MapPropertySource(
-            "prometheusDefaults", Map.of(EXPOSURE_PROPERTY, String.join(",", endpoints)));
+            "prometheusDefaults",
+            Map.of(
+                EXPOSURE_PROPERTY, String.join(",", endpoints), PROMETHEUS_EXPORT_ENABLED, "true"));
 
     environment.getPropertySources().addLast(propertySource);
   }
