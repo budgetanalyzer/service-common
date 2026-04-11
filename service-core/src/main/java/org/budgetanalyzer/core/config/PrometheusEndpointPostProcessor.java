@@ -1,8 +1,6 @@
 package org.budgetanalyzer.core.config;
 
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
@@ -13,20 +11,20 @@ import org.springframework.core.env.MapPropertySource;
 /**
  * Provides default Prometheus actuator endpoint exposure and metrics export.
  *
- * <p>This post-processor adds a low-priority property source that:
+ * <p>This post-processor adds a low-priority property source that publishes two fixed defaults:
  *
  * <ol>
- *   <li>Includes "prometheus" in {@code management.endpoints.web.exposure.include} (merged with
- *       "health" as the baseline when no existing value is set).
- *   <li>Enables Prometheus metrics export via {@code
- *       management.prometheus.metrics.export.enabled=true}.
+ *   <li>{@code management.endpoints.web.exposure.include=health,prometheus}
+ *   <li>{@code management.prometheus.metrics.export.enabled=true}
  * </ol>
  *
- * <p>Because the source is added via {@code addLast}, any explicit properties set by a consumer
- * service take precedence.
+ * <p>The source is added via {@code addLast}, so any explicit value set by a consumer service wins
+ * unchanged. The post-processor does <strong>not</strong> merge its defaults into a consumer-set
+ * exposure list: any consumer that sets {@code management.endpoints.web.exposure.include} itself is
+ * responsible for keeping {@code prometheus} in the list if it wants the scrape endpoint exposed.
  *
- * <p>Downstream services automatically get Prometheus metrics at /actuator/prometheus without any
- * configuration changes, but can override both the exposure list and the export flag when needed.
+ * <p>Downstream services that set neither property automatically get Prometheus metrics at {@code
+ * /actuator/prometheus} with no configuration changes.
  */
 public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor, Ordered {
 
@@ -41,18 +39,10 @@ public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor
       return;
     }
 
-    var existing = environment.getProperty(EXPOSURE_PROPERTY);
-    var endpoints = parseEndpoints(existing);
-    if (endpoints.isEmpty()) {
-      endpoints.add("health");
-    }
-    endpoints.add("prometheus");
-
     var propertySource =
         new MapPropertySource(
             "prometheusDefaults",
-            Map.of(
-                EXPOSURE_PROPERTY, String.join(",", endpoints), PROMETHEUS_EXPORT_ENABLED, "true"));
+            Map.of(EXPOSURE_PROPERTY, "health,prometheus", PROMETHEUS_EXPORT_ENABLED, "true"));
 
     environment.getPropertySources().addLast(propertySource);
   }
@@ -64,19 +54,6 @@ public class PrometheusEndpointPostProcessor implements EnvironmentPostProcessor
     } catch (ClassNotFoundException e) {
       return false;
     }
-  }
-
-  private Set<String> parseEndpoints(String value) {
-    var endpoints = new LinkedHashSet<String>();
-    if (value != null && !value.isBlank()) {
-      for (var endpoint : value.split(",")) {
-        var trimmed = endpoint.trim();
-        if (!trimmed.isEmpty()) {
-          endpoints.add(trimmed);
-        }
-      }
-    }
-    return endpoints;
   }
 
   @Override
