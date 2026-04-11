@@ -13,6 +13,8 @@ import org.springframework.mock.env.MockEnvironment;
 class PrometheusEndpointPostProcessorTest {
 
   private static final String EXPOSURE_PROPERTY = "management.endpoints.web.exposure.include";
+  private static final String PROMETHEUS_EXPORT_ENABLED =
+      "management.prometheus.metrics.export.enabled";
 
   private PrometheusEndpointPostProcessor postProcessor;
   private MockEnvironment environment;
@@ -24,62 +26,49 @@ class PrometheusEndpointPostProcessorTest {
   }
 
   @Test
-  void shouldAddPrometheusWhenNoExistingConfig() {
-    // Act
+  void shouldPublishStaticDefaultExposureList() {
     postProcessor.postProcessEnvironment(environment, new SpringApplication());
 
-    // Assert
     var result = environment.getProperty(EXPOSURE_PROPERTY);
     assertThat(result).isEqualTo("health,prometheus");
   }
 
   @Test
+  void shouldEnablePrometheusMetricsExport() {
+    postProcessor.postProcessEnvironment(environment, new SpringApplication());
+
+    var result = environment.getProperty(PROMETHEUS_EXPORT_ENABLED);
+    assertThat(result).isEqualTo("true");
+  }
+
+  @Test
   void shouldNotOverrideExistingConfig() {
-    // Arrange
     environment
         .getPropertySources()
         .addFirst(
             new MapPropertySource("application", Map.of(EXPOSURE_PROPERTY, "health,info,metrics")));
 
-    // Act
     postProcessor.postProcessEnvironment(environment, new SpringApplication());
 
-    // Assert -- consumer's property source wins because prometheusDefaults is addLast
+    // Consumer value wins unchanged: the post-processor does not merge its default into the
+    // consumer's exposure list, so callers that set this property themselves are responsible for
+    // keeping "prometheus" in the value if they want the scrape endpoint exposed.
     var result = environment.getProperty(EXPOSURE_PROPERTY);
     assertThat(result).isEqualTo("health,info,metrics");
   }
 
   @Test
-  void shouldNotDuplicatePrometheusIfAlreadyPresent() {
-    // Arrange
+  void shouldNotMergePrometheusIntoConsumerExposureList() {
     environment
         .getPropertySources()
-        .addFirst(
-            new MapPropertySource(
-                "application", Map.of(EXPOSURE_PROPERTY, "health,prometheus,metrics")));
+        .addFirst(new MapPropertySource("application", Map.of(EXPOSURE_PROPERTY, "health,info")));
 
-    // Act
     postProcessor.postProcessEnvironment(environment, new SpringApplication());
 
-    // Assert -- consumer source wins; prometheus appears once in that value
+    // Option A contract: the post-processor never merges. A consumer that drops "prometheus" from
+    // its exposure list loses the scrape endpoint — it is the consumer's responsibility to keep it.
     var result = environment.getProperty(EXPOSURE_PROPERTY);
-    assertThat(result).isEqualTo("health,prometheus,metrics");
-  }
-
-  @Test
-  void shouldHandleWhitespaceInExistingConfig() {
-    // Arrange
-    environment
-        .getPropertySources()
-        .addFirst(
-            new MapPropertySource(
-                "application", Map.of(EXPOSURE_PROPERTY, " health , info , metrics ")));
-
-    // Act
-    postProcessor.postProcessEnvironment(environment, new SpringApplication());
-
-    // Assert -- consumer source wins
-    var result = environment.getProperty(EXPOSURE_PROPERTY);
-    assertThat(result).isEqualTo(" health , info , metrics ");
+    assertThat(result).isEqualTo("health,info");
+    assertThat(result).doesNotContain("prometheus");
   }
 }

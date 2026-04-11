@@ -104,6 +104,7 @@ When service-core is on your classpath, you automatically get:
 - **JPA Auditing** - Automatic timestamps (createdAt, updatedAt) on entities
 - **CSV Parser Bean** - OpenCsvParser available for injection
 - **Prometheus Metrics** - `/actuator/prometheus` endpoint exposed automatically for scraping
+- **`application` Common Tag** - Every Micrometer meter is tagged with `application=${spring.application.name}` so metrics carry service identity independent of the scrape pipeline (override with `management.metrics.tags.application`)
 
 #### service-web (Mostly Automatic)
 When service-web is on your classpath, you automatically get:

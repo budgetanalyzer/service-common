@@ -1,2 +1,0 @@
-org.budgetanalyzer.service.http.HttpLoggingConfig
-org.budgetanalyzer.service.api.DefaultApiExceptionHandler

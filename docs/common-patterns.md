@@ -355,6 +355,8 @@ management:
       enabled: true
 ```
 
+service-core also sets `management.metrics.tags.application=${spring.application.name}` as a default, so every Micrometer meter carries an `application` tag without any per-service configuration. This is registry-agnostic and keeps metric identity attached to the series itself rather than relying on scrape-time relabeling. Override by setting `management.metrics.tags.application` explicitly in the consumer service.
+
 ## Database Patterns
 
 ### 1. Use JPA Specifications for Dynamic Queries
