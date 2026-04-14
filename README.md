@@ -189,6 +189,9 @@ same literal and publishes to
 `https://maven.pkg.github.com/budgetanalyzer/service-common`, requiring both
 `GITHUB_ACTOR` and `GITHUB_TOKEN`.
 
+Release workflow details, version/tag rules, and the normal tag-based publish
+sequence live in [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
+
 ## Development
 
 ### Prerequisites
