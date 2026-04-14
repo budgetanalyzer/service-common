@@ -115,7 +115,7 @@ Changes here affect all services that depend on these libraries.
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
 
@@ -123,16 +123,20 @@ dependencies {
 ```kotlin
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
 
 **Non-web service (batch jobs, workers):**
 ```kotlin
 dependencies {
-    implementation("org.budgetanalyzer:service-core:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-core:<service-common-version>")
 }
 ```
+
+Use the checked-in version literal from `build.gradle.kts` when consuming the
+published artifacts. `0.0.1-SNAPSHOT` is only an example of a local snapshot
+version.
 
 **Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (reactive services inheriting JPA).
 
@@ -276,17 +280,29 @@ find service-web/src/main/java -name "*.java"
 ./gradlew publishToMavenLocal
 ```
 
-**Maven Coordinates** (both modules published):
+### Publish to GitHub Packages Maven
+```bash
+export GITHUB_ACTOR=<your-github-username>
+export GITHUB_TOKEN=<github-packages-token>
+./gradlew publish
+```
+
+`publishToMavenLocal` remains the local development path. `publish` uses the
+same checked-in version literal from `build.gradle.kts` and publishes both
+modules to `https://maven.pkg.github.com/budgetanalyzer/service-common`.
+
+**Maven Coordinates** (both modules published, using the checked-in version
+literal from `build.gradle.kts`; `0.0.1-SNAPSHOT` is only an example):
 ```groovy
 // service-core
 groupId: org.budgetanalyzer
 artifactId: service-core
-version: 0.0.1-SNAPSHOT
+version: <service-common-version>
 
 // service-web
 groupId: org.budgetanalyzer
 artifactId: service-web
-version: 0.0.1-SNAPSHOT
+version: <service-common-version>
 ```
 
 ### Consume in Microservices
@@ -295,7 +311,7 @@ version: 0.0.1-SNAPSHOT
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
 
@@ -303,7 +319,7 @@ dependencies {
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("org.budgetanalyzer:service-core:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-core:<service-common-version>")
 }
 ```
 
@@ -593,7 +609,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 1. Verify need (is this really shared?)
 2. Add to service-common with tests
 3. Version bump (semantic versioning)
-4. Publish: `./gradlew publishToMavenLocal`
+4. Publish locally with `./gradlew publishToMavenLocal`, or publish the checked-in release version to GitHub Packages with `./gradlew publish`
 5. Update consuming services
 6. Document changes
 

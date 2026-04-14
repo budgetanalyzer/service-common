@@ -59,6 +59,9 @@ Service Common promotes code reuse and consistency across microservices by:
 ## Usage
 
 These libraries are published to Maven Local and consumed by other Budget Analyzer services.
+Examples below use `<service-common-version>` as a placeholder. Use the
+checked-in version literal from `build.gradle.kts` for the build you are
+consuming (for example, `0.0.1-SNAPSHOT` during local snapshot development).
 
 ### Which Module Should I Use?
 
@@ -66,7 +69,7 @@ These libraries are published to Maven Local and consumed by other Budget Analyz
 
 ```kotlin
 dependencies {
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
 
@@ -74,7 +77,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("org.budgetanalyzer:service-core:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-core:<service-common-version>")
 }
 ```
 
@@ -85,7 +88,7 @@ In your service's `build.gradle.kts`:
 ```kotlin
 dependencies {
     // Recommended: Use service-web (includes service-core transitively)
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 
 repositories {
@@ -166,13 +169,25 @@ For complete details, see the [Autoconfiguration section in AGENTS.md](AGENTS.md
 # Build all modules
 ./gradlew clean build
 
-# Publish both modules to Maven Local
+# Publish both modules to Maven Local for local development
 ./gradlew publishToMavenLocal
+
+# Publish both modules to GitHub Packages Maven
+export GITHUB_ACTOR=<your-github-username>
+export GITHUB_TOKEN=<github-packages-token>
+./gradlew publish
 ```
 
-This publishes both artifacts:
-- `org.budgetanalyzer:service-core:0.0.1-SNAPSHOT`
-- `org.budgetanalyzer:service-web:0.0.1-SNAPSHOT`
+This publishes both artifacts using the checked-in version literal from
+`build.gradle.kts` (for example, `0.0.1-SNAPSHOT`):
+- `org.budgetanalyzer:service-core:<service-common-version>`
+- `org.budgetanalyzer:service-web:<service-common-version>`
+
+`publishToMavenLocal` uses the checked-in version literal from
+`build.gradle.kts` and does not require GitHub credentials. `publish` uses that
+same literal and publishes to
+`https://maven.pkg.github.com/budgetanalyzer/service-common`, requiring both
+`GITHUB_ACTOR` and `GITHUB_TOKEN`.
 
 ## Development
 

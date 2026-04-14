@@ -7,7 +7,8 @@
 ## Multi-Module Versioning
 
 **service-core** and **service-web** are versioned **together as a coordinated pair**:
-- Both modules share the same version number (e.g., `0.0.1-SNAPSHOT`)
+- Both modules share the same version number (for example, `0.0.1-SNAPSHOT`
+  for a local snapshot build)
 - Both modules are released together in lockstep
 - Changes to either module trigger a version bump for both
 - Consuming services upgrade both modules simultaneously
