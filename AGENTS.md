@@ -280,6 +280,16 @@ published artifacts.
 Use `service-web` by default; depend on `service-core` directly only when you
 need the minimal non-web module.
 
+Remote publish now has two CI paths:
+
+- `.github/workflows/publish-snapshot.yml` publishes only checked-in
+  `-SNAPSHOT` versions from `main`
+- `.github/workflows/publish-release.yml` publishes checked-in numeric release
+  versions from matching `v*` tags
+
+Local development still stays on `publishToMavenLocal`; GitHub Packages is for
+CI, release, and intentional isolated-build scenarios.
+
 Remote publish, release workflow, version/tag rules, and published coordinates
 live in [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
 

@@ -1,0 +1,68 @@
+name: Publish Snapshot
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read checked-in version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          build_version="$(sed -nE 's/^[[:space:]]*version = \"([^\"]+)\"$/\1/p' build.gradle.kts | head -n1)"
+
+          if [[ -z "${build_version}" ]]; then
+            echo "Could not read the checked-in version literal from build.gradle.kts." >&2
+            exit 1
+          fi
+
+          echo "build_version=${build_version}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${build_version}" == *"-SNAPSHOT" ]]; then
+            echo "should_publish=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "should_publish=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Skip non-snapshot versions
+        if: steps.version.outputs.should_publish != 'true'
+        shell: bash
+        run: |
+          echo "Checked-in version ${BUILD_VERSION} is not a snapshot; skipping snapshot publish."
+        env:
+          BUILD_VERSION: ${{ steps.version.outputs.build_version }}
+
+      - name: Set up JDK 24
+        if: steps.version.outputs.should_publish == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        if: steps.version.outputs.should_publish == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Publish snapshot to GitHub Packages Maven
+        if: steps.version.outputs.should_publish == 'true'
+        run: ./gradlew publish
+
