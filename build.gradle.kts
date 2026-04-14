@@ -17,7 +17,7 @@ val githubPackagesToken = providers.environmentVariable("GITHUB_TOKEN")
 
 allprojects {
     group = "org.budgetanalyzer"
-    version = "0.0.8"
+    version = "0.0.9-SNAPSHOT"
 
     repositories {
         mavenCentral()
