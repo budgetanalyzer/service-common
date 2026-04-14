@@ -252,6 +252,29 @@ checked-in version literal from `build.gradle.kts`.
 Use this only for isolated validation. It is not the normal release path and it
 is not a contributor prerequisite for consuming-service local development.
 
+### Snapshot Workflow
+
+The main-branch snapshot workflow is
+`.github/workflows/publish-snapshot.yml`. It:
+
+- Runs on pushes to `main` and on manual dispatch
+- Reads the checked-in `version = "..."` literal in `build.gradle.kts`
+- Publishes only when that version ends with `-SNAPSHOT`
+- Skips cleanly when `main` is temporarily on a numeric release version for the
+  release/tag sequence
+- Uses `GITHUB_ACTOR=${{ github.actor }}` and the workflow `GITHUB_TOKEN`
+
+Normal snapshot usage is:
+
+1. Keep `build.gradle.kts` on the active development version, for example
+   `0.0.9-SNAPSHOT`.
+2. Merge changes to `main`.
+3. Let GitHub Actions refresh the published snapshot coordinate in GitHub
+   Packages.
+
+This lets consuming CI workflows resolve the current snapshot remotely while
+local contributors still use `publishToMavenLocal` and orchestration/Tilt.
+
 ### Release Workflow
 
 The tag-driven release workflow is
@@ -281,6 +304,14 @@ git push origin v<service-common-version>
 
 Create the tag before the next development-version PR moves `main` forward to
 the next snapshot.
+
+The snapshot workflow does not replace the release workflow. The intended
+steady state is:
+
+- `main` usually carries a `-SNAPSHOT` version and publishes snapshots
+- release prep temporarily sets `main` to the numeric release version
+- the matching `v*` tag publishes the release artifact
+- `main` then moves back to the next `-SNAPSHOT`
 
 Consuming services should still use the orchestration getting-started flow and
 Maven Local for routine local work. GitHub Packages consumption is a

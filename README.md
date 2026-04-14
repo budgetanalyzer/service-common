@@ -177,10 +177,17 @@ For complete details, see the [Autoconfiguration section in AGENTS.md](AGENTS.md
 `build.gradle.kts` and is the supported local development path. It does not
 require GitHub credentials.
 
-Normal remote publishing is tag-driven through
-`.github/workflows/publish-release.yml`. The workflow validates the pushed `v*`
-tag against `build.gradle.kts`, sets `GITHUB_ACTOR` from `github.actor`, and
-runs `./gradlew publish` with `GITHUB_TOKEN`.
+Remote publishing now has two CI-owned paths:
+
+- `.github/workflows/publish-snapshot.yml` publishes from `main` only when the
+  checked-in `build.gradle.kts` version ends with `-SNAPSHOT` such as
+  `0.0.9-SNAPSHOT`
+- `.github/workflows/publish-release.yml` remains the tag-driven release path
+  for numeric versions such as `0.0.8`
+
+That split lets `main` keep moving on `0.0.9-SNAPSHOT` while GitHub Actions
+refreshes the remote snapshot for isolated CI builds, without turning
+GitHub Packages into a local contributor prerequisite.
 
 If you intentionally need a one-off manual remote publish validation from a
 clean environment, export both variables first and then run `./gradlew publish`:
