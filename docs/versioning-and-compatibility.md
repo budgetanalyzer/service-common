@@ -234,19 +234,23 @@ public class CategorizedBusinessException extends BusinessException {
 ./gradlew publishToMavenLocal
 ```
 
-This is the local development path. It does not require GitHub credentials.
+This is the supported local development path. It does not require GitHub
+credentials and is what the side-by-side orchestration/Tilt workflow uses.
 
-### Manual GitHub Packages Publish
+### Exceptional Manual GitHub Packages Validation
 
 ```bash
 export GITHUB_ACTOR=<your-github-username>
-export GITHUB_TOKEN=<github-packages-token>
+export GITHUB_TOKEN=<token-with-packages-write-access>
 ./gradlew publish
 ```
 
 This publishes both modules to
 `https://maven.pkg.github.com/budgetanalyzer/service-common` using the
 checked-in version literal from `build.gradle.kts`.
+
+Use this only for isolated validation. It is not the normal release path and it
+is not a contributor prerequisite for consuming-service local development.
 
 ### Release Workflow
 
@@ -257,8 +261,8 @@ The tag-driven release workflow is
 - Strips the leading `v` from the tag
 - Compares that value to the checked-in `version = "..."` literal in
   `build.gradle.kts`
-- Fails fast on drift before running `./gradlew publish` with the workflow
-  `GITHUB_TOKEN`
+- Fails fast on drift before running `./gradlew publish` with
+  `GITHUB_ACTOR=${{ github.actor }}` and the workflow `GITHUB_TOKEN`
 
 Normal release usage is:
 
@@ -277,6 +281,12 @@ git push origin v<service-common-version>
 
 Create the tag before the next development-version PR moves `main` forward to
 the next snapshot.
+
+Consuming services should still use the orchestration getting-started flow and
+Maven Local for routine local work. GitHub Packages consumption is a
+GitHub-Actions/release concern or an intentional isolated-build concern, not a
+local contributor prerequisite. See
+[orchestration/docs/development/service-common-artifact-resolution.md](https://github.com/budgetanalyzer/orchestration/blob/main/docs/development/service-common-artifact-resolution.md).
 
 ### Published Coordinates
 

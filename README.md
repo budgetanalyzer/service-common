@@ -171,10 +171,23 @@ For complete details, see the [Autoconfiguration section in AGENTS.md](AGENTS.md
 
 # Publish both modules to Maven Local for local development
 ./gradlew publishToMavenLocal
+```
 
-# Publish both modules to GitHub Packages Maven
+`publishToMavenLocal` uses the checked-in version literal from
+`build.gradle.kts` and is the supported local development path. It does not
+require GitHub credentials.
+
+Normal remote publishing is tag-driven through
+`.github/workflows/publish-release.yml`. The workflow validates the pushed `v*`
+tag against `build.gradle.kts`, sets `GITHUB_ACTOR` from `github.actor`, and
+runs `./gradlew publish` with `GITHUB_TOKEN`.
+
+If you intentionally need a one-off manual remote publish validation from a
+clean environment, export both variables first and then run `./gradlew publish`:
+
+```bash
 export GITHUB_ACTOR=<your-github-username>
-export GITHUB_TOKEN=<github-packages-token>
+export GITHUB_TOKEN=<token-with-packages-write-access>
 ./gradlew publish
 ```
 
@@ -183,11 +196,12 @@ This publishes both artifacts using the checked-in version literal from
 - `org.budgetanalyzer:service-core:<service-common-version>`
 - `org.budgetanalyzer:service-web:<service-common-version>`
 
-`publishToMavenLocal` uses the checked-in version literal from
-`build.gradle.kts` and does not require GitHub credentials. `publish` uses that
-same literal and publishes to
-`https://maven.pkg.github.com/budgetanalyzer/service-common`, requiring both
-`GITHUB_ACTOR` and `GITHUB_TOKEN`.
+That manual remote path is not the standard contributor workflow. GitHub
+Packages publishing and consumption are CI/release concerns or isolated-build
+concerns, not contributor prerequisites. Consumer repos should use the
+orchestration getting-started flow for local onboarding, and the
+local-vs-remote artifact contract is documented in
+[service-common-artifact-resolution.md](https://github.com/budgetanalyzer/orchestration/blob/main/docs/development/service-common-artifact-resolution.md).
 
 Release workflow details, version/tag rules, and the normal tag-based publish
 sequence live in [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
