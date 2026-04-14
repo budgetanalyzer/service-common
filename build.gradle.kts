@@ -1,7 +1,9 @@
+import org.gradle.api.GradleException
 import com.diffplug.gradle.spotless.SpotlessExtension
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.jvm.toolchain.JavaLanguageVersion
@@ -10,9 +12,12 @@ plugins {
     id("com.diffplug.spotless") version "8.0.0" apply false
 }
 
+val githubPackagesActor = providers.environmentVariable("GITHUB_ACTOR")
+val githubPackagesToken = providers.environmentVariable("GITHUB_TOKEN")
+
 allprojects {
     group = "org.budgetanalyzer"
-    version = "0.0.1-SNAPSHOT"
+    version = "0.0.8"
 
     repositories {
         mavenCentral()
@@ -111,7 +116,33 @@ subprojects {
         }
 
         repositories {
-            mavenLocal()
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/budgetanalyzer/service-common")
+                credentials {
+                    username = githubPackagesActor.orNull ?: ""
+                    password = githubPackagesToken.orNull ?: ""
+                }
+            }
+        }
+    }
+
+    tasks.withType<PublishToMavenRepository>().configureEach {
+        doFirst {
+            if (repository.name != "GitHubPackages") {
+                return@doFirst
+            }
+
+            val missingEnvVars = listOfNotNull(
+                "GITHUB_ACTOR".takeUnless { githubPackagesActor.isPresent },
+                "GITHUB_TOKEN".takeUnless { githubPackagesToken.isPresent }
+            )
+
+            if (missingEnvVars.isNotEmpty()) {
+                throw GradleException(
+                    "Publishing to GitHub Packages requires ${missingEnvVars.joinToString(" and ")}."
+                )
+            }
         }
     }
 }

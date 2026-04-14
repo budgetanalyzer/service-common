@@ -7,7 +7,8 @@
 ## Multi-Module Versioning
 
 **service-core** and **service-web** are versioned **together as a coordinated pair**:
-- Both modules share the same version number (e.g., `0.0.1-SNAPSHOT`)
+- Both modules share the same version number (for example, `0.0.1-SNAPSHOT`
+  for a local snapshot build)
 - Both modules are released together in lockstep
 - Changes to either module trigger a version bump for both
 - Consuming services upgrade both modules simultaneously
@@ -221,6 +222,71 @@ public class CategorizedBusinessException extends BusinessException {
 2. Coordinated upgrade plan across all services
 3. Testing in all service environments
 4. Rollback plan in case of issues
+
+## Release Publishing
+
+`service-common` uses the checked-in `version = "..."` literal in
+`build.gradle.kts` as the release version source of truth.
+
+### Local Development Publish
+
+```bash
+./gradlew publishToMavenLocal
+```
+
+This is the local development path. It does not require GitHub credentials.
+
+### Manual GitHub Packages Publish
+
+```bash
+export GITHUB_ACTOR=<your-github-username>
+export GITHUB_TOKEN=<github-packages-token>
+./gradlew publish
+```
+
+This publishes both modules to
+`https://maven.pkg.github.com/budgetanalyzer/service-common` using the
+checked-in version literal from `build.gradle.kts`.
+
+### Release Workflow
+
+The tag-driven release workflow is
+`.github/workflows/publish-release.yml`. It:
+
+- Runs only for `v*` tags
+- Strips the leading `v` from the tag
+- Compares that value to the checked-in `version = "..."` literal in
+  `build.gradle.kts`
+- Fails fast on drift before running `./gradlew publish` with the workflow
+  `GITHUB_TOKEN`
+
+Normal release usage is:
+
+1. Merge the PR that sets `build.gradle.kts` to the release version on `main`
+   (for example, `0.0.8`).
+2. Create the matching tag from that merged `main` commit.
+3. Push the tag so GitHub Actions publishes the release.
+
+```bash
+git fetch origin
+git checkout main
+git pull --ff-only origin main
+git tag v<service-common-version>
+git push origin v<service-common-version>
+```
+
+Create the tag before the next development-version PR moves `main` forward to
+the next snapshot.
+
+### Published Coordinates
+
+Both modules are published together using the same checked-in version literal
+from `build.gradle.kts`:
+
+```text
+org.budgetanalyzer:service-core:<service-common-version>
+org.budgetanalyzer:service-web:<service-common-version>
+```
 
 ## Database Migrations
 

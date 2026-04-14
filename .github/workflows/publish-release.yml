@@ -1,0 +1,53 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 24
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Verify tag matches build version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag_version="${GITHUB_REF_NAME#v}"
+          build_version="$(sed -nE 's/^[[:space:]]*version = \"([^\"]+)\"$/\1/p' build.gradle.kts | head -n1)"
+
+          if [[ -z "${build_version}" ]]; then
+            echo "Could not read the checked-in version literal from build.gradle.kts." >&2
+            exit 1
+          fi
+
+          if [[ "${tag_version}" != "${build_version}" ]]; then
+            echo "Release tag ${GITHUB_REF_NAME} does not match build.gradle.kts version ${build_version}." >&2
+            exit 1
+          fi
+
+      - name: Publish to GitHub Packages Maven
+        run: ./gradlew publish

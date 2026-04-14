@@ -115,7 +115,7 @@ Changes here affect all services that depend on these libraries.
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
 
@@ -123,16 +123,20 @@ dependencies {
 ```kotlin
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
 
 **Non-web service (batch jobs, workers):**
 ```kotlin
 dependencies {
-    implementation("org.budgetanalyzer:service-core:0.0.1-SNAPSHOT")
+    implementation("org.budgetanalyzer:service-core:<service-common-version>")
 }
 ```
+
+Use the checked-in version literal from `build.gradle.kts` when consuming the
+published artifacts. `0.0.1-SNAPSHOT` is only an example of a local snapshot
+version.
 
 **Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (reactive services inheriting JPA).
 
@@ -268,54 +272,16 @@ find service-web/src/main/java -name "*.java"
 
 ## Publishing and Consumption
 
-### Publish to Maven Local
-```bash
-# Build and publish both modules
-./gradlew clean spotlessApply
-./gradlew clean build
-./gradlew publishToMavenLocal
-```
+Use `./gradlew publishToMavenLocal` for local development publishing.
 
-**Maven Coordinates** (both modules published):
-```groovy
-// service-core
-groupId: org.budgetanalyzer
-artifactId: service-core
-version: 0.0.1-SNAPSHOT
+Use the checked-in version literal from `build.gradle.kts` when consuming the
+published artifacts.
 
-// service-web
-groupId: org.budgetanalyzer
-artifactId: service-web
-version: 0.0.1-SNAPSHOT
-```
+Use `service-web` by default; depend on `service-core` directly only when you
+need the minimal non-web module.
 
-### Consume in Microservices
-
-**Recommended**: Use service-web (includes service-core transitively)
-```kotlin
-// build.gradle.kts
-dependencies {
-    implementation("org.budgetanalyzer:service-web:0.0.1-SNAPSHOT")
-}
-```
-
-**Alternative**: Use service-core only (minimal dependencies)
-```kotlin
-// build.gradle.kts
-dependencies {
-    implementation("org.budgetanalyzer:service-core:0.0.1-SNAPSHOT")
-}
-```
-
-**Spring Boot Autoconfiguration**: Both modules automatically register their components via Spring Boot's autoconfiguration mechanism. **No manual component scanning or @ComponentScan is required** - exception handling, security, filters, and all other components are automatically available.
-
-**Non-standard package structure**: If your service doesn't have `@SpringBootApplication` in the root package, add explicit component scanning:
-```java
-@SpringBootApplication(scanBasePackages = {
-    "org.budgetanalyzer.yourservice"  // Your service packages
-})
-```
-Note: This is for **your service's components only** - service-common components are already autoconfigured.
+Remote publish, release workflow, version/tag rules, and published coordinates
+live in [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
 
 ## Autoconfiguration
 
@@ -514,14 +480,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 ### Backwards Compatibility: CI/CD-Driven Lockstep Upgrades
 **CRITICAL**: ALL changes to service-core and service-web MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these libraries.
 
-**How it works**: Pushes to service-common trigger automated CI/CD releases of all microservices. All services are always on the latest version - no version tracking mental overhead, no "which services are on which version?" confusion.
-
-**Why lockstep over independent versioning**:
-- **Eliminates version drift**: Integration issues surface immediately during the coordinated upgrade, not weeks later
-- **Simpler operations**: One version across all services means consistent behavior and simpler debugging
-- **Reduced mental overhead**: No compatibility matrices to maintain, no version mismatch investigations
-
-**Note**: Both modules (service-core and service-web) are versioned together and released as a coordinated pair.
+Both modules are versioned and released together as a coordinated pair.
 
 **When to consult details**:
 - Determining if a change is breaking → Read [What's Breaking vs. Safe](docs/versioning-and-compatibility.md#examples-whats-breaking-vs-safe)
@@ -593,7 +552,7 @@ Entities extending `SoftDeletableEntity` are never actually deleted from the dat
 1. Verify need (is this really shared?)
 2. Add to service-common with tests
 3. Version bump (semantic versioning)
-4. Publish: `./gradlew publishToMavenLocal`
+4. Publish locally with `./gradlew publishToMavenLocal`; use the versioning doc for remote or release publishing
 5. Update consuming services
 6. Document changes
 
