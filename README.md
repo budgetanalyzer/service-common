@@ -177,41 +177,14 @@ For complete details, see the [Autoconfiguration section in AGENTS.md](AGENTS.md
 `build.gradle.kts` and is the supported local development path. It does not
 require GitHub credentials.
 
-Remote publishing now has two CI-owned paths:
+Remote publishing (snapshots from `main`, tag-driven releases, and the
+GitHub Packages consumption contract) is owned by orchestration. See
+[CI/CD Workflows](https://github.com/budgetanalyzer/orchestration/blob/main/docs/ci-cd.md)
+and
+[service-common artifact resolution](https://github.com/budgetanalyzer/orchestration/blob/main/docs/development/service-common-artifact-resolution.md).
 
-- `.github/workflows/publish-snapshot.yml` publishes from `main` only when the
-  checked-in `build.gradle.kts` version ends with `-SNAPSHOT` such as
-  `0.0.9-SNAPSHOT`
-- `.github/workflows/publish-release.yml` remains the tag-driven release path
-  for numeric versions such as `0.0.8`
-
-That split lets `main` keep moving on `0.0.9-SNAPSHOT` while GitHub Actions
-refreshes the remote snapshot for isolated CI builds, without turning
-GitHub Packages into a local contributor prerequisite.
-
-If you intentionally need a one-off manual remote publish validation from a
-clean environment, export both variables first and then run `./gradlew publish`:
-
-```bash
-export GITHUB_ACTOR=<your-github-username>
-export GITHUB_TOKEN=<token-with-packages-write-access>
-./gradlew publish
-```
-
-This publishes both artifacts using the checked-in version literal from
-`build.gradle.kts` (for example, `0.0.1-SNAPSHOT`):
-- `org.budgetanalyzer:service-core:<service-common-version>`
-- `org.budgetanalyzer:service-web:<service-common-version>`
-
-That manual remote path is not the standard contributor workflow. GitHub
-Packages publishing and consumption are CI/release concerns or isolated-build
-concerns, not contributor prerequisites. Consumer repos should use the
-orchestration getting-started flow for local onboarding, and the
-local-vs-remote artifact contract is documented in
-[service-common-artifact-resolution.md](https://github.com/budgetanalyzer/orchestration/blob/main/docs/development/service-common-artifact-resolution.md).
-
-Release workflow details, version/tag rules, and the normal tag-based publish
-sequence live in [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
+`service-common`'s own version and backwards-compatibility contract lives in
+[docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
 
 ## Development
 
