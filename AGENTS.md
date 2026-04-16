@@ -24,7 +24,7 @@
 
 ### Relationships
 - **Abstracts for**: Discover via `grep -l "service-common" /workspace/*/build.gradle.kts`
-- **Observed by**: architecture-conversations, orchestration
+- **Observed by**: orchestration
 
 ### Permissions
 - **Read**: All siblings
