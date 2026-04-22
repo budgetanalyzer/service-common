@@ -52,6 +52,14 @@ Update the nearest affected documentation in the same work:
 
 Do not leave documentation updates as follow-up work.
 
+## Documentation Strategy
+
+Prefer pattern-based guidance, discovery commands, and local source references over maintained inventories.
+
+The quick references and current entry-point lists in this file are orientation aids, not exhaustive source-of-truth lists. Where specific class names appear, treat them as representative current hooks and verify state with the adjacent `Discovery` blocks or linked local docs before relying on completeness.
+
+Do not use GitHub-web links or `@file` imports here. Use relative markdown links or plain-text paths so details stay on-demand.
+
 ## Purpose
 
 Multi-module Gradle project providing shared libraries for all Budget Analyzer Spring Boot microservices. Consists of two modules:
@@ -59,8 +67,7 @@ Multi-module Gradle project providing shared libraries for all Budget Analyzer S
 **service-core**: Minimal-dependency core utilities (base entities, CSV parsing, safe logging)
 **service-web**: Spring Boot web components (exception handling, API error responses, HTTP logging, OpenAPI config)
 
-**Impacts**: transaction-service, currency-service, and all future Spring Boot services.
-Changes here affect all services that depend on these libraries.
+**Impacts**: Current consumers are discoverable from the workspace, and changes here affect all services that depend on these libraries.
 
 ## Module Architecture
 
@@ -240,7 +247,7 @@ find service-web/src/test/java -name "*Test.java"
 
 **Pattern**: Shared utilities and base classes for cross-cutting concerns.
 
-**Quick reference by module**:
+**Quick reference by module** (current entry points; verify with discovery before assuming completeness):
 
 **service-core**:
 - Base Entities: `AuditableEntity` (timestamps + user tracking), `SoftDeletableEntity` (soft delete)
@@ -630,14 +637,3 @@ Do not over-validate ideas. The user wants honest pushback, not agreement.
 - Skip the preamble and caveats — just answer
 
 ---
-
-## External Links (GitHub Web Viewing)
-
-*The relative paths in this document are optimized for Claude Code. When viewing on GitHub, use these links to access other repositories:*
-
-- [Orchestration Repository](https://github.com/budgetanalyzer/orchestration)
-- [Orchestration AGENTS.md](https://github.com/budgetanalyzer/orchestration/blob/main/AGENTS.md)
-- [Session Gateway Repository](https://github.com/budgetanalyzer/session-gateway)
-- [Session Gateway AGENTS.md](https://github.com/budgetanalyzer/session-gateway/blob/main/AGENTS.md)
-- [Permission Service Repository](https://github.com/budgetanalyzer/permission-service)
-- [Token Validation Service Repository](https://github.com/budgetanalyzer/token-validation-service)
