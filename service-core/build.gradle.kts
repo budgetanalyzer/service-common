@@ -1,16 +1,8 @@
-plugins {
-    alias(libs.plugins.spring.dependency.management)
-}
-
 description = "Core utilities for microservices - minimal dependencies"
 
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:${libs.versions.springBoot.get()}")
-    }
-}
-
 dependencies {
+    api(platform(project(":spring-platform")))
+
     // TRANSITIVE (api) - every service gets these
     api(libs.spring.boot.starter.actuator)
     api(libs.micrometer.registry.prometheus)

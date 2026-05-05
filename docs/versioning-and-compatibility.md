@@ -2,27 +2,27 @@
 
 ## Core Principle
 
-**CRITICAL**: ALL changes to **service-core** and **service-web** MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these libraries.
+**CRITICAL**: ALL changes to **spring-platform**, **spring-cloud-platform**, **service-core**, and **service-web** MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these artifacts.
 
 ## Multi-Module Versioning
 
-**service-core** and **service-web** are versioned **together as a coordinated pair**:
-- Both modules share the same version number (for example, `0.0.1-SNAPSHOT`
+**spring-platform**, **spring-cloud-platform**, **service-core**, and **service-web** are versioned **together as a coordinated set**:
+- All artifacts share the same version number (for example, `0.0.1-SNAPSHOT`
   for a local snapshot build)
-- Both modules are released together in lockstep
-- Changes to either module trigger a version bump for both
-- Consuming services upgrade both modules simultaneously
+- All artifacts are released together in lockstep
+- Changes to any artifact trigger one service-common version bump
+- Consuming services upgrade the platform and runtime library artifacts simultaneously
 
 ## Why Backwards Compatibility Matters
 
 ### CI/CD-Driven Lockstep Upgrades
 
-Budget Analyzer uses a **CI/CD-driven lockstep upgrade strategy** for service-core and service-web:
+Budget Analyzer uses a **CI/CD-driven lockstep upgrade strategy** for all service-common artifacts:
 
 **How it works**: Pushes to service-common trigger automated CI/CD releases of all microservices. This is not a manual "war room" coordination - it's fully automated.
 
 **Benefits**:
-- All services stay on the same version of both modules - always latest
+- All services stay on the same service-common artifact version - always latest
 - Integration issues are caught immediately during the coordinated upgrade
 - No version fragmentation across the microservice ecosystem
 - No mental overhead of tracking "which service is on which version"
@@ -63,6 +63,8 @@ A **breaking change** is any modification that could cause existing code to:
 - Changing constructor parameters
 - Removing enum values
 - Changing default behavior of existing methods
+- Removing platform constraints or imported BOMs that consumers rely on
+- Moving to a major Spring Boot, Spring Cloud, or Spring Modulith version that requires consumer source or configuration changes
 
 ### 2. All New Features Must Work With Existing Services
 
@@ -172,9 +174,9 @@ public class CategorizedBusinessException extends BusinessException {
 
 ## Semantic Versioning
 
-**service-core** and **service-web** follow [Semantic Versioning 2.0.0](https://semver.org/):
+The service-common artifacts follow [Semantic Versioning 2.0.0](https://semver.org/):
 
-**Important**: Both modules share the same version number and are always released together.
+**Important**: `spring-platform`, `spring-cloud-platform`, `service-core`, and `service-web` share the same version number and are always released together.
 
 **Version format: MAJOR.MINOR.PATCH** (e.g., 1.4.2)
 
@@ -245,7 +247,7 @@ export GITHUB_TOKEN=<token-with-packages-write-access>
 ./gradlew publish
 ```
 
-This publishes both modules to
+This publishes all service-common artifacts to
 `https://maven.pkg.github.com/budgetanalyzer/service-common` using the
 checked-in version literal from `build.gradle.kts`.
 
@@ -321,10 +323,12 @@ local contributor prerequisite. See
 
 ### Published Coordinates
 
-Both modules are published together using the same checked-in version literal
+All service-common artifacts are published together using the same checked-in version literal
 from `build.gradle.kts`:
 
 ```text
+org.budgetanalyzer:spring-platform:<service-common-version>
+org.budgetanalyzer:spring-cloud-platform:<service-common-version>
 org.budgetanalyzer:service-core:<service-common-version>
 org.budgetanalyzer:service-web:<service-common-version>
 ```

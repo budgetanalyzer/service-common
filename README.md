@@ -10,7 +10,26 @@ Shared libraries for Budget Analyzer microservices - a personal finance manageme
 
 ## Overview
 
-Service Common is a **multi-module Gradle project** that provides common functionality shared across all Budget Analyzer backend microservices. It consists of two modules:
+Service Common is a **multi-module Gradle project** that provides common functionality shared across all Budget Analyzer backend microservices. It publishes four artifacts:
+
+### spring-platform
+**Purpose**: Base dependency platform for Budget Analyzer Spring services.
+
+**Provides**:
+- Spring Boot dependency BOM import
+- Spring Modulith dependency BOM import
+- Shared version constraints for SpringDoc, Testcontainers, WireMock, Awaitility, and ShedLock
+
+**Behavior**: Version management only. It does not add runtime dependencies, application code, or autoconfiguration.
+
+### spring-cloud-platform
+**Purpose**: Opt-in Spring Cloud dependency platform for services that use Spring Cloud APIs.
+
+**Provides**:
+- spring-platform import
+- Spring Cloud dependency BOM import
+
+**Behavior**: Version management only. Non-Cloud services should use spring-platform instead.
 
 ### service-core
 **Purpose**: Minimal-dependency core utilities for microservices
@@ -58,7 +77,7 @@ Service Common promotes code reuse and consistency across microservices by:
 
 ## Usage
 
-These libraries are published to Maven Local and consumed by other Budget Analyzer services.
+These artifacts are published to Maven Local and consumed by other Budget Analyzer services.
 Examples below use `<service-common-version>` as a placeholder. Use the
 checked-in version literal from `build.gradle.kts` for the build you are
 consuming (for example, `0.0.1-SNAPSHOT` during local snapshot development).
@@ -69,6 +88,16 @@ consuming (for example, `0.0.1-SNAPSHOT` during local snapshot development).
 
 ```kotlin
 dependencies {
+    implementation(platform("org.budgetanalyzer:spring-platform:<service-common-version>"))
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
+}
+```
+
+**Spring Cloud services should use `spring-cloud-platform`** instead of importing both platforms:
+
+```kotlin
+dependencies {
+    implementation(platform("org.budgetanalyzer:spring-cloud-platform:<service-common-version>"))
     implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
@@ -77,6 +106,7 @@ dependencies {
 
 ```kotlin
 dependencies {
+    implementation(platform("org.budgetanalyzer:spring-platform:<service-common-version>"))
     implementation("org.budgetanalyzer:service-core:<service-common-version>")
 }
 ```
@@ -87,6 +117,9 @@ In your service's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
+    // Import dependency versions explicitly.
+    implementation(platform("org.budgetanalyzer:spring-platform:<service-common-version>"))
+
     // Recommended: Use service-web (includes service-core transitively)
     implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
@@ -97,9 +130,13 @@ repositories {
 }
 ```
 
+The platform artifacts only provide dependency version management. They do not provide beans,
+filters, exception handlers, or autoconfiguration metadata. Runtime behavior comes from
+`service-core` and `service-web`.
+
 ### What You Get Automatically
 
-Both modules use **Spring Boot autoconfiguration** - all components are automatically registered when the libraries are on your classpath. **No manual configuration or component scanning required!**
+The runtime modules use **Spring Boot autoconfiguration** - all components are automatically registered when the libraries are on your classpath. **No manual configuration or component scanning required!**
 
 #### service-core (Fully Automatic)
 When service-core is on your classpath, you automatically get:
@@ -169,7 +206,7 @@ For complete details, see the [Autoconfiguration section in AGENTS.md](AGENTS.md
 # Build all modules
 ./gradlew clean build
 
-# Publish both modules to Maven Local for local development
+# Publish all service-common artifacts to Maven Local for local development
 ./gradlew publishToMavenLocal
 ```
 
@@ -232,6 +269,10 @@ See the [Vendor Independence section in AGENTS.md](AGENTS.md#vendor-independence
 
 ```
 service-common/
+├── spring-platform/                 # Base Spring dependency platform
+│   └── build.gradle.kts
+├── spring-cloud-platform/           # Spring Cloud dependency platform overlay
+│   └── build.gradle.kts
 ├── service-core/                    # Core utilities module
 │   ├── src/main/java/
 │   │   └── org/budgetanalyzer/core/
