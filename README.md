@@ -69,7 +69,7 @@ Service Common promotes code reuse and consistency across microservices by:
 
 ## Technology Stack
 
-- **Java 24**
+- **Java 25**
 - **Spring Boot 3.x** (Starter Web, Data JPA)
 - **SpringDoc OpenAPI** for API documentation
 - **OpenCSV** for CSV file processing
@@ -227,7 +227,7 @@ and
 
 ### Prerequisites
 
-- JDK 24
+- JDK 25
 - Gradle (wrapper included)
 
 ### Building

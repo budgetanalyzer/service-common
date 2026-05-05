@@ -1,5 +1,5 @@
 [versions]
-java = "24"
+java = "25"
 springBoot = "3.5.7"
 springCloud = "2025.0.0"
 springModulith = "1.4.0"

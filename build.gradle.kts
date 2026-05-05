@@ -69,7 +69,7 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
 
     configure<JavaPluginExtension> {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(24))
+            languageVersion.set(JavaLanguageVersion.of(25))
         }
         withSourcesJar()
         withJavadocJar()
@@ -93,7 +93,7 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
                 // External API links for generating clickable Javadoc references
                 // Update these URLs when upgrading Spring Boot or Jakarta EE versions
                 links(
-                    "https://docs.oracle.com/en/java/javase/24/docs/api/",
+                    "https://docs.oracle.com/en/java/javase/25/docs/api/",
                     "https://docs.spring.io/spring-framework/docs/6.2.2/javadoc-api/",
                     "https://jakarta.ee/specifications/platform/10/apidocs/"
                 )
