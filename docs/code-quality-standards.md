@@ -36,7 +36,9 @@ This is the foundation for collaborative AI-native development - a standardized,
 
 **Purpose**: Automatic code formatting with Google Java Format
 
-**Scope**: Applied to all modules (service-core, service-web, and all consuming services)
+**Scope**: Applied to runtime Java modules (`service-core`, `service-web`) and all consuming
+services. Platform modules (`spring-platform`, `spring-cloud-platform`) publish dependency metadata
+only and do not have Java source formatting tasks.
 
 **Features**:
 - Google Java Format 1.17.0
@@ -62,7 +64,7 @@ This is the foundation for collaborative AI-native development - a standardized,
 
 **Purpose**: Static code analysis for style and best practices
 
-**Scope**: Applied to all modules (service-core, service-web)
+**Scope**: Applied to runtime Java modules (`service-core`, `service-web`)
 
 **Configuration**:
 - Version 12.0.1
@@ -128,7 +130,8 @@ tasks.withType<Javadoc> {
 
 The `clean build` command will:
 - Clean previous build artifacts in all modules
-- Compile all source code (service-core and service-web)
+- Compile all runtime source code (`service-core` and `service-web`)
+- Validate platform project metadata (`spring-platform` and `spring-cloud-platform`)
 - Run all tests in all modules
 - Execute Checkstyle validation on all modules
 - Run Spotless checks

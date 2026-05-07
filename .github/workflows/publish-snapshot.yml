@@ -54,11 +54,11 @@ jobs:
         env:
           BUILD_VERSION: ${{ steps.version.outputs.build_version }}
 
-      - name: Set up JDK 24
+      - name: Set up JDK 25
         if: steps.version.outputs.should_publish == 'true'
         uses: actions/setup-java@v5
         with:
-          java-version: '24'
+          java-version: '25'
           distribution: 'temurin'
 
       - name: Setup Gradle

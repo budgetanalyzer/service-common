@@ -1,17 +1,21 @@
 [versions]
-java = "24"
+java = "25"
 springBoot = "3.5.7"
-dependencyManagement = "1.1.7"
+springCloud = "2025.0.0"
+springModulith = "1.4.0"
 spotless = "8.0.0"
 checkstyle = "12.0.1"
 googleJavaFormat = "1.32.0"
 opencsv = "3.7"
 springdoc = "2.8.13"
+testcontainers = "1.21.4"
+wiremock = "3.10.0"
+awaitility = "4.2.2"
+shedlock = "6.0.2"
 junitPlatform = "1.12.2"
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
-spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "dependencyManagement" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 
 [libraries]

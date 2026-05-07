@@ -14,10 +14,11 @@ plugins {
 
 val githubPackagesActor = providers.environmentVariable("GITHUB_ACTOR")
 val githubPackagesToken = providers.environmentVariable("GITHUB_TOKEN")
+val platformProjectNames = setOf("spring-platform", "spring-cloud-platform")
 
 allprojects {
     group = "org.budgetanalyzer"
-    version = "0.0.12"
+    version = "0.0.13-SNAPSHOT"
 
     repositories {
         mavenCentral()
@@ -25,14 +26,50 @@ allprojects {
 }
 
 subprojects {
+    apply(plugin = "maven-publish")
+
+    // Publishing configuration
+    configure<PublishingExtension> {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/budgetanalyzer/service-common")
+                credentials {
+                    username = githubPackagesActor.orNull ?: ""
+                    password = githubPackagesToken.orNull ?: ""
+                }
+            }
+        }
+    }
+
+    tasks.withType<PublishToMavenRepository>().configureEach {
+        doFirst {
+            if (repository.name != "GitHubPackages") {
+                return@doFirst
+            }
+
+            val missingEnvVars = listOfNotNull(
+                "GITHUB_ACTOR".takeUnless { githubPackagesActor.isPresent },
+                "GITHUB_TOKEN".takeUnless { githubPackagesToken.isPresent }
+            )
+
+            if (missingEnvVars.isNotEmpty()) {
+                throw GradleException(
+                    "Publishing to GitHub Packages requires ${missingEnvVars.joinToString(" and ")}."
+                )
+            }
+        }
+    }
+}
+
+configure(subprojects.filter { it.name !in platformProjectNames }) {
     apply(plugin = "java-library")
     apply(plugin = "checkstyle")
-    apply(plugin = "maven-publish")
     apply(plugin = "com.diffplug.spotless")
 
     configure<JavaPluginExtension> {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(24))
+            languageVersion.set(JavaLanguageVersion.of(25))
         }
         withSourcesJar()
         withJavadocJar()
@@ -56,7 +93,7 @@ subprojects {
                 // External API links for generating clickable Javadoc references
                 // Update these URLs when upgrading Spring Boot or Jakarta EE versions
                 links(
-                    "https://docs.oracle.com/en/java/javase/24/docs/api/",
+                    "https://docs.oracle.com/en/java/javase/25/docs/api/",
                     "https://docs.spring.io/spring-framework/docs/6.2.2/javadoc-api/",
                     "https://jakarta.ee/specifications/platform/10/apidocs/"
                 )
@@ -85,7 +122,6 @@ subprojects {
         dependsOn("spotlessCheck")
     }
 
-    // Publishing configuration
     configure<PublishingExtension> {
         publications {
             create<MavenPublication>("mavenJava") {
@@ -103,7 +139,7 @@ subprojects {
 
                 pom {
                     name.set(project.name)
-                    description.set(project.description ?: "Shared module for microservices")
+                    description.set(project.provider { project.description ?: "Shared module for microservices" })
 
                     licenses {
                         license {
@@ -114,34 +150,31 @@ subprojects {
                 }
             }
         }
-
-        repositories {
-            maven {
-                name = "GitHubPackages"
-                url = uri("https://maven.pkg.github.com/budgetanalyzer/service-common")
-                credentials {
-                    username = githubPackagesActor.orNull ?: ""
-                    password = githubPackagesToken.orNull ?: ""
-                }
-            }
-        }
     }
+}
 
-    tasks.withType<PublishToMavenRepository>().configureEach {
-        doFirst {
-            if (repository.name != "GitHubPackages") {
-                return@doFirst
-            }
+configure(subprojects.filter { it.name in platformProjectNames }) {
+    apply(plugin = "java-platform")
 
-            val missingEnvVars = listOfNotNull(
-                "GITHUB_ACTOR".takeUnless { githubPackagesActor.isPresent },
-                "GITHUB_TOKEN".takeUnless { githubPackagesToken.isPresent }
-            )
+    configure<PublishingExtension> {
+        publications {
+            create<MavenPublication>("mavenJava") {
+                from(components["javaPlatform"])
+                groupId = project.group.toString()
+                artifactId = project.name
+                version = project.version.toString()
 
-            if (missingEnvVars.isNotEmpty()) {
-                throw GradleException(
-                    "Publishing to GitHub Packages requires ${missingEnvVars.joinToString(" and ")}."
-                )
+                pom {
+                    name.set(project.name)
+                    description.set(project.provider { project.description ?: "Dependency platform for microservices" })
+
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                    }
+                }
             }
         }
     }

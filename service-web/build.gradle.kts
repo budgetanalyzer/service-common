@@ -1,16 +1,8 @@
-plugins {
-    alias(libs.plugins.spring.dependency.management)
-}
-
 description = "Spring Boot web service components with auto-configuration"
 
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:${libs.versions.springBoot.get()}")
-    }
-}
-
 dependencies {
+    api(platform(project(":spring-platform")))
+
     // Core module dependency (transitive to consumers via api())
     api(project(":service-core"))
 

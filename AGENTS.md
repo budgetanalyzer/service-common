@@ -62,14 +62,39 @@ Do not use GitHub-web links or `@file` imports here. Use relative markdown links
 
 ## Purpose
 
-Multi-module Gradle project providing shared libraries for all Budget Analyzer Spring Boot microservices. Consists of two modules:
+Multi-module Gradle project providing shared dependency platforms and runtime libraries for all Budget Analyzer Spring Boot microservices. Publishes four artifacts:
 
+**spring-platform**: Base backend Spring dependency platform (Spring Boot BOM, Spring Modulith BOM, shared JVM constraints)
+**spring-cloud-platform**: Opt-in Spring Cloud dependency platform overlay
 **service-core**: Minimal-dependency core utilities (base entities, CSV parsing, safe logging)
 **service-web**: Spring Boot web components (exception handling, API error responses, HTTP logging, OpenAPI config)
 
 **Impacts**: Current consumers are discoverable from the workspace, and changes here affect all services that depend on these libraries.
 
 ## Module Architecture
+
+### spring-platform
+**Location**: `spring-platform/build.gradle.kts`
+
+**Purpose**: Base Maven BOM-style dependency platform for Budget Analyzer Spring services
+
+**Contains**:
+- Spring Boot dependency BOM import
+- Spring Modulith dependency BOM import
+- Shared constraints for SpringDoc, Testcontainers, WireMock, Awaitility, and ShedLock
+
+**Behavior**: Version management only. No source code, runtime dependencies, beans, or autoconfiguration metadata.
+
+### spring-cloud-platform
+**Location**: `spring-cloud-platform/build.gradle.kts`
+
+**Purpose**: Opt-in Maven BOM-style dependency platform for services using Spring Cloud APIs
+
+**Contains**:
+- spring-platform import
+- Spring Cloud dependency BOM import
+
+**Behavior**: Version management only. Use only in services that explicitly depend on Spring Cloud libraries.
 
 ### service-core
 **Location**: `service-core/src/main/java/org/budgetanalyzer/core/`
@@ -108,6 +133,16 @@ Multi-module Gradle project providing shared libraries for all Budget Analyzer S
 
 **Note**: service-web transitively includes service-core, so consuming services typically only need service-web.
 
+**Discovery**:
+```bash
+# View platform build definitions
+cat spring-platform/build.gradle.kts
+cat spring-cloud-platform/build.gradle.kts
+
+# View published modules configured for this build
+cat settings.gradle.kts
+```
+
 ## When to Use These Libraries
 
 - ✅ Cross-service utilities (logging, error handling, common DTOs)
@@ -120,6 +155,7 @@ Multi-module Gradle project providing shared libraries for all Budget Analyzer S
 **Servlet service with database (most common):**
 ```kotlin
 dependencies {
+    implementation(platform("org.budgetanalyzer:spring-platform:<service-common-version>"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.budgetanalyzer:service-web:<service-common-version>")
@@ -129,7 +165,17 @@ dependencies {
 **Reactive service (e.g., Session Gateway):**
 ```kotlin
 dependencies {
+    implementation(platform("org.budgetanalyzer:spring-platform:<service-common-version>"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.budgetanalyzer:service-web:<service-common-version>")
+}
+```
+
+**Spring Cloud service:**
+```kotlin
+dependencies {
+    implementation(platform("org.budgetanalyzer:spring-cloud-platform:<service-common-version>"))
+    implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
@@ -137,6 +183,7 @@ dependencies {
 **Non-web service (batch jobs, workers):**
 ```kotlin
 dependencies {
+    implementation(platform("org.budgetanalyzer:spring-platform:<service-common-version>"))
     implementation("org.budgetanalyzer:service-core:<service-common-version>")
 }
 ```
@@ -145,7 +192,7 @@ Use the checked-in version literal from `build.gradle.kts` when consuming the
 published artifacts. `0.0.1-SNAPSHOT` is only an example of a local snapshot
 version.
 
-**Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (reactive services inheriting JPA).
+**Why explicit dependencies?** Web stack and JPA are `compileOnly` in service-common to prevent classpath conflicts (reactive inheriting servlet) and unnecessary transitive dependencies (reactive services inheriting JPA). Platform artifacts manage versions only; consuming services must still declare the libraries they use.
 
 ## Spring Boot Conventions
 
@@ -284,8 +331,20 @@ Use `./gradlew publishToMavenLocal` for local development publishing.
 Use the checked-in version literal from `build.gradle.kts` when consuming the
 published artifacts.
 
+Import `spring-platform` in non-Cloud Spring services. Import
+`spring-cloud-platform` instead for services that use Spring Cloud APIs; it
+already imports `spring-platform`.
+
 Use `service-web` by default; depend on `service-core` directly only when you
 need the minimal non-web module.
+
+Published coordinates:
+```text
+org.budgetanalyzer:spring-platform:<service-common-version>
+org.budgetanalyzer:spring-cloud-platform:<service-common-version>
+org.budgetanalyzer:service-core:<service-common-version>
+org.budgetanalyzer:service-web:<service-common-version>
+```
 
 Local development still stays on `publishToMavenLocal`; GitHub Packages is for
 CI, release, and intentional isolated-build scenarios.
@@ -488,9 +547,9 @@ All API errors follow `ApiErrorResponse` format with error types, field-level va
 Entities extending `SoftDeletableEntity` are never actually deleted from the database - only marked as deleted.
 
 ### Backwards Compatibility: CI/CD-Driven Lockstep Upgrades
-**CRITICAL**: ALL changes to service-core and service-web MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these libraries.
+**CRITICAL**: ALL changes to spring-platform, spring-cloud-platform, service-core, and service-web MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these artifacts.
 
-Both modules are versioned and released together as a coordinated pair.
+All four artifacts are versioned and released together as a coordinated set.
 
 **When to consult details**:
 - Determining if a change is breaking → Read [What's Breaking vs. Safe](docs/versioning-and-compatibility.md#examples-whats-breaking-vs-safe)
@@ -500,10 +559,11 @@ Both modules are versioned and released together as a coordinated pair.
 
 **Quick reference**:
 - Add new, don't modify existing (extend rather than change)
+- Platform changes can be breaking when they remove constraints or move major framework versions
 - Test against all consuming services before release
 - Major version bumps require coordinated migration across all services
 
-**For comprehensive compatibility guidelines, read [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md) when making any changes to service-core or service-web.**
+**For comprehensive compatibility guidelines, read [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md) when making any changes to service-common artifacts.**
 
 ### Code Quality Standards
 - **Spotless**: Google Java Format
