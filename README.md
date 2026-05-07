@@ -77,10 +77,11 @@ Service Common promotes code reuse and consistency across microservices by:
 
 ## Usage
 
-These artifacts are published to Maven Local and consumed by other Budget Analyzer services.
-Examples below use `<service-common-version>` as a placeholder. Use the
-checked-in version literal from `build.gradle.kts` for the build you are
-consuming (for example, `0.0.1-SNAPSHOT` during local snapshot development).
+For local development, publish these artifacts to Maven Local and consume them from sibling
+Budget Analyzer services. CI workflows publish snapshot and release artifacts to GitHub Packages.
+Examples below use `<service-common-version>` as a placeholder. Use the checked-in version literal
+from `build.gradle.kts` for the build you are consuming (for example, `0.0.1-SNAPSHOT` during local
+snapshot development).
 
 ### Which Module Should I Use?
 
@@ -212,13 +213,14 @@ For complete details, see the [Autoconfiguration section in AGENTS.md](AGENTS.md
 
 `publishToMavenLocal` uses the checked-in version literal from
 `build.gradle.kts` and is the supported local development path. It does not
-require GitHub credentials.
+require GitHub credentials and does not publish anything remotely. The build
+workflow also runs `publishToMavenLocal` as a validation step only.
 
-Remote publishing (snapshots from `main`, tag-driven releases, and the
-GitHub Packages consumption contract) is owned by orchestration. See
-[CI/CD Workflows](https://github.com/budgetanalyzer/orchestration/blob/main/docs/ci-cd.md)
-and
-[service-common artifact resolution](https://github.com/budgetanalyzer/orchestration/blob/main/docs/development/service-common-artifact-resolution.md).
+Remote publishing is handled by this repository's workflows:
+`publish-snapshot.yml` publishes `-SNAPSHOT` versions from `main` to GitHub
+Packages, and `publish-release.yml` publishes tag-driven releases to GitHub
+Packages. See [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md)
+for the release and publishing contract.
 
 `service-common`'s own version and backwards-compatibility contract lives in
 [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
