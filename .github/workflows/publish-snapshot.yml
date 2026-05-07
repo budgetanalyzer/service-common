@@ -68,3 +68,32 @@ jobs:
       - name: Publish snapshot to GitHub Packages Maven
         if: steps.version.outputs.should_publish == 'true'
         run: ./gradlew publish
+
+      - name: Report published package links
+        if: steps.version.outputs.should_publish == 'true'
+        shell: bash
+        env:
+          BUILD_VERSION: ${{ steps.version.outputs.build_version }}
+        run: |
+          set -euo pipefail
+
+          artifacts=(
+            spring-platform
+            spring-cloud-platform
+            service-core
+            service-web
+          )
+
+          echo "Published service-common ${BUILD_VERSION} packages:"
+          {
+            echo "## Published service-common ${BUILD_VERSION}"
+            echo
+            echo "| Artifact | GitHub Packages |"
+            echo "| --- | --- |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          for artifact in "${artifacts[@]}"; do
+            package_url="https://github.com/orgs/budgetanalyzer/packages/maven/package/org.budgetanalyzer.${artifact}?version=${BUILD_VERSION}"
+            echo "- ${artifact}: ${package_url}"
+            echo "| ${artifact} | [${package_url}](${package_url}) |" >> "${GITHUB_STEP_SUMMARY}"
+          done

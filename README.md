@@ -219,8 +219,10 @@ workflow also runs `publishToMavenLocal` as a validation step only.
 Remote publishing is handled by this repository's workflows:
 `publish-snapshot.yml` publishes `-SNAPSHOT` versions from `main` to GitHub
 Packages, and `publish-release.yml` publishes tag-driven releases to GitHub
-Packages. See [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md)
-for the release and publishing contract.
+Packages. Successful remote publishes write the published version and GitHub
+Packages links to the workflow log and job summary. See
+[docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md) for
+the release and publishing contract.
 
 `service-common`'s own version and backwards-compatibility contract lives in
 [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).

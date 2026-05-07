@@ -265,6 +265,8 @@ The main-branch snapshot workflow is
 - Skips cleanly when `main` is temporarily on a numeric release version for the
   release/tag sequence
 - Uses `GITHUB_ACTOR=${{ github.actor }}` and the workflow `GITHUB_TOKEN`
+- Writes the published version and GitHub Packages links to the workflow log
+  and job summary after a successful publish
 
 Normal snapshot usage is:
 
@@ -288,6 +290,8 @@ The tag-driven release workflow is
   `build.gradle.kts`
 - Fails fast on drift before running `./gradlew publish` with
   `GITHUB_ACTOR=${{ github.actor }}` and the workflow `GITHUB_TOKEN`
+- Writes the published version and GitHub Packages links to the workflow log
+  and job summary after a successful publish
 
 Normal release usage is:
 

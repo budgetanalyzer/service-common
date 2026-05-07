@@ -35,6 +35,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Verify tag matches build version
+        id: version
         shell: bash
         run: |
           set -euo pipefail
@@ -52,5 +53,35 @@ jobs:
             exit 1
           fi
 
+          echo "build_version=${build_version}" >> "${GITHUB_OUTPUT}"
+
       - name: Publish to GitHub Packages Maven
         run: ./gradlew publish
+
+      - name: Report published package links
+        shell: bash
+        env:
+          BUILD_VERSION: ${{ steps.version.outputs.build_version }}
+        run: |
+          set -euo pipefail
+
+          artifacts=(
+            spring-platform
+            spring-cloud-platform
+            service-core
+            service-web
+          )
+
+          echo "Published service-common ${BUILD_VERSION} packages:"
+          {
+            echo "## Published service-common ${BUILD_VERSION}"
+            echo
+            echo "| Artifact | GitHub Packages |"
+            echo "| --- | --- |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          for artifact in "${artifacts[@]}"; do
+            package_url="https://github.com/orgs/budgetanalyzer/packages/maven/package/org.budgetanalyzer.${artifact}?version=${BUILD_VERSION}"
+            echo "- ${artifact}: ${package_url}"
+            echo "| ${artifact} | [${package_url}](${package_url}) |" >> "${GITHUB_STEP_SUMMARY}"
+          done
