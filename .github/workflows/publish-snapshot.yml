@@ -74,14 +74,15 @@ jobs:
         shell: bash
         env:
           BUILD_VERSION: ${{ steps.version.outputs.build_version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
-          artifacts=(
-            spring-platform
-            spring-cloud-platform
-            service-core
-            service-web
+          packages=(
+            org.budgetanalyzer.spring-platform
+            org.budgetanalyzer.spring-cloud-platform
+            org.budgetanalyzer.service-core
+            org.budgetanalyzer.service-web
           )
 
           echo "Published service-common ${BUILD_VERSION} packages:"
@@ -92,8 +93,18 @@ jobs:
             echo "| --- | --- |"
           } >> "${GITHUB_STEP_SUMMARY}"
 
-          for artifact in "${artifacts[@]}"; do
-            package_url="https://github.com/orgs/budgetanalyzer/packages/maven/package/org.budgetanalyzer.${artifact}?version=${BUILD_VERSION}"
-            echo "- ${artifact}: ${package_url}"
-            echo "| ${artifact} | [${package_url}](${package_url}) |" >> "${GITHUB_STEP_SUMMARY}"
+          for package_name in "${packages[@]}"; do
+            package_url="$(
+              gh api --paginate "/orgs/budgetanalyzer/packages/maven/${package_name}/versions" \
+                --jq ".[] | select(.name == \"${BUILD_VERSION}\") | .html_url" \
+                | head -n1
+            )"
+
+            if [[ -z "${package_url}" ]]; then
+              echo "Could not resolve GitHub Packages URL for ${package_name} ${BUILD_VERSION}." >&2
+              exit 1
+            fi
+
+            echo "- ${package_name}: ${package_url}"
+            echo "| ${package_name} | [${package_url}](${package_url}) |" >> "${GITHUB_STEP_SUMMARY}"
           done
