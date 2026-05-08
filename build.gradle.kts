@@ -18,7 +18,7 @@ val platformProjectNames = setOf("spring-platform", "spring-cloud-platform")
 
 allprojects {
     group = "org.budgetanalyzer"
-    version = "0.0.13-SNAPSHOT"
+    version = "0.0.13"
 
     repositories {
         mavenCentral()
