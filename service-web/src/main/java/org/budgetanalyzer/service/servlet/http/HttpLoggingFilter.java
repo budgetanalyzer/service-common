@@ -106,7 +106,8 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
     }
 
     // Wrap request and response to enable content caching
-    var requestWrapper = new ContentCachingRequestWrapper(request);
+    var requestWrapper =
+        new ContentCachingRequestWrapper(request, httpLoggingProperties.getMaxBodySize());
     var responseWrapper = new ContentCachingResponseWrapper(response);
 
     var startTime = System.currentTimeMillis();
