@@ -12,16 +12,16 @@ dependencies {
         api("org.springdoc:springdoc-openapi-starter-webmvc-ui:${libs.versions.springdoc.get()}")
         api("org.springdoc:springdoc-openapi-starter-webflux-ui:${libs.versions.springdoc.get()}")
         api("org.testcontainers:testcontainers:${libs.versions.testcontainers.get()}") {
-            because("Spring Boot 3.5.7 manages Testcontainers 1.21.3; 1.21.4 fixes Docker 29.x compatibility")
+            because("Keep Testcontainers pinned at the selected 1.21.x patch level for Docker 29.x compatibility")
         }
         api("org.testcontainers:junit-jupiter:${libs.versions.testcontainers.get()}") {
-            because("Spring Boot 3.5.7 manages Testcontainers 1.21.3; 1.21.4 fixes Docker 29.x compatibility")
+            because("Keep Testcontainers pinned at the selected 1.21.x patch level for Docker 29.x compatibility")
         }
         api("org.testcontainers:postgresql:${libs.versions.testcontainers.get()}") {
-            because("Spring Boot 3.5.7 manages Testcontainers 1.21.3; 1.21.4 fixes Docker 29.x compatibility")
+            because("Keep Testcontainers pinned at the selected 1.21.x patch level for Docker 29.x compatibility")
         }
         api("org.testcontainers:rabbitmq:${libs.versions.testcontainers.get()}") {
-            because("Spring Boot 3.5.7 manages Testcontainers 1.21.3; 1.21.4 fixes Docker 29.x compatibility")
+            because("Keep Testcontainers pinned at the selected 1.21.x patch level for Docker 29.x compatibility")
         }
         api("org.wiremock:wiremock-standalone:${libs.versions.wiremock.get()}")
         api("org.awaitility:awaitility:${libs.versions.awaitility.get()}")
