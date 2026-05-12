@@ -332,6 +332,14 @@ public record TransactionFilter(
 | `defaultValue` | Default value if not provided | `"USD"` |
 | `allowableValues` | Valid enum values | `{"INCOME", "EXPENSE"}` |
 
+#### OpenAPI Nullability
+
+All services serialize JSON with `spring.jackson.default-property-inclusion: non_null`, so null response fields are omitted from API responses.
+
+For response DTOs, do not use `@Schema(nullable = true)` unless the service intentionally emits explicit JSON `null` for that field. Use `requiredMode = Schema.RequiredMode.REQUIRED` for fields that are always present and `requiredMode = Schema.RequiredMode.NOT_REQUIRED` for fields that may be omitted.
+
+When documenting optional response fields, describe them as "omitted when ..." rather than "null when ...". OpenAPI `nullable` tells clients to expect an explicit JSON `null`, while Budget Analyzer response metadata normally represents absence by omitting the property.
+
 #### Enum Documentation
 
 Annotate enums to provide descriptions for each value:
