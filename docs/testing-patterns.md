@@ -380,6 +380,9 @@ void shouldSaveTransactionWithCorrectTimestamp() {
 - **Services**: 85% coverage
 
 ### Coverage Tools
+JaCoCo report generation is enabled for Java service modules. The current
+baseline phase generates reports without failing builds on coverage thresholds.
+
 ```bash
 # Run tests with coverage (all modules)
 ./gradlew test jacocoTestReport

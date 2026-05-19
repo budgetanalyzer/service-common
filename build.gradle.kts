@@ -7,6 +7,8 @@ import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
+import org.gradle.testing.jacoco.tasks.JacocoReport
 
 plugins {
     id("com.diffplug.spotless") version "8.0.0" apply false
@@ -15,6 +17,7 @@ plugins {
 val githubPackagesActor = providers.environmentVariable("GITHUB_ACTOR")
 val githubPackagesToken = providers.environmentVariable("GITHUB_TOKEN")
 val platformProjectNames = setOf("spring-platform", "spring-cloud-platform")
+val jacocoToolVersion = libs.versions.jacoco.get()
 
 allprojects {
     group = "org.budgetanalyzer"
@@ -66,6 +69,7 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
     apply(plugin = "java-library")
     apply(plugin = "checkstyle")
     apply(plugin = "com.diffplug.spotless")
+    apply(plugin = "jacoco")
 
     configure<JavaPluginExtension> {
         toolchain {
@@ -77,12 +81,26 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+        finalizedBy(tasks.named("jacocoTestReport"))
         testLogging {
             events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED)
             exceptionFormat = TestExceptionFormat.FULL
             showExceptions = true
             showCauses = true
             showStackTraces = true
+        }
+    }
+
+    configure<JacocoPluginExtension> {
+        toolVersion = jacocoToolVersion
+    }
+
+    tasks.named<JacocoReport>("jacocoTestReport") {
+        dependsOn(tasks.named("test"))
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+            csv.required.set(false)
         }
     }
 

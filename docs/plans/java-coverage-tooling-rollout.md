@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed.
+Phase 1 implemented. Phases 2-5 remain proposed.
 
 ## Goal
 
@@ -113,6 +113,10 @@ Acceptance criteria:
 - JaCoCo XML and HTML reports are generated for every Java code module.
 - No new coverage threshold fails builds in Phase 1.
 - Documentation in each touched repository describes how to generate and view reports.
+
+Implementation note: Phase 1 configures Gradle report generation only. Coverage
+verification remains intentionally unwired until Phase 2 thresholds are chosen
+from the generated baseline.
 
 ## Phase 2: Coverage Gates
 
