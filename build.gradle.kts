@@ -26,7 +26,7 @@ val coverageMinimumsByProject = mapOf(
 
 allprojects {
     group = "org.budgetanalyzer"
-    version = "0.0.13"
+    version = "0.0.14"
 
     repositories {
         mavenCentral()
