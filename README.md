@@ -256,17 +256,8 @@ the release and publishing contract.
 JaCoCo report generation is configured for the Java library modules only:
 `service-core/build/reports/jacoco/test/html/index.html` and
 `service-web/build/reports/jacoco/test/html/index.html`. XML reports are written
-next to the HTML reports for CI/dashboard ingestion. `check` enforces
-module-specific coverage gates:
-
-| Module | Line gate | Branch gate | Current baseline |
-|---|---:|---:|---|
-| `service-core` | 80% | 70% | 81.52% line / 72.27% branch |
-| `service-web` | 93% | 80% | 94.20% line / 81.27% branch |
-
-`service-core` starts below the shared-library target because its Phase 1 branch
-baseline is 72.27%. Ratchet it to at least 75% branch coverage after targeted
-tests cover the remaining core utility conditionals.
+next to the HTML reports for CI/dashboard ingestion. `check` enforces the
+configured coverage gates.
 
 ## Code Quality
 
