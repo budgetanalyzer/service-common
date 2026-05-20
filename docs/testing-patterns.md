@@ -380,6 +380,9 @@ void shouldSaveTransactionWithCorrectTimestamp() {
 - **Services**: 85% coverage
 
 ### Coverage Tools
+JaCoCo report generation and coverage verification are enabled for Java service
+modules. `check` enforces the active gates after running tests.
+
 ```bash
 # Run tests with coverage (all modules)
 ./gradlew test jacocoTestReport
@@ -391,6 +394,17 @@ open service-core/build/reports/jacoco/test/html/index.html
 # service-web report:
 open service-web/build/reports/jacoco/test/html/index.html
 ```
+
+Active service-common gates:
+
+| Module | Line gate | Branch gate | Current baseline |
+|---|---:|---:|---|
+| `service-core` | 80% | 70% | 81.52% line / 72.27% branch |
+| `service-web` | 93% | 80% | 94.20% line / 81.27% branch |
+
+`service-core` has a temporary lower branch gate because its Phase 1 baseline is
+below the shared-library branch target. Raise it to at least 75% once targeted
+tests cover the remaining core utility conditionals.
 
 ## Testing Best Practices
 

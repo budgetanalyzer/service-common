@@ -243,12 +243,21 @@ the release and publishing contract.
 # Run tests
 ./gradlew test
 
+# Run tests and generate JaCoCo coverage reports
+./gradlew test jacocoTestReport
+
 # Check code style
 ./gradlew spotlessCheck
 
 # Apply code formatting
 ./gradlew clean spotlessApply
 ```
+
+JaCoCo report generation is configured for the Java library modules only:
+`service-core/build/reports/jacoco/test/html/index.html` and
+`service-web/build/reports/jacoco/test/html/index.html`. XML reports are written
+next to the HTML reports for CI/dashboard ingestion. `check` enforces the
+configured coverage gates.
 
 ## Code Quality
 
