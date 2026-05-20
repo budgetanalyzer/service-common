@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 implemented. Phases 2-5 remain proposed.
+Phases 1 and 2 implemented. Phases 3-5 remain proposed.
 
 ## Goal
 
@@ -122,6 +122,9 @@ from the generated baseline.
 
 Objective: turn the baseline into enforceable quality gates after Phase 1 reports are reviewed.
 
+Status: implemented with repository-local `jacocoTestCoverageVerification` tasks wired into
+`check`.
+
 Implementation steps:
 
 1. Record current line and branch coverage for each module.
@@ -142,6 +145,34 @@ Initial threshold targets:
 | `transaction-service` | 80% | 75% | Starts below the current baseline as a regression guard. |
 | `currency-service` | 90% | 85% | Current baseline supports a higher initial gate. |
 | `session-gateway` | 90% | 65% | Branch coverage starts lower because reactive/session/security conditionals need targeted tests. |
+
+Recorded Phase 1 baselines and active Phase 2 gates:
+
+| Repository/module | Baseline line | Baseline branch | Active line gate | Active branch gate | Ratchet path |
+|---|---:|---:|---:|---:|---|
+| `service-common/service-core` | 81.52% | 72.27% | 80% | 70% | Raise branch gate to at least 75% after targeted utility tests. |
+| `service-common/service-web` | 94.20% | 81.27% | 93% | 80% | Ratchet toward 95% line / 85% branch. |
+| `permission-service` | 84.60% | 72.50% | 80% | 70% | Ratchet branch coverage after authorization/search edge-case tests. |
+| `transaction-service` | 85.16% | 78.59% | 80% | 75% | Ratchet after CSV import/search/soft-delete tests. |
+| `currency-service` | 96.43% | 88.71% | 90% | 85% | Ratchet toward critical utility and provider path coverage. |
+| `session-gateway` | 92.77% | 67.86% | 90% | 65% | Raise branch gate after reactive session/security conditional tests. |
+
+Coverage improvement priorities:
+
+1. `session-gateway` branch coverage: raise from 67.86% by targeting reactive session and
+   security conditionals first.
+2. `service-common/service-core` branch coverage: raise from 72.27% by covering core utility,
+   logging, sanitizer, and configuration conditionals.
+3. `permission-service` branch coverage: raise from 72.50% by covering authorization, search
+   edge cases, user sync, and deactivation failure paths.
+4. `transaction-service` branch coverage: raise from 78.59% toward an 80% branch gate by covering
+   CSV import edge cases, search filters, and soft-delete behavior.
+5. `currency-service` branch coverage: keep healthy at 88.71%; prioritize only critical provider,
+   messaging, caching, and scheduler paths before broad coverage work.
+
+Line coverage is currently healthy across the rollout. Near-term coverage work should prioritize
+branch coverage in `session-gateway`, `service-common/service-core`, and `permission-service`
+before raising gates.
 
 Target end state:
 

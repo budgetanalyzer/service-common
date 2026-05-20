@@ -8,6 +8,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 
 plugins {
@@ -18,6 +19,10 @@ val githubPackagesActor = providers.environmentVariable("GITHUB_ACTOR")
 val githubPackagesToken = providers.environmentVariable("GITHUB_TOKEN")
 val platformProjectNames = setOf("spring-platform", "spring-cloud-platform")
 val jacocoToolVersion = libs.versions.jacoco.get()
+val coverageMinimumsByProject = mapOf(
+    "service-core" to ("0.80".toBigDecimal() to "0.70".toBigDecimal()),
+    "service-web" to ("0.93".toBigDecimal() to "0.80".toBigDecimal())
+)
 
 allprojects {
     group = "org.budgetanalyzer"
@@ -104,6 +109,26 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
         }
     }
 
+    tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+        dependsOn(tasks.named("test"))
+
+        val coverageMinimums = coverageMinimumsByProject.getValue(project.name)
+        violationRules {
+            rule {
+                limit {
+                    counter = "LINE"
+                    value = "COVEREDRATIO"
+                    minimum = coverageMinimums.first
+                }
+                limit {
+                    counter = "BRANCH"
+                    value = "COVEREDRATIO"
+                    minimum = coverageMinimums.second
+                }
+            }
+        }
+    }
+
     tasks.withType<Javadoc> {
         options {
             (this as StandardJavadocDocletOptions).apply {
@@ -137,7 +162,7 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
     }
 
     tasks.named("check") {
-        dependsOn("spotlessCheck")
+        dependsOn("spotlessCheck", "jacocoTestCoverageVerification")
     }
 
     configure<PublishingExtension> {
