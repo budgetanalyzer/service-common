@@ -127,13 +127,27 @@ Implementation steps:
 1. Record current line and branch coverage for each module.
 2. Pick initial thresholds that prevent regression without requiring a large immediate test-writing
    campaign.
-3. Add `jacocoTestCoverageVerification` to each Java project.
-4. Wire coverage verification into `check`.
-5. Ratchet thresholds upward over time until shared standards are met.
+3. Start gates slightly below the Phase 1 baseline so Phase 2 prevents regressions instead of
+   forcing immediate broad test-writing.
+4. Add `jacocoTestCoverageVerification` to each Java project.
+5. Wire coverage verification into `check`.
+6. Ratchet thresholds upward over time until shared standards are met.
+
+Initial threshold targets:
+
+| Repository | Line gate | Branch gate | Notes |
+|---|---:|---:|---|
+| `service-common` | 90% aggregate, or module-specific gates | 75% | Shared library code should stay above the general service baseline. |
+| `permission-service` | 80% | 70% | Starts below the current baseline as a regression guard. |
+| `transaction-service` | 80% | 75% | Starts below the current baseline as a regression guard. |
+| `currency-service` | 90% | 85% | Current baseline supports a higher initial gate. |
+| `session-gateway` | 90% | 65% | Branch coverage starts lower because reactive/session/security conditionals need targeted tests. |
 
 Target end state:
 
 - Overall line coverage reaches the documented 80% minimum.
+- Branch coverage is enforced separately and ratcheted carefully; avoid a blanket 80% branch gate
+  until reactive/security-heavy services have targeted tests.
 - Shared libraries and critical utilities trend toward 100% meaningful coverage.
 - Controllers, services, exception handling, security helpers, and sanitizers have explicit
   coverage expectations.
