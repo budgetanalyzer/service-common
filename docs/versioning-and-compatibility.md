@@ -2,46 +2,56 @@
 
 ## Core Principle
 
-**CRITICAL**: ALL changes to **spring-platform**, **spring-cloud-platform**, **service-core**, and **service-web** MUST be backwards compatible. We maintain a common platform across all microservices and upgrade all services in lockstep when we upgrade these artifacts.
+**CRITICAL**: ALL changes to **spring-platform**, **spring-cloud-platform**, **service-core**, and **service-web** MUST be backwards compatible. We maintain a common platform across all microservices, but `service-common` is a library version, not the global Budget Analyzer deployment version.
 
 ## Multi-Module Versioning
 
 **spring-platform**, **spring-cloud-platform**, **service-core**, and **service-web** are versioned **together as a coordinated set**:
 - All artifacts share the same version number (for example, `0.0.1-SNAPSHOT`
   for a local snapshot build)
-- All artifacts are released together in lockstep
+- All artifacts are released together as one `service-common` library set
 - Changes to any artifact trigger one service-common version bump
-- Consuming services upgrade the platform and runtime library artifacts simultaneously
+- Consuming services upgrade the platform and runtime library artifacts by
+  changing their checked-in `serviceCommon` coordinate when they intentionally
+  adopt that library release
 
 ## Why Backwards Compatibility Matters
 
-### CI/CD-Driven Lockstep Upgrades
+### Independent Service Releases
 
-Budget Analyzer uses a **CI/CD-driven lockstep upgrade strategy** for all service-common artifacts:
+Budget Analyzer services may publish and deploy runtime artifacts
+independently. A service image release, frontend release, or orchestration
+configuration change does not automatically imply a new
+`service-common` release.
 
-**How it works**: Pushes to service-common trigger automated CI/CD releases of all microservices. This is not a manual "war room" coordination - it's fully automated.
+This makes backwards compatibility stricter, not looser:
 
-**Benefits**:
-- All services stay on the same service-common artifact version - always latest
-- Integration issues are caught immediately during the coordinated upgrade
-- No version fragmentation across the microservice ecosystem
-- No mental overhead of tracking "which service is on which version"
+- different services may consume different `service-common` versions during a
+  rollout window
+- a change to one service's runtime artifact should not force unrelated
+  services to rebuild or change library coordinates
+- runtime environments may contain mixed service artifact versions and
+  `service-common` coordinates
+- rollbacks are simpler when a service can return to its previous runtime
+  artifact and library coordinate without requiring a repository-wide library
+  version move
 
-**Why not independent versioning?** Independent versioning creates operational complexity:
-- Compatibility matrices to maintain
-- "Works on my machine" issues from version mismatches
-- Integration bugs that surface weeks after the actual breaking change
-- Cognitive overhead of version tracking across services
-
-With CI/CD lockstep, the question "which version?" has one answer: latest.
+Coordinated `service-common` adoption across every Java consumer is still valid
+for broad platform changes or intentional shared-library upgrades. It is a
+library-consumer decision, not a default side effect of unrelated runtime or
+configuration changes.
 
 ### Problems with Breaking Changes
 
-Breaking changes undermine the lockstep strategy by:
-- **Forcing staggered upgrades**: Services must upgrade one-by-one instead of together
-- **Version fragmentation**: Services end up on different versions of the libraries
-- **Missed compatibility issues**: Integration problems surface weeks/months later
-- **Deployment coordination nightmares**: Complex rollout sequences, rollback challenges
+Breaking changes undermine independent service deployment by:
+- **Forcing coordinated upgrades**: Services must upgrade together instead of
+  adopting the library when they actually need it
+- **Increasing version risk**: Services on older library coordinates can break
+  when compatibility is assumed but not preserved
+- **Missed compatibility issues**: Integration problems surface later in a
+  consuming service release rather than at the library change
+- **Deployment coordination pressure**: Rollout and rollback become tied to a
+  shared-library migration instead of a service artifact
 - **Technical debt accumulation**: Temporary workarounds become permanent
 
 ## Rules for Backwards Compatibility
@@ -124,10 +134,9 @@ public void processTransaction(Transaction tx) {
 ### 4. Test Against All Consuming Services
 
 Before releasing service-common changes:
-- Build and test against transaction-service
-- Build and test against currency-service
-- Build and test against any other consuming services
-- Run integration test suites for each service
+- Build and test against the Java services that consume the changed surface
+- Prefer testing all Java consumers before publishing a shared-library release
+- Run integration test suites for affected services
 - Verify no compilation errors, test failures, or behavior changes
 
 **Testing checklist:**
@@ -230,6 +239,11 @@ The service-common artifacts follow [Semantic Versioning 2.0.0](https://semver.o
 `service-common` uses the checked-in `version = "..."` literal in
 `build.gradle.kts` as the release version source of truth.
 
+Publishing `service-common` only makes a Maven coordinate available. Consuming
+services adopt it by changing their checked-in `serviceCommon` version in
+`gradle/libs.versions.toml` and rebuilding through their normal release path.
+Do not assume a published library automatically changes any runtime service.
+
 ### Local Development Publish
 
 ```bash
@@ -323,7 +337,7 @@ Consuming services should still use the orchestration getting-started flow and
 Maven Local for routine local work. GitHub Packages consumption is a
 GitHub-Actions/release concern or an intentional isolated-build concern, not a
 local contributor prerequisite. See
-[orchestration/docs/development/service-common-artifact-resolution.md](https://github.com/budgetanalyzer/orchestration/blob/main/docs/development/service-common-artifact-resolution.md).
+[orchestration/docs/development/service-common-artifact-resolution.md](../../orchestration/docs/development/service-common-artifact-resolution.md).
 
 ### Published Coordinates
 
@@ -610,4 +624,4 @@ cd ../currency-service
 
 **Golden Rule**: If you're unsure whether a change is breaking, assume it is and add new APIs instead.
 
-**Remember**: The short-term convenience of modifying existing APIs is not worth the long-term pain of version fragmentation and coordination issues. Always maintain backwards compatibility to support our lockstep upgrade strategy.
+**Remember**: The short-term convenience of modifying existing APIs is not worth the long-term pain of forced coordinated service releases. Always maintain backwards compatibility so services can adopt `service-common` releases intentionally.
