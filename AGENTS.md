@@ -560,6 +560,7 @@ All four artifacts are versioned and released together as a coordinated set.
 **Quick reference**:
 - Add new, don't modify existing (extend rather than change)
 - Platform changes can be breaking when they remove constraints or move major framework versions
+- Prefer expand/contract database migrations; incompatible schema or data changes cannot rely on default Kubernetes rolling updates
 - Test against all consuming services before release
 - Major version bumps require coordinated migration across all services
 

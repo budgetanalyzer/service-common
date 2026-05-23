@@ -355,6 +355,38 @@ org.budgetanalyzer:service-web:<service-common-version>
 
 Database schema changes require special care for backwards compatibility.
 
+### Rolling Deployments and Incompatible Changes
+
+For a migration that is not backward compatible with the old application
+version, do not use the current default rolling-update behavior as-is.
+
+Budget Analyzer services are normally exposed through stable Kubernetes Service
+selectors such as:
+
+```yaml
+selector:
+  app: transaction-service
+```
+
+Deployments use the default rolling strategy unless orchestration explicitly
+configures otherwise. During a rollout, both old and new ReplicaSets can have
+Ready pods behind the same Service. With `replicas: 1`, Kubernetes normally
+keeps the old pod serving until the new pod becomes Ready, then terminates the
+old pod. This is good for availability, but unsafe for incompatible schema or
+data changes because old code can still receive traffic while the new schema or
+data shape is already active.
+
+The production-grade default is to prefer backward-compatible migrations using
+an expand/contract sequence:
+
+- **Release N**: Add nullable columns/tables or dual-write support.
+- **Release N+1**: Switch reads/writes to the new format.
+- **Release N+2**: Remove old fields after all old code is gone.
+
+This allows rolling deploys safely. If a migration cannot be made backward
+compatible, treat it as an explicit deployment-orchestration concern and do not
+rely on the current default rolling strategy.
+
 ### Safe Schema Changes (Additive)
 ```sql
 -- ✅ Adding new table (doesn't affect existing code)
