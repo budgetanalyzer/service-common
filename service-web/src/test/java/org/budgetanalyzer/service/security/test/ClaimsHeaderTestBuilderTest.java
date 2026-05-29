@@ -2,6 +2,8 @@ package org.budgetanalyzer.service.security.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,7 +24,7 @@ class ClaimsHeaderTestBuilderTest {
         .containsEntry(
             "X-Permissions",
             "transactions:read,transactions:write,transactions:delete,views:read,views:write,"
-                + "views:delete,statementformats:read,currencies:read");
+                + "views:delete,statementformats:read,statementformats:write,currencies:read");
     assertThat(headers).containsEntry("X-Roles", "USER");
   }
 
@@ -40,24 +42,30 @@ class ClaimsHeaderTestBuilderTest {
     assertThat(headers).containsEntry("X-User-Id", "usr_admin456");
     assertThat(headers).containsEntry("X-Roles", "ADMIN");
 
-    var permissions = headers.get("X-Permissions");
-    assertThat(permissions).contains("transactions:read");
-    assertThat(permissions).contains("transactions:write");
-    assertThat(permissions).contains("transactions:delete");
-    assertThat(permissions).contains("transactions:read:any");
-    assertThat(permissions).contains("transactions:write:any");
-    assertThat(permissions).contains("transactions:delete:any");
-    assertThat(permissions).contains("users:read");
-    assertThat(permissions).contains("users:write");
-    assertThat(permissions).contains("users:delete");
-    assertThat(permissions).contains("currencies:read");
-    assertThat(permissions).contains("currencies:write");
-    assertThat(permissions).contains("statementformats:read");
-    assertThat(permissions).contains("statementformats:write");
-    assertThat(permissions).doesNotContain("statementformats:delete");
-    assertThat(permissions).doesNotContain("views:read");
-    assertThat(permissions).doesNotContain("views:write");
-    assertThat(permissions).doesNotContain("views:delete");
+    var permissions = List.of(headers.get("X-Permissions").split(","));
+    assertThat(permissions)
+        .containsExactly(
+            "transactions:read",
+            "transactions:write",
+            "transactions:delete",
+            "transactions:read:any",
+            "transactions:write:any",
+            "transactions:delete:any",
+            "users:read",
+            "users:write",
+            "users:delete",
+            "statementformats:read",
+            "statementformats:read:any",
+            "statementformats:write:any",
+            "currencies:read",
+            "currencies:write");
+    assertThat(permissions)
+        .doesNotContain(
+            "statementformats:write",
+            "statementformats:delete",
+            "views:read",
+            "views:write",
+            "views:delete");
   }
 
   @Test

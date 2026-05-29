@@ -65,6 +65,7 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
           "views:write",
           "views:delete",
           "statementformats:read",
+          "statementformats:write",
           "currencies:read");
 
   private static final List<String> ADMIN_PERMISSIONS =
@@ -79,7 +80,8 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
           "users:write",
           "users:delete",
           "statementformats:read",
-          "statementformats:write",
+          "statementformats:read:any",
+          "statementformats:write:any",
           "currencies:read",
           "currencies:write");
 
@@ -102,7 +104,8 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
    *   <li>User ID: "usr_test123"
    *   <li>Roles: ["USER"]
    *   <li>Permissions: ["transactions:read", "transactions:write", "transactions:delete",
-   *       "views:read", "views:write", "views:delete", "statementformats:read", "currencies:read"]
+   *       "views:read", "views:write", "views:delete", "statementformats:read",
+   *       "statementformats:write", "currencies:read"]
    * </ul>
    *
    * @return builder configured as default user (also usable as RequestPostProcessor)
@@ -132,7 +135,7 @@ public class ClaimsHeaderTestBuilder implements RequestPostProcessor {
    *   <li>User ID: "usr_admin456"
    *   <li>Roles: ["ADMIN"]
    *   <li>Permissions: all non-view permissions for transactions (including {@code :any} variants),
-   *       users, statement formats, and currencies
+   *       users, statement format read plus {@code :any} read/write, and currencies
    * </ul>
    *
    * @return builder configured as admin user
