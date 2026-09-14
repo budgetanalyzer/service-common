@@ -38,13 +38,13 @@ services by itself.
 
 ## Resolved dependency graph
 
-`.github/workflows/dependency-submission.yml` runs on trusted pushes to `main`,
-weekly, and by manual dispatch. The job runs only for the `main` ref and uses
-the official `gradle/actions/dependency-submission` action with the open-source
-`basic` cache provider. Its job token receives only `contents: write`, which is
-required by GitHub's Dependency Submission API. The graph is submitted
-directly and is not retained as a workflow artifact or published as a Build
-Scan.
+`.github/workflows/dependency-submission.yml` preserves graph submission on
+trusted `main` pushes, weekly runs, and `main` dispatches. It also accepts the
+exact `dependency-automation-trial` ref. Trial runs build the complete project
+and use the official `gradle/actions/dependency-submission` generation-only path
+until both the protected trial ref is the current default and the trial graph
+submission variable is enabled. The action uses the open-source `basic` cache
+provider and never performs its implicit graph-artifact upload.
 
 The action's default resolution task visits all projects and all resolvable
 configurations. Do not add project or configuration filters without proving
@@ -77,6 +77,19 @@ also not proof that an available Spring Boot update fixes every Framework,
 Security, Jackson, Tomcat, or Netty advisory. Trace the affected configuration
 with Gradle dependency insight and review any override as a service-owner
 decision.
+
+## Phase 12 branch measurement controls
+
+`build.yml` accepts pushes to the exact trial branch and pull requests based on
+either `main` or that branch. Trial builds measure the complete JAR, test-result,
+and failure-log allowlist with optional caches and uploads disabled by default.
+`dependency-submission.yml` measures the generated graph and resolution log;
+trial schedule, cache, upload, and submission expansion follows the repository
+variables defined by the
+[orchestration trial workflow policy](../../orchestration/docs/dependency-automation.md#trial-workflow-controls).
+Any enabled trial upload is a single sealed archive retained for one day and
+must fit beneath the 25 MiB per-run cap. Production `main` uploads and
+submissions are unchanged.
 
 ## Bot pull request checks
 
