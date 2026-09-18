@@ -724,6 +724,12 @@ All four artifacts are versioned and released together as a coordinated set.
 - System-wide architecture: [orchestration/AGENTS.md](../orchestration/AGENTS.md)
 - Individual service AGENTS.md files - Service-specific concerns
 
+**Dependency automation** (load before changing Renovate or GitHub Actions):
+- Repository preset inheritance, build artifacts, and resolved graph behavior:
+  [docs/dependency-automation.md](docs/dependency-automation.md)
+- Cross-repository shared preset and operating policy:
+  [orchestration dependency automation](../orchestration/docs/dependency-automation.md)
+
 **NO GIT WRITE OPERATIONS**: Never run git commands (commit, push, checkout, reset, etc.) without explicit user request. The user controls git operations entirely. You may suggest what to commit, but don't do it.
 
 ## Honest Discourse
