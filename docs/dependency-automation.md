@@ -1,28 +1,20 @@
 # Dependency Automation
 
-The workspace-wide operating policy, activation steps, cost boundary, and
-failure triage are owned by
+The workspace-wide operating policy, shared Renovate preset, and failure triage
+are owned by
 [orchestration's dependency automation guide](../../orchestration/docs/dependency-automation.md).
 This document records only the `service-common` integration and review checks.
 
 ## Update discovery
 
-`renovate.json` extends the shared Budget Analyzer preset. Renovate's native
-Gradle, Gradle Wrapper, and GitHub Actions managers discover this repository's
-version catalog, build scripts, wrapper distribution, and workflow actions.
-There are currently no Dockerfiles in this repository. Add file-specific
-manager configuration only if a future dependency declaration is not covered
-by a native manager.
-
-The Phase 3 local extraction found 52 dependency occurrences across 12 files:
-33 Gradle occurrences in seven files, one wrapper occurrence, and 18 GitHub
-Actions occurrences in four workflows. Maven and Gradle lookups produced 41
-candidate branches before scheduling, concurrency limits, and dashboard
-approval. Maintained-line and later-major proposals were both visible for the
-Spring platform, documentation, test, locking, and wrapper dependencies. The
-Actions references were extracted, but authenticated GitHub lookups remain a
-post-publication hosted check because no GitHub token is supplied to local
-validation.
+`renovate.json` extends
+`github>budgetanalyzer/orchestration//renovate-presets/default`. The reference
+has no branch suffix, so Renovate inherits the production preset from the
+orchestration repository's default branch. Renovate's native Gradle, Gradle
+Wrapper, and GitHub Actions managers discover this repository's version
+catalog, build scripts, wrapper distribution, and workflow actions. Add
+file-specific manager configuration only if a future dependency declaration is
+not covered by a native manager.
 
 Renovate proposes changes only to direct declarations. It does not turn every
 version inherited from the Spring Boot, Spring Cloud, or Spring Modulith BOMs
@@ -39,37 +31,24 @@ services by itself.
 ## Resolved dependency graph
 
 `.github/workflows/dependency-submission.yml` preserves graph submission on
-trusted `main` pushes, weekly runs, and `main` dispatches. It also accepts the
-exact `dependency-automation-trial` ref. Trial runs build the complete project
-and use the official `gradle/actions/dependency-submission` generation-only path
-until both the protected trial ref is the current default and the trial graph
-submission variable is enabled. The action uses the open-source `basic` cache
-provider and never performs its implicit graph-artifact upload.
+trusted `main` pushes, weekly runs, and manual dispatches. The workflow grants
+only `contents: write` at job scope, checks out without persisted credentials,
+and uses the official `gradle/actions/dependency-submission` action to generate
+and submit the resolved graph directly. The action uses the open-source `basic`
+cache provider and runs Gradle with `--no-configuration-cache`.
 
 The action's default resolution task visits all projects and all resolvable
 configurations. Do not add project or configuration filters without proving
 equivalent coverage: the platform modules contribute imported BOMs, while the
 library modules contribute compile, runtime, and test dependency trees.
 
-Local Phase 3 validation generated an official plugin snapshot without
-submitting it. The snapshot contained 216 resolved coordinate/version entries
-across the four subprojects. It included the Spring Boot, Spring Cloud, and
-Spring Modulith BOM coordinates and these inherited component families where
-the current build actually resolves them:
-
-| Component family | Resolution evidence |
-| --- | --- |
-| Spring Framework | Library runtime and test classpaths |
-| Spring Security | `service-core` and `service-web` test classpaths; compile-only APIs are also resolved through compile classpaths |
-| Embedded Tomcat | `service-web` test runtime, which exercises the servlet stack |
-| Netty | `service-web` test runtime, which exercises the reactive stack |
-| Jackson | `service-core` and `service-web` runtime and test classpaths |
-
-The entry count and resolved versions will change as the checked-in dependency
-selection changes; they are evidence from onboarding, not a desired-version
-inventory. A successful local snapshot proves generation and transitive
-coverage, but only a hosted run after repository activation proves submission
-and creates Dependabot alert input.
+The submitted graph includes the Spring Boot, Spring Cloud, and Spring Modulith
+BOM coordinates plus the dependencies resolved from the platform and library
+module configurations. This gives Dependabot alerting visibility into inherited
+component families such as Spring Framework, Spring Security, servlet and
+reactive runtimes, and Jackson without turning those components into direct
+Renovate declarations. A successful hosted workflow run is the proof that the
+graph was accepted and can supply Dependabot alerts.
 
 GitHub's dependency graph reports resolved packages but does not decide which
 BOM or override should remediate an inherited finding. A Dependabot alert is
@@ -78,18 +57,18 @@ Security, Jackson, Tomcat, or Netty advisory. Trace the affected configuration
 with Gradle dependency insight and review any override as a service-owner
 decision.
 
-## Phase 12 branch measurement controls
+## Production workflow ownership
 
-`build.yml` accepts pushes to the exact trial branch and pull requests based on
-either `main` or that branch. Trial builds measure the complete JAR, test-result,
-and failure-log allowlist with optional caches and uploads disabled by default.
-`dependency-submission.yml` measures the generated graph and resolution log;
-trial schedule, cache, upload, and submission expansion follows the repository
-variables defined by the
-[orchestration trial workflow policy](../../orchestration/docs/dependency-automation.md#trial-workflow-controls).
-Any enabled trial upload is a single sealed archive retained for one day and
-must fit beneath the 25 MiB per-run cap. Production `main` uploads and
-submissions are unchanged.
+`.github/workflows/build.yml` runs for `main` pushes, pull requests targeting
+`main`, and manual dispatches. It retains the repository's normal JUnit XML and
+library JAR artifacts for seven days and validates publication locally with
+`publishToMavenLocal`. These JARs are part of the shared-library validation
+contract and must not be removed as deployable-application artifact cleanup.
+
+`.github/workflows/dependency-submission.yml` owns resolved graph generation and
+submission. Keep its triggers restricted to trusted `main` execution, preserve
+full-project resolution, and do not add evidence archives or alternate
+generation-only paths.
 
 ## Bot pull request checks
 

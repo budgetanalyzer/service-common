@@ -225,7 +225,7 @@ Packages links to the workflow log and job summary. See
 [docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md) for
 the release and publishing contract.
 
-Renovate update discovery and the trusted-branch resolved dependency graph are
+Renovate update discovery and the trusted `main` resolved dependency graph are
 documented in
 [docs/dependency-automation.md](docs/dependency-automation.md). Dependency graph
 submission inventories BOM-managed transitive packages for Dependabot alerts;
