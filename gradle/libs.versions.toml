@@ -13,7 +13,7 @@ testcontainers = "1.21.4"
 wiremock = "3.13.2"
 awaitility = "4.3.0"
 shedlock = "6.10.0"
-junitPlatform = "1.12.2"
+junitPlatform = "1.14.4"
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
