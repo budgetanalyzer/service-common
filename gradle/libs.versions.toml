@@ -2,7 +2,7 @@
 java = "25"
 springBoot = "3.5.14"
 springCloud = "2025.0.2"
-springModulith = "1.4.11"
+springModulith = "1.4.13"
 spotless = "8.0.0"
 checkstyle = "12.0.1"
 googleJavaFormat = "1.32.0"
