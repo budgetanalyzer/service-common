@@ -1,6 +1,6 @@
 [versions]
 java = "25"
-springBoot = "3.5.14"
+springBoot = "3.5.16"
 springCloud = "2025.0.2"
 springModulith = "1.4.11"
 spotless = "8.0.0"
