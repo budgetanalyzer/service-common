@@ -2,7 +2,12 @@ package org.budgetanalyzer.service.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +15,8 @@ import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.method.HandlerMethod;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -17,7 +24,11 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+
+import org.budgetanalyzer.service.api.ApiErrorResponse;
+import org.budgetanalyzer.service.api.ApiErrorType;
 
 class BaseOpenApiConfigTest {
 
@@ -58,6 +69,79 @@ class BaseOpenApiConfigTest {
       var customizer = context.getBean("globalResponseCustomizer", OpenApiCustomizer.class);
       assertThat(customizer).as("OpenApiCustomizer should not be null").isNotNull();
     }
+  }
+
+  @Test
+  void shouldAddSecurityResponsesForMergedMethodPreAuthorize() throws NoSuchMethodException {
+    // Arrange
+    var operation = createOperation();
+    var handlerMethod =
+        createHandlerMethod(new MethodSecuredController(), "securedWithComposedAnnotation");
+
+    // Act
+    testOpenApiConfig.securityResponseCustomizer().customize(operation, handlerMethod);
+
+    // Assert
+    assertSecurityResponse(
+        operation.getResponses().get("401"), ApiErrorType.UNAUTHORIZED, "Authentication required");
+    assertSecurityResponse(
+        operation.getResponses().get("403"),
+        ApiErrorType.FORBIDDEN,
+        "You do not have permission to perform this action");
+  }
+
+  @Test
+  void shouldAddSecurityResponsesForInheritedClassPreAuthorize() throws NoSuchMethodException {
+    // Arrange
+    var operation = createOperation();
+    var handlerMethod =
+        createHandlerMethod(new InheritedClassSecuredController(), "securedByClass");
+
+    // Act
+    testOpenApiConfig.securityResponseCustomizer().customize(operation, handlerMethod);
+
+    // Assert
+    assertThat(operation.getResponses()).containsKeys("401", "403");
+  }
+
+  @Test
+  void shouldNotAddSecurityResponsesForUnsecuredHandler() throws NoSuchMethodException {
+    // Arrange
+    var operation = createOperation();
+    var handlerMethod = createHandlerMethod(new MethodSecuredController(), "unsecured");
+
+    // Act
+    testOpenApiConfig.securityResponseCustomizer().customize(operation, handlerMethod);
+
+    // Assert
+    assertThat(operation.getResponses()).doesNotContainKeys("401", "403");
+  }
+
+  @Test
+  void shouldPreserveAllExplicitSharedResponses() throws NoSuchMethodException {
+    // Arrange
+    var operation = createOperationWithPathParameter();
+    var explicitResponses = new LinkedHashMap<String, ApiResponse>();
+    for (var statusCode : new String[] {"400", "401", "403", "404", "500", "503"}) {
+      var explicitResponse = new ApiResponse().description("Explicit " + statusCode);
+      explicitResponses.put(statusCode, explicitResponse);
+      operation.getResponses().addApiResponse(statusCode, explicitResponse);
+    }
+    openApi.getPaths().addPathItem("/api/users/{id}", new PathItem().put(operation));
+    var handlerMethod =
+        createHandlerMethod(new MethodSecuredController(), "securedWithComposedAnnotation");
+
+    // Act
+    testOpenApiConfig.securityResponseCustomizer().customize(operation, handlerMethod);
+    testOpenApiConfig.globalResponseCustomizer().customise(openApi);
+
+    // Assert
+    explicitResponses.forEach(
+        (statusCode, explicitResponse) -> {
+          assertThat(operation.getResponses().get(statusCode)).isSameAs(explicitResponse);
+          assertThat(operation.getResponses().get(statusCode).getDescription())
+              .isEqualTo("Explicit " + statusCode);
+        });
   }
 
   @Test
@@ -554,6 +638,46 @@ class BaseOpenApiConfigTest {
     operation.setParameters(new ArrayList<>());
     operation.addParametersItem(pathParam);
     return operation;
+  }
+
+  private HandlerMethod createHandlerMethod(Object controller, String methodName)
+      throws NoSuchMethodException {
+    return new HandlerMethod(controller, controller.getClass().getMethod(methodName));
+  }
+
+  private void assertSecurityResponse(
+      ApiResponse apiResponse, ApiErrorType expectedType, String expectedMessage) {
+    assertThat(apiResponse).isNotNull();
+    var mediaType = apiResponse.getContent().get("application/json");
+    assertThat(mediaType.getSchema().get$ref()).isEqualTo("#/components/schemas/ApiErrorResponse");
+    assertThat(mediaType.getExample())
+        .isInstanceOfSatisfying(
+            ApiErrorResponse.class,
+            example -> {
+              assertThat(example.getType()).isEqualTo(expectedType);
+              assertThat(example.getMessage()).isEqualTo(expectedMessage);
+            });
+  }
+
+  @Target({ElementType.METHOD, ElementType.TYPE})
+  @Retention(RetentionPolicy.RUNTIME)
+  @PreAuthorize("hasAuthority('test:read')")
+  @interface TestPreAuthorize {}
+
+  static class MethodSecuredController {
+
+    @TestPreAuthorize
+    public void securedWithComposedAnnotation() {}
+
+    public void unsecured() {}
+  }
+
+  @PreAuthorize("hasAuthority('test:read')")
+  static class ClassSecuredController {}
+
+  static class InheritedClassSecuredController extends ClassSecuredController {
+
+    public void securedByClass() {}
   }
 
   @Configuration

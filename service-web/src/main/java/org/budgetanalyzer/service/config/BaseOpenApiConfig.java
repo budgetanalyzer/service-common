@@ -1,9 +1,13 @@
 package org.budgetanalyzer.service.config;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.customizers.OperationCustomizer;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.method.HandlerMethod;
 
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Components;
@@ -33,6 +37,8 @@ import org.budgetanalyzer.service.api.FieldError;
  *
  * <ul>
  *   <li>Automatic addition of standard error responses (400, 404, 500, 503) to all endpoints
+ *   <li>Automatic 401 and 403 responses for operations secured with {@code @PreAuthorize}
+ *   <li>Preservation of all responses explicitly documented by consuming services
  *   <li>Prevents SpringDoc from scanning RestControllerAdvice (which adds every possible response
  *       to every endpoint)
  *   <li>Ensures ApiErrorResponse and FieldError schemas are included in OpenAPI documentation
@@ -90,6 +96,9 @@ public abstract class BaseOpenApiConfig {
    *   <li>All methods: 500 Internal Server Error, 503 Service Unavailable
    * </ul>
    *
+   * <p>Every generated response is additive. If SpringDoc has already built a response from
+   * controller annotations, that explicit response remains unchanged.
+   *
    * @return an OpenAPI customizer that adds standard error responses
    */
   @Bean
@@ -102,6 +111,29 @@ public abstract class BaseOpenApiConfig {
             .forEach(
                 pathItem -> pathItem.readOperationsMap().forEach(this::addStandardErrorResponses));
       }
+    };
+  }
+
+  /**
+   * Creates an operation customizer that documents standard method-security responses.
+   *
+   * <p>The customizer detects merged {@link PreAuthorize} annotations on the controller method or
+   * controller class. Secured operations receive standard 401 Unauthorized and 403 Forbidden
+   * responses unless the consuming service already documented those responses explicitly. Unsecured
+   * operations are unchanged.
+   *
+   * @return an operation customizer that adds security responses to secured operations
+   */
+  @Bean
+  public OperationCustomizer securityResponseCustomizer() {
+    return (operation, handlerMethod) -> {
+      if (hasPreAuthorize(handlerMethod)) {
+        addGeneratedResponseIfAbsent(operation, HttpStatus.UNAUTHORIZED, "Authentication required");
+        addGeneratedResponseIfAbsent(
+            operation, HttpStatus.FORBIDDEN, "You do not have permission to perform this action");
+      }
+
+      return operation;
     };
   }
 
@@ -232,47 +264,61 @@ public abstract class BaseOpenApiConfig {
   }
 
   /**
-   * Adds a 400 Bad Request error response to an operation.
+   * Adds a 400 Bad Request error response when the operation does not already define one.
    *
    * @param operation the operation to add the response to
    */
   protected void addBadRequestResponse(Operation operation) {
-    operation
-        .getResponses()
-        .addApiResponse("400", buildExampleApiErrorResponse(HttpStatus.BAD_REQUEST));
+    addGeneratedResponseIfAbsent(operation, HttpStatus.BAD_REQUEST);
   }
 
   /**
-   * Adds a 404 Not Found error response to an operation.
+   * Adds a 404 Not Found error response when the operation does not already define one.
    *
    * @param operation the operation to add the response to
    */
   protected void addNotFoundResponse(Operation operation) {
-    operation
-        .getResponses()
-        .addApiResponse("404", buildExampleApiErrorResponse(HttpStatus.NOT_FOUND));
+    addGeneratedResponseIfAbsent(operation, HttpStatus.NOT_FOUND);
   }
 
   /**
-   * Adds a 500 Internal Server Error response to an operation.
+   * Adds a 500 Internal Server Error response when the operation does not already define one.
    *
    * @param operation the operation to add the response to
    */
   protected void addInternalServerErrorResponse(Operation operation) {
-    operation
-        .getResponses()
-        .addApiResponse("500", buildExampleApiErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR));
+    addGeneratedResponseIfAbsent(operation, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   /**
-   * Adds a 503 Service Unavailable error response to an operation.
+   * Adds a 503 Service Unavailable response when the operation does not already define one.
    *
    * @param operation the operation to add the response to
    */
   protected void addServiceUnavailableResponse(Operation operation) {
-    operation
-        .getResponses()
-        .addApiResponse("503", buildExampleApiErrorResponse(HttpStatus.SERVICE_UNAVAILABLE));
+    addGeneratedResponseIfAbsent(operation, HttpStatus.SERVICE_UNAVAILABLE);
+  }
+
+  private boolean hasPreAuthorize(HandlerMethod handlerMethod) {
+    return AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), PreAuthorize.class)
+            != null
+        || AnnotatedElementUtils.findMergedAnnotation(
+                handlerMethod.getBeanType(), PreAuthorize.class)
+            != null;
+  }
+
+  private void addGeneratedResponseIfAbsent(Operation operation, HttpStatus httpStatus) {
+    addGeneratedResponseIfAbsent(operation, httpStatus, httpStatus.getReasonPhrase());
+  }
+
+  private void addGeneratedResponseIfAbsent(
+      Operation operation, HttpStatus httpStatus, String message) {
+    var statusCode = Integer.toString(httpStatus.value());
+    if (!operation.getResponses().containsKey(statusCode)) {
+      operation
+          .getResponses()
+          .addApiResponse(statusCode, buildExampleApiErrorResponse(httpStatus, message, null));
+    }
   }
 
   /**
@@ -284,6 +330,8 @@ public abstract class BaseOpenApiConfig {
   private ApiErrorType getTypeFromHttpStatus(HttpStatus httpStatus) {
     return switch (httpStatus) {
       case HttpStatus.BAD_REQUEST -> ApiErrorType.INVALID_REQUEST;
+      case HttpStatus.UNAUTHORIZED -> ApiErrorType.UNAUTHORIZED;
+      case HttpStatus.FORBIDDEN -> ApiErrorType.FORBIDDEN;
       case HttpStatus.NOT_FOUND -> ApiErrorType.NOT_FOUND;
       case HttpStatus.UNPROCESSABLE_ENTITY -> ApiErrorType.APPLICATION_ERROR;
       case HttpStatus.SERVICE_UNAVAILABLE -> ApiErrorType.SERVICE_UNAVAILABLE;

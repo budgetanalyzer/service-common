@@ -159,7 +159,8 @@ When service-web is on your classpath, you automatically get:
   - Multipart, binary, and compressed bodies are omitted with placeholders instead of raw content
   - Required list settings and `log-level` must not be explicit null values; startup fails during
     configuration validation if they are bound as null. Empty lists are valid.
-- **OpenAPI Base Config** - Standard error response schemas (extend BaseOpenApiConfig in your service)
+- **OpenAPI Base Config** - Additive standard error responses, including 401/403 for
+  `@PreAuthorize` operations (extend BaseOpenApiConfig in your service)
 
 **Example configuration** (application.yml):
 ```yaml
