@@ -494,7 +494,11 @@ budgetanalyzer:
 
 **OpenAPI Base Configuration** (`BaseOpenApiConfig`):
 - Abstract base class for service-specific OpenAPI configuration
-- Automatically provides: Standard error response schemas (400/404/500/503)
+- Automatically provides method-specific standard error responses (400/404/500/503)
+- Adds standard 401/403 `ApiErrorResponse` documentation to controller methods or classes with
+  `@PreAuthorize`, including merged annotations
+- Preserves explicit controller responses for every generated status code; public endpoints and
+  service-specific authentication flows remain documented by their owning service
 - **Requires manual setup**: Service must extend `BaseOpenApiConfig`
   ```java
   @Configuration
@@ -541,7 +545,8 @@ grep -r "@Configuration" service-web/src/main/java/
 - ✅ Consumer-defined Spring Security chains override the shared default chain on both servlet and reactive stacks
 - ✅ Correlation ID filter - automatic
 - ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`; structured text bodies are redacted and unsafe body types are omitted
-- ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`
+- ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`; shared
+  defaults are additive and `@PreAuthorize` operations receive standard 401/403 responses
 
 **IMPORTANT**: Component scanning of `org.budgetanalyzer.service` is **NOT required** for autoconfiguration. The Spring Boot autoconfiguration mechanism handles everything automatically via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 

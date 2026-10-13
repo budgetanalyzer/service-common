@@ -206,7 +206,21 @@ public class CreateTransactionRequest {
 
 **Rule**: ALL request/response DTOs MUST be annotated with SpringDoc OpenAPI annotations for API documentation.
 
-Budget Analyzer uses SpringDoc OpenAPI to generate interactive API documentation. This is fundamental to our design - the `BaseOpenApiConfig` in service-common provides base configuration, but all DTOs require proper annotations.
+Budget Analyzer uses SpringDoc OpenAPI to generate interactive API documentation. This is
+fundamental to our design: `BaseOpenApiConfig` in service-common provides shared configuration, but
+all request and response models still require proper annotations.
+
+`BaseOpenApiConfig` adds standard method-specific `400`, `404`, `500`, and `503` responses. It also
+adds standard `401` and `403` `ApiErrorResponse` documentation when a controller method or
+controller class has `@PreAuthorize`, including composed or inherited annotations. Every generated
+response is additive: an explicit controller `@ApiResponse` for the same status code takes
+precedence, including its description, schema, headers, and examples.
+
+Do not add `@PreAuthorize` merely to generate OpenAPI responses. Public endpoints and endpoints
+secured through service-specific path rules or authentication flows must document any applicable
+security responses explicitly in their owning service. The shared configuration does not infer
+security from `SecurityFilterChain` or `SecurityWebFilterChain` path matchers and does not define an
+OpenAPI security scheme for internal claims headers.
 
 #### DTO Annotations
 
