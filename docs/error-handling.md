@@ -53,6 +53,11 @@ as `code` and `fieldErrors` remain optional.
 `ApiErrorResponse` rejects missing `type` and `message` at build time. All `FieldError` factories
 require `field` and `message`.
 
+The same wire format is emitted by edge producers such as Session Gateway security entry points
+and `ext-authz`. Keep changes to `ApiErrorResponse` synchronized with those producers. This
+deliberate contract coupling is accepted so callers receive one stable error shape without learning
+which internal layer rejected a request.
+
 ## Error Types
 
 The `ApiErrorType` enum defines standard error categories:
