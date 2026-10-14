@@ -23,7 +23,7 @@
 **Role**: Shared library; provides patterns all Java services consume
 
 ### Relationships
-- **Abstracts for**: Discover via `grep -l "service-common" /workspace/*/build.gradle.kts`
+- **Abstracts for**: Discover via `grep -l "service-common" ../*/build.gradle.kts`
 - **Observed by**: orchestration
 
 ### Permissions
@@ -34,12 +34,17 @@
 ### Discovery
 ```bash
 # My consumers
-grep -l "service-common" /workspace/*/build.gradle.kts 2>/dev/null
+grep -l "service-common" ../*/build.gradle.kts 2>/dev/null
 ```
 
 ## Code Exploration
 
 NEVER use Agent/subagent tools for code exploration. Use Grep, Glob, and Read directly.
+
+## Path Portability
+
+Use repository-relative, sibling-relative, or dynamically resolved paths.
+Never hardcode machine-specific checkout locations such as `/workspace`.
 
 ## Documentation Discipline
 
@@ -60,11 +65,13 @@ use its canonical template, replace every placeholder, and retain the numbered
 Run a specific plan through the workspace wrapper with:
 
 ```bash
+repo_root=$(git rev-parse --show-toplevel)
+workspace_parent=$(dirname "$repo_root")
 ai-session-handler run \
-  --plan /workspace/REPOSITORY/docs/plans/PLAN.md \
+  --plan "$repo_root/docs/plans/PLAN.md" \
   --max-phases 999 \
   --quiet \
-  --agent-cmd "/workspace/ai-session-handler/.venv/bin/ai-session-handler-codex-high --model MODEL"
+  --agent-cmd "$workspace_parent/ai-session-handler/.venv/bin/ai-session-handler-codex-high --model MODEL"
 ```
 
 Omit `--model MODEL` from the quoted agent command to use the wrapper's
