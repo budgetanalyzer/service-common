@@ -21,12 +21,21 @@ version inherited from the Spring Boot, Spring Cloud, or Spring Modulith BOMs
 into an independently updateable declaration. The resolved dependency graph
 described below is the security inventory for those inherited versions.
 
-Major updates remain visible in the Dependency Dashboard and require approval.
-In particular, Spring Boot 4 and the related Spring Cloud, Spring Framework,
-Spring Security, Spring Modulith, SpringDoc, Testcontainers, ShedLock, and test
-platform lines are a compatibility migration, not a routine patch. Renovate
-cannot select the correct release-train combination or coordinate consumer
-services by itself.
+The repository-local rule for
+`org.springframework.cloud:spring-cloud-dependencies` disables minor and major
+updates. Those updates change the Spring Cloud release train and are suppressed
+because Renovate cannot evaluate the Spring Boot and Spring Cloud compatibility
+matrix. Patch updates within the active Cloud train remain enabled and inherit
+the shared preset's routine-update policy.
+
+Spring Boot major updates remain visible as one latest migration candidate,
+require Dependency Dashboard approval, and are never automerged. The Boot
+plugin and BOM remain coordinated through the shared `springBoot` version in
+the Gradle catalog. A visible Boot target is not proof that a compatible Cloud
+train exists. Before approving a Boot major migration, use the current upstream
+compatibility matrix and release notes to select the Boot, Cloud, and related
+Spring platform versions together in a separately reviewed dependency change,
+then coordinate the affected consumer services.
 
 ## Resolved dependency graph
 
