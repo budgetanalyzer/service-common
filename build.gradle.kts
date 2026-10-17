@@ -12,7 +12,7 @@ import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 
 plugins {
-    id("com.diffplug.spotless") version "8.0.0" apply false
+    id("com.diffplug.spotless") version "8.10.4" apply false
 }
 
 val githubPackagesActor = providers.environmentVariable("GITHUB_ACTOR")
