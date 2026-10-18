@@ -58,7 +58,7 @@ public interface CsvParser {
    * @param fileName the name of the file (used for logging and error messages)
    * @param format a label describing the CSV format or data type (e.g., "transaction", "user")
    * @return parsed CSV data containing headers and rows
-   * @throws IOException if an I/O error occurs reading the stream
+   * @throws IOException if the stream cannot be read or the CSV content cannot be parsed
    */
   CsvData parseCsvInputStream(InputStream inputStream, String fileName, String format)
       throws IOException;

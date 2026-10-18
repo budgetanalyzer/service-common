@@ -157,7 +157,7 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
 
     // Shared checkstyle configuration
     configure<CheckstyleExtension> {
-        toolVersion = "12.0.1"
+        toolVersion = "12.3.1"
         config = resources.text.fromUri("https://raw.githubusercontent.com/budgetanalyzer/checkstyle-config/main/checkstyle.xml")
     }
 

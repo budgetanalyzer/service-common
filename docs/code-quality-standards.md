@@ -67,7 +67,7 @@ only and do not have Java source formatting tasks.
 **Scope**: Applied to runtime Java modules (`service-core`, `service-web`)
 
 **Configuration**:
-- Version 12.0.1
+- Version 12.3.1
 - Centralized rules in [`checkstyle-config`](https://github.com/budgetanalyzer/checkstyle-config) repo (`/workspace/checkstyle-config/` locally), shared across all services
 - Enforces Hibernate import ban
 - Enforces strict lowerCamelCase method names without underscores or a redundant `test` prefix

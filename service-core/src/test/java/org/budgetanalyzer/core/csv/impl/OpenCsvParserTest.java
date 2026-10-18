@@ -1,6 +1,7 @@
 package org.budgetanalyzer.core.csv.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -9,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.opencsv.exceptions.CsvMalformedLineException;
 
 /**
  * Unit tests for {@link OpenCsvParser}.
@@ -36,6 +39,17 @@ class OpenCsvParserTest {
     assertThat(csvData.format()).isEqualTo("user-data");
     assertThat(csvData.headers()).containsExactly("Name", "Age", "City");
     assertThat(csvData.rows()).hasSize(2);
+  }
+
+  @Test
+  void shouldReportMalformedCsvAsIoException() {
+    var inputStream = createInputStream("Name,Description\nJohn,\"unterminated");
+
+    assertThatThrownBy(
+            () -> openCsvParser.parseCsvInputStream(inputStream, "malformed.csv", "user-data"))
+        .isInstanceOf(IOException.class)
+        .hasMessage("Failed to parse CSV file: malformed.csv")
+        .hasCauseInstanceOf(CsvMalformedLineException.class);
   }
 
   @Test
