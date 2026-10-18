@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvException;
+import com.opencsv.exceptions.CsvMalformedLineException;
 
 import org.budgetanalyzer.core.csv.CsvData;
 import org.budgetanalyzer.core.csv.CsvParser;
@@ -22,9 +24,8 @@ import org.budgetanalyzer.core.csv.CsvRow;
 /**
  * CSV parser implementation using the OpenCSV library.
  *
- * <p>This implementation uses OpenCSV version 3.7 to parse CSV files. It extracts headers from the
- * first row and converts subsequent rows into {@link CsvRow} objects with header-based column
- * access.
+ * <p>This implementation uses OpenCSV to parse CSV files. It extracts headers from the first row
+ * and converts subsequent rows into {@link CsvRow} objects with header-based column access.
  *
  * <p>Features:
  *
@@ -55,7 +56,7 @@ public class OpenCsvParser implements CsvParser {
    * @param fileName the name of the file (used for logging)
    * @param format a label describing the CSV format or data type
    * @return parsed CSV data containing headers and rows
-   * @throws IOException if an I/O error occurs reading the stream
+   * @throws IOException if the stream cannot be read or the CSV content cannot be parsed
    */
   @Override
   public CsvData parseCsvInputStream(InputStream inputStream, String fileName, String format)
@@ -69,6 +70,8 @@ public class OpenCsvParser implements CsvParser {
       }
 
       return buildCsvData(fileName, format, allRows);
+    } catch (CsvException | CsvMalformedLineException exception) {
+      throw new IOException("Failed to parse CSV file: " + fileName, exception);
     }
   }
 
