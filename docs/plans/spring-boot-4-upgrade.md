@@ -6,7 +6,8 @@ first iteration changes only this repository. A later integration plan moves the
 
 ## Status
 
-Reviewed execution plan. Migration has not started.
+Reviewed execution plan, including the approved Jackson logging redesign and error-response
+contract changes below. Migration has not started.
 
 ## Versioning
 
@@ -14,7 +15,8 @@ Reviewed execution plan. Migration has not started.
   the Spring Boot 4 line. Do not change the version in any phase.
 - This plan records the user-approved exception to the normal backwards-compatibility,
   deprecation, and major-version rules for this development snapshot only. Jackson public API
-  changes and the framework/BOM changes below are intentional; do not add compatibility shims.
+  removals, logging behavior corrections, explicit error-response serialization policy, and the
+  framework/BOM changes below are intentional; do not add compatibility shims.
   This exception does not authorize a stable release, consumer upgrades, or deployment.
 - The four current consumer repositories pin the published `0.0.17` release. Recheck their
   checked-in coordinates before publishing; do not assume this remains true throughout the work.
@@ -74,17 +76,26 @@ OpenCSV, and Gradle 9.8.2 need no change for Boot 4; Boot 4 requires Gradle 8.14
 - **Jackson 3.** Packages move from `com.fasterxml.jackson` to `tools.jackson`. Annotations stay in
   `com.fasterxml.jackson.annotation`. Boot auto-configures a `tools.jackson.databind.json.JsonMapper`
   bean and no Jackson 2 `ObjectMapper` bean, so every bean method here that injects
-  `com.fasterxml.jackson.databind.ObjectMapper` fails at startup. Type renames we use:
-  `SerializerProvider` -> `SerializationContext`, `JsonSerializer` -> `ValueSerializer`,
-  `BeanSerializerModifier` -> `ValueSerializerModifier`, `TextNode` -> `StringNode`, and
-  `JsonGenerator.writeFieldName` -> `writeName`. Serializer-modifier callbacks now accept
-  `BeanDescription.Supplier` rather than `BeanDescription`; adapt property introspection too.
+  `com.fasterxml.jackson.databind.ObjectMapper` fails at startup. `SerializerProvider` becomes
+  `SerializationContext` and `JsonSerializer` becomes `ValueSerializer`. Phase 2 replaces the
+  property-writer and fallback modifiers instead of porting their internals. For reference,
+  `serializeAsField` became `serializeAsProperty`, modifier callbacks use `BeanDescription.Supplier`,
+  and `JsonGenerator.writeFieldName` became `writeName`.
   `JavaTimeModule` is built in, so `jackson-datatype-jsr310` goes away. Mappers are immutable and
   built with `JsonMapper.builder()`.
-  `JacksonException` is unchecked. Several defaults change, including
-  `MapperFeature.SORT_PROPERTIES_ALPHABETICALLY` and the date features that moved to
-  `DateTimeFeature`. These can reorder JSON output in `SafeLogger` and `ApiErrorResponse`.
-  `spring-boot-jackson2` exists but is deprecated, and this plan does not use it.
+  `JacksonException` is unchecked. Defaults change:
+  `MapperFeature.SORT_PROPERTIES_ALPHABETICALLY` and `DeserializationFeature.FAIL_ON_TRAILING_TOKENS`
+  are enabled by default; dates use ISO strings and date features moved to `DateTimeFeature`.
+  Configure intentional logging order and error-model order explicitly. Keep strict trailing-token
+  checks: multiple JSON roots, including multi-record NDJSON, must produce the sanitizer's omission
+  placeholder instead of silently logging only the first record. This plan uses neither the
+  deprecated `spring-boot-jackson2` bridge nor blanket Jackson 2 default-restoration settings.
+- **Jackson 2 can still compile.** Springdoc 3.1.1 uses Swagger Core Jakarta 2.2.55, which brings
+  Jackson 2 databind onto the classpath. Old imports can compile while mapper injection fails at
+  startup; old databind annotations such as `@JsonSerialize` are silently ignored by Jackson 3.
+  Scan each migrated module's main/test sources in Phases 2 and 3. Keep legitimate third-party
+  Jackson 2 dependencies; do not add global exclusions or a shared Checkstyle ban that affects
+  consumers still using Boot 3. `com.fasterxml.jackson.annotation` remains valid.
 - **Testing.** `@MockBean` and `@SpyBean` are removed (none are used here). `@SpringBootTest` no
   longer provides MockMvc, `TestRestTemplate`, or `WebTestClient` implicitly; the existing tests
   already declare `@AutoConfigureMockMvc` / `@AutoConfigureWebTestClient`. JUnit Jupiter moves to 6.
@@ -107,6 +118,8 @@ OpenCSV, and Gradle 9.8.2 need no change for Boot 4; Boot 4 requires Gradle 8.14
 - [Spring Boot 4.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide)
 - [Spring Boot 4.1 Release Notes](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.1-Release-Notes)
 - [Migrating to Jackson 3](https://github.com/FasterXML/jackson/blob/main/jackson3/MIGRATING_TO_JACKSON_3.md)
+- [Boot Jackson customization and module registration](https://docs.spring.io/spring-boot/how-to/spring-mvc.html#howto.spring-mvc.customize-jackson-objectmapper)
+- [Jackson 3 annotation introspector extension points](https://github.com/FasterXML/jackson-databind/blob/3.1/src/main/java/tools/jackson/databind/AnnotationIntrospector.java)
 - [Spring Cloud 2025.1 (Oakwood) announcement](https://spring.io/blog/2025/11/25/spring-cloud-2025-1-0-aka-oakwood-has-been-released/)
 - [springdoc-openapi compatibility](https://springdoc.org/)
 - [ShedLock compatibility table](https://github.com/lukas-krecan/ShedLock)
@@ -118,15 +131,29 @@ OpenCSV, and Gradle 9.8.2 need no change for Boot 4; Boot 4 requires Gradle 8.14
 - Work only in this repository. Do not edit consumer services, orchestration, or
   budget-analyzer-web.
 - Record public API changes, dependency changes, validation results, and consumer actions as they
-  arise in `docs/plans/spring-boot-4-consumer-migration.md`, created in Phase 1. Include changed
-  public supertypes and implemented interfaces, not just constructors and method parameters.
+  arise in `docs/plans/spring-boot-4-consumer-migration.md`, created in Phase 1. Include
+  public API removals, changed supertypes and implemented interfaces, not just constructors and
+  method parameters. Absence of usage in known consumers does not make public API removal
+  backwards compatible.
   Keep this execution plan unchanged while the session handler is running it.
 - Update the nearest affected documentation in each phase. Canonical docs stay version-agnostic;
   release-specific details belong in the consumer migration notes. Before any `AGENTS.md` edit,
   read [AGENTS.md checkstyle](../../../orchestration/docs/agents-md-checkstyle.md).
-- Do not modify, weaken, or delete existing tests to make them pass. Adapt imports and Jackson
-  construction where the old API no longer exists. If an assertion fails because behavior changed,
-  fix the production code to preserve behavior, or stop and record the decision.
+- Existing tests are expected to change where Boot 4, Spring Security 7, Testcontainers 2, JUnit 6,
+  or Jackson 3 remove or relocate the APIs they use: imports, starters, test annotations, container
+  types and coordinates, and mapper construction. Such migration edits must keep each test's
+  behavioral assertions equivalent. The user also approved these contract changes for the logging
+  redesign: replace the three `SafeLoggerTest` generic-toString expectations with empty-object
+  expectations at the same root/map/nested positions, and update assertions that explicitly require
+  null optional error fields to require omission. Retain ordinary-field assertions and add
+  regression coverage. Do not weaken unrelated assertions. Baseline masking semantics remain
+  unchanged; Phase 2 adds correct-behavior tests for known defects instead of preserving those
+  defects. Any other behavior difference requires a production fix or a recorded decision before
+  proceeding.
+- Keep serialization responsibilities separate: Boot owns the API `JsonMapper`; `SafeLogger` owns
+  a private immutable mapper and package-private masking implementation; `HttpBodyLogSanitizer`
+  owns a private immutable tree mapper. Do not expose logging modules as Spring beans, register
+  them through ServiceLoader, or attach global Jackson serializer meta-annotations to `@Sensitive`.
 - Keep the JaCoCo minimums in the root `build.gradle.kts` unchanged.
 - Use real application beans and concrete test fixtures. Do not introduce Mockito bean overrides.
 - Phases 1 and 2 intentionally leave later modules unbuildable; their scoped validation replaces
@@ -177,8 +204,12 @@ to the target set without breaking Gradle configuration or dependency resolution
 2. Add and run `SensitiveDataSerializationTest` against the current Jackson 2 implementation.
    Exercise `SafeLogger.toJson()` with real objects containing field/getter `@Sensitive`
    annotations, full masking, `showLast` and custom mask characters, short/null values, and nested
-   objects. Assert both masked output and preserved ordinary fields so a fallback `{}` cannot
-   pass. Check that secret portions are absent. Do not rewrite existing assertions.
+   objects, including record components and objects inside lists. Parse the resulting JSON and
+   assert masked values and preserved ordinary fields so a fallback `{}` cannot pass; do not lock
+   in whole-string property order. Check that secret portions are absent. Do not rewrite existing
+   assertions in this phase. Record the known array-shape masking, inclusion, generic-toString,
+   and multi-root parsing defects for Phase 2; do not add tests requiring defective behavior or
+   leave failing future-contract tests in the baseline checkpoint.
 3. In `gradle/libs.versions.toml`, set `springBoot = "4.1.2"`, `springCloud = "2025.1.4"`,
    `springModulith = "2.1.2"`, `springdoc = "3.1.1"`, and `shedlock = "7.10.1"`. Remove the
    `testcontainers` version entry.
@@ -210,7 +241,7 @@ to the target set without breaking Gradle configuration or dependency resolution
    (`https://jakarta.ee/specifications/platform/11/apidocs/`). Keep the Java 25 link.
 7. Update starter and Testcontainers coordinate examples in affected docs. Create the consumer
    migration notes with the target versions, snapshot exception, baseline results, dependency
-   changes, and the later consumer-integration/release gate.
+   changes, approved logging/API contract changes, and the later consumer-integration/release gate.
 
 ### Implementation notes
 
@@ -268,14 +299,15 @@ migration notes are updated.
 
 ### Goal
 
-Make `service-core` build, test, and meet coverage on Boot 4.1.2 and Jackson 3 with unchanged
-logging and masking behavior.
+Make `service-core` build, test, and meet coverage on Boot 4.1.2 and Jackson 3 with a private
+logging serializer implementation, preserved masking semantics, and the approved safety corrections.
 
 ### Scope
 
 - Minimal `service-core/build.gradle.kts` adjustments only if relocated types need explicit modules.
-- Jackson 3 migration of `SafeLogger`, `SensitiveDataModule`, `UnknownTypeSerializer`, and
-  `HttpBodyLogSanitizer` in `service-core/src/main/java/org/budgetanalyzer/core/logging/`.
+- Jackson 3 migration of `SafeLogger` and `HttpBodyLogSanitizer`, replacement of the public
+  `SensitiveDataModule` with a package-private logging module, and removal of
+  `UnknownTypeSerializer` in `service-core/src/main/java/org/budgetanalyzer/core/logging/`.
 - `PrometheusEndpointPostProcessor` and `ApplicationMetricTagPostProcessor`: relocate the
   `EnvironmentPostProcessor` import and update `META-INF/spring.factories`.
 - `ServiceCoreJpaAutoConfiguration`: relocated `DataSourceAutoConfiguration` import.
@@ -285,12 +317,14 @@ logging and masking behavior.
 ### Non-goals
 
 - `service-web` changes.
-- New features or refactoring beyond what the migration requires.
+- Features or refactoring beyond the approved logging redesign; NDJSON sequence support.
 
 ### Required context
 
-- This plan's Gotchas section.
+- This plan's Gotchas and Plan-Wide Constraints sections.
 - [docs/testing-patterns.md](../testing-patterns.md).
+- [docs/common-patterns.md](../common-patterns.md) logging guidance and the current `AGENTS.md`
+  logging/module entry points. Read the linked AGENTS.md checkstyle before editing those entries.
 - `service-core/src/main/java/org/budgetanalyzer/core/logging/`,
   `service-core/src/main/java/org/budgetanalyzer/core/config/`,
   `service-core/src/main/resources/META-INF/`.
@@ -298,35 +332,69 @@ logging and masking behavior.
 
 ### Execution steps
 
-1. Read the baseline masking tests before rewriting serializers. Keep their behavior assertions
-   unchanged, adding focused cases only where the migration exposes a gap. Dependency and test
-   starter wiring is already complete from Phase 1.
-2. Migrate `SafeLogger` to an immutable `JsonMapper.builder()` configuration that preserves the
-   current behavior: indented output, ISO dates rather than timestamps, no failure on empty beans,
-   `SensitiveDataModule`, and the toString fallback module. Remove `JavaTimeModule` registration.
-3. Migrate `SensitiveDataModule` and `UnknownTypeSerializer` to `ValueSerializerModifier`,
-   `ValueSerializer`, and `SerializationContext`, the `BeanDescription.Supplier` callback
-   signatures/property introspection, and the renamed `JsonGenerator` methods.
-   Their public class names and public constructors stay the same.
-4. Migrate `HttpBodyLogSanitizer` to `tools.jackson` tree types (`StringNode` replaces `TextNode`).
-   Keep its existing failure fallback behavior on unparsable bodies; `JacksonException` is now
-   unchecked.
-5. Change both post-processors to implement `org.springframework.boot.EnvironmentPostProcessor`, and
+1. Read Phase 1's masking tests and recorded defects. Preserve baseline masking assertions and
+   add regression tests for the approved behavior below alongside its implementation. Dependency
+   and test starter wiring is already complete from Phase 1.
+2. Build `SafeLogger`'s private immutable mapper with `JsonMapper.builder()` and its private logging
+   module. Enable `INDENT_OUTPUT` and disable `FAIL_ON_EMPTY_BEANS`. Disable
+   `MapperFeature.SORT_PROPERTIES_ALPHABETICALLY` deliberately for readable configuration dumps;
+   retain explicit model ordering. Use Jackson 3's built-in Java time support and ISO date defaults;
+   remove `JavaTimeModule`. Keep existing null-root and empty-map behavior and verify ISO dates.
+3. Replace the public `SensitiveDataModule` implementation with a package-private module and
+   serializer helpers. In the module's `setupModule`, register an annotation introspector with
+   `SetupContext.insertAnnotationIntrospector`. Its `findSerializer(MapperConfig<?>, Annotated)`
+   returns a masking `ValueSerializer` for `@Sensitive` members and otherwise defers to Jackson.
+   Insertion composes with Jackson's default introspector and gives masking precedence. Do not use
+   `MapperBuilder.annotationIntrospector(...)`: it replaces the default and disables standard
+   annotations such as `@JsonValue`, `@JsonProperty`, and `@JsonInclude`. Write only the masked value; leave property names, nulls, and inclusion to Jackson.
+   Preserve mask length, custom characters, short/empty values, and `showLast` semantics. Implement
+   appropriate `isEmpty` behavior so annotated empty strings respect `NON_EMPTY`. Masking takes
+   precedence over another property-level serializer on the same sensitive member. Do not port
+   `BeanPropertyWriter`, serializer modifiers, or lazy bean-property introspection.
+4. Delete `UnknownTypeSerializer`, its modifier, and all generic-toString fallback registration.
+   Do not replace them with an `UnknownSerializer`-based fallback: it still bypasses masking for
+   private fields exposed by `toString()`. Unknown empty beans serialize as `{}` at root and nested
+   positions. Preserve known Jackson serializers, including `@JsonValue`. Keep `SafeLogger` and
+   `@Sensitive` public APIs unchanged; retain Jackson databind as an `implementation` dependency.
+   Both HTTP loggers already normalize methods to strings; no framework-type fallback is needed.
+5. Migrate `HttpBodyLogSanitizer` using a private `JsonMapper.builder().build()` with strict
+   trailing-token checks retained. Use `propertyNames()` and `objectNode.put(name, MASKED_VALUE)`
+   instead of explicit text-node construction. Keep bounded tree traversal and fail-closed
+   omission for invalid/truncated structured bodies. Multiple JSON roots, including multi-record
+   NDJSON, must use the existing unable-to-safely-sanitize placeholder; a single valid JSON root
+   remains supported. Do not disable trailing-token checks or add line-by-line parsing.
+6. Change both post-processors to implement `org.springframework.boot.EnvironmentPostProcessor`, and
    change the `spring.factories` key to `org.springframework.boot.EnvironmentPostProcessor`.
-6. Update `ServiceCoreJpaAutoConfiguration` to import
+7. Update `ServiceCoreJpaAutoConfiguration` to import
    `org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration`. Relocate
    `EntityScan` to `org.springframework.boot.persistence.autoconfigure` in the core test
    application that actually uses it. Add an explicit `compileOnly` module only if the data-jpa
    starter does not already expose a required main-source type.
-7. Fix remaining test imports and Jackson construction. Run logging tests first, then the full
-   core build, including JPA auditing and soft-delete tests.
-8. Update affected core documentation and record changed public Jackson supertypes, serializer
-   methods, and post-processor interfaces in the consumer migration notes.
+8. Fix remaining test imports and Jackson construction. Replace only the three generic fallback
+   tests as authorized in Plan-Wide Constraints. Verify the following with real fixtures:
+   field/getter/record annotations, nested objects/lists, non-string values, null/empty/short values,
+   custom characters, and partial/full masking; `NON_EMPTY` omission; masking in array-shaped
+   beans; masking precedence over a property serializer; preserved ordinary `@JsonValue` output;
+   and an empty bean whose private sensitive field would be exposed by `toString()` producing
+   `{}` without invoking that fallback. Verify a plain mapper does not apply logging-only masking.
+   Add multi-record NDJSON and trailing-garbage tests asserting omission and absence of secrets.
+   Add a single-record NDJSON body ending in `\n` and in `\r\n` that is still sanitized, not
+   omitted; strict trailing-token checks accept trailing whitespace.
+   Test ordering separately from parsed-JSON behavior assertions. Run logging tests first, then
+   the full core build, including JPA auditing and soft-delete tests.
+9. Update core logging guidance and remove public-module usage from `AGENTS.md` after reading its
+   checkstyle. Record the removed public APIs (including `UnknownTypeSerializer.ToStringFallbackModifier`),
+   changed logging behavior, and relocated post-processor interfaces in the consumer migration notes.
+   Explain that callers needing string output should explicitly provide known-safe values; absence
+   of usage in current consumers does not make the public removals backwards compatible.
 
 ### Implementation notes
 
-- Jackson 3 sorts properties alphabetically by default. If `SafeLogger` tests assert declaration
-  order, preserve declaration order in the mapper configuration rather than editing the tests.
+- Review prototypes verified that the old property writer leaks sensitive values in array-shaped
+  beans and bypasses `NON_EMPTY`, while its fallback overrides `@JsonValue` and can expose private
+  secrets. These are defects to correct, not behavior to freeze in migration tests.
+- Do not export the masking module through Spring or ServiceLoader or add a serializer
+  meta-annotation to `@Sensitive`. The module must affect only the logging mapper.
 - Check whether Hibernate 7 or `spring.jpa.database-platform: org.hibernate.dialect.H2Dialect` in
   `service-core/src/test/resources/application.yml` logs deprecation warnings. Remove the explicit
   dialect only if Hibernate reports it as redundant.
@@ -337,14 +405,19 @@ logging and masking behavior.
 ./gradlew clean spotlessApply
 ./gradlew :service-core:test --tests 'org.budgetanalyzer.core.logging.*'
 ./gradlew :service-core:build --warning-mode all
+rg -n 'com\.fasterxml\.jackson\.(core|databind|datatype)' service-core/src
 ```
 
 `service-core` must pass tests, Checkstyle, Spotless, Javadoc, and its JaCoCo minimums (80% line,
-70% branch).
+70% branch). The scan must have no matches (ripgrep exit code 1 means no matches; errors are not
+success). Do not wait for Phase 5 to detect stale Jackson 2 imports or databind annotations.
 
 ### Completion criteria
 
 `service-core` builds green on Boot 4.1.2, including the unchanged baseline masking assertions.
+The new regression tests pass: annotation masking respects Jackson property handling, arbitrary
+empty beans never invoke a generic toString fallback, and multi-root bodies are safely omitted.
+Jackson-specific logging implementation classes are no longer public APIs.
 No Jackson 2 core/databind/datatype references remain in its sources; Jackson annotations remain
 valid. Affected docs and public API changes are recorded in the consumer migration notes.
 
@@ -368,6 +441,8 @@ and Jackson 3, with the existing suite and full repository build passing.
   `ClaimsHeaderAuthenticationFilter`, `ClaimsHeaderSecurityErrorResponseWriter`,
   `ReactiveClaimsHeaderSecurityErrorResponseWriter`, `ReactiveErrorWebExceptionHandler`, and
   `ServiceWebAutoConfiguration`.
+- Explicit null omission and property order on `ApiErrorResponse` and `FieldError`, with
+  serialization and HTTP error-contract coverage.
 - `BaseOpenApiConfig` and other Springdoc customizer usage for Springdoc 3.
 - Published test-support classes under `org.budgetanalyzer.service.security.test`.
 - All existing web test sources, fixtures, and configuration.
@@ -376,7 +451,9 @@ and Jackson 3, with the existing suite and full repository build passing.
 ### Non-goals
 
 - New isolated consumer smoke tests and end-to-end OpenAPI coverage (Phase 4).
-- Changing security rules, public paths, filter ordering, or error response shapes.
+- Changing security rules, public paths, filter ordering, or error response fields/statuses beyond
+  the approved null-omission and ordering policy.
+- Replacing direct error serialization with Spring codecs/converters or a new abstraction layer.
 
 ### Required context
 
@@ -395,29 +472,47 @@ and Jackson 3, with the existing suite and full repository build passing.
    `tools.jackson.databind.json.JsonMapper`, which is the bean type Boot 4 auto-configures. Using
    `JsonMapper` rather than `ObjectMapper` also avoids ambiguity when an `XmlMapper` bean is
    present. Update Javadoc `@param` text to match.
-4. Update the error-response writers for Jackson 3's unchecked exceptions without changing
-   response status, content type, or body.
-5. Fix compile issues in `BaseOpenApiConfig` and Springdoc customizers. Preserve the
+4. Keep direct error serialization through the injected Boot-managed `JsonMapper`. Catch
+   `JacksonException` where Jackson 2 serialization failures previously triggered a fallback or
+   returned `Mono.error`; preserve status/content-type handling and error delivery through the
+   reactive publisher. The servlet writers had no serialization fallback, so add no
+   `JacksonException` handling there. Jackson 3 reports writer failures as unchecked
+   `JacksonIOException`, and the servlet response `PrintWriter` records I/O errors instead of
+   throwing them. Verify the reactive failure paths with a real mapper and a concrete throwing
+   serializer, not mapper mocks.
+5. Add `@JsonInclude(NON_NULL)` and explicit `@JsonPropertyOrder` to both error models:
+   `ApiErrorResponse`: `type`, `message`, `code`, `fieldErrors`;
+   `FieldError`: `index`, `field`, `message`, `rejectedValue`.
+   This makes the documented optional-field omission policy independent of global mapper settings.
+   Keep empty lists/strings present; use `NON_NULL`, not `NON_EMPTY`. Preserve existing model
+   construction APIs, field values, and status semantics. Document that explicit null optional
+   fields are now omitted even for consumers whose mapper previously included them.
+6. Fix compile issues in `BaseOpenApiConfig` and Springdoc customizers. Preserve the
    documented standard-response and `@PreAuthorize` 401/403 behavior.
-6. Confirm `ClaimsHeaderTestBuilder` and `TestClaimsSecurityConfig` compile against Spring
+7. Confirm `ClaimsHeaderTestBuilder` and `TestClaimsSecurityConfig` compile against Spring
    Security Test 7 and Spring Test 7.
-7. Migrate all existing test imports and fixtures in this phase: `AutoConfigureMockMvc`,
+8. Migrate all existing test imports and fixtures in this phase: `AutoConfigureMockMvc`,
    `AutoConfigureWebTestClient`, `JacksonAutoConfiguration`, `SecurityAutoConfiguration`,
    `WebMvcAutoConfiguration`, `DispatcherServletAutoConfiguration`, `WebFluxAutoConfiguration`,
    `ErrorWebExceptionHandler`, `DataSourceAutoConfiguration`, and `EntityScan` where used.
    Replace Jackson 2 mapper construction and `withBean(ObjectMapper.class, ObjectMapper::new)`
    with Jackson 3 `JsonMapper` equivalents; adapt removed exception APIs as necessary.
-8. Run focused security, exception-handler, configuration, and JSON-model tests, then the full
-   build. Resolve startup/wiring and serialization failures now. Preserve API response shapes,
-   contractually required JSON order, and application mapper customization, including the
-   existing `spring.jackson.serialization.indent_output` test property.
-9. Update affected web/testing documentation and append all public signature changes and consumer
-   test migration actions to the migration notes.
+9. Add error-model serialization tests for populated and absent optional fields, empty lists, and
+   explicit property order, using both a plain `JsonMapper` and Boot's auto-configured `JsonMapper`
+   without a global `non_null` setting. The annotations live on the models, so they apply on every
+   response path that uses the Boot mapper. Do not add a per-path omission matrix; update existing
+   HTTP error-path tests only where they assert null optional fields. Preserve application mapper
+   customization, including the existing `spring.jackson.serialization.indent_output` test property.
+10. Run focused security, exception-handler, configuration, and JSON-model tests, the Jackson 2
+    source scan, then the full build. Resolve startup/wiring and serialization failures now.
+11. Update affected web/testing documentation and append all public signature changes, explicit
+    error serialization policy, and consumer test migration actions to the migration notes.
 
 ### Implementation notes
 
-- `ApiErrorResponse` and `PagedResponse` use `com.fasterxml.jackson.annotation` types, which remain
-  valid in Jackson 3.
+- The error models' new annotations and existing pagination annotations use
+  `com.fasterxml.jackson.annotation`, which remains valid in Jackson 3. JSON order is an explicit
+  readability policy; general response assertions should compare parsed structure and values.
 - Gradle compiles the whole test source set before running selected tests. Complete the mechanical
   test migration before relying on test filters for focused debugging.
 - Preserve existing security rules, default-chain backoff, and reactive method-security behavior.
@@ -428,16 +523,21 @@ and Jackson 3, with the existing suite and full repository build passing.
 ```bash
 ./gradlew clean spotlessApply
 ./gradlew :service-web:test --tests '*Security*' --tests '*ExceptionHandler*' \
-  --tests '*ConfigTest' --tests '*ResponseTest'
+  --tests '*ConfigTest' --tests '*ResponseTest' --tests '*FieldErrorTest'
+rg -n 'com\.fasterxml\.jackson\.(core|databind|datatype)' service-web/src
 ./gradlew clean build --warning-mode all
 ```
+
+The scan must have no matches (ripgrep exit code 1 means no matches; errors are not success).
+Inspect it independently of the build result: Swagger's Jackson 2 dependency can hide stale imports.
 
 ### Completion criteria
 
 The existing servlet and reactive tests and the full build pass, including Javadoc, formatting,
 Checkstyle, and unchanged JaCoCo minimums (`service-web`: 93% line, 80% branch). No Jackson 2
 core/databind/datatype references remain in main or test sources. No startup or behavior failures
-are deferred to Phase 4. Affected docs and public API migration notes are current.
+are deferred to Phase 4. The error models declare null omission and property order, verified with
+plain and Boot-configured mappers. Affected docs and public API migration notes are current.
 
 ## Phase 4: Consumer Classpaths And Runtime Behavior
 
@@ -488,7 +588,8 @@ integration, closing the gaps that the existing combined-classpath suite cannot 
 4. In both smoke suites, use real application beans and HTTP requests to verify:
 
    - Startup and a representative successful response, plus the standard unauthorized (401),
-     forbidden (403), and exception `ApiErrorResponse` contracts.
+     forbidden (403), and exception `ApiErrorResponse` contracts. Confirm absent optional error
+     fields are omitted without global `non_null` configuration. Reuse Phase 3 fixtures.
    - Default security chains back off for a consumer-defined chain; reactive `@PreAuthorize`
      still enforces permissions. Reuse existing assertions/fixture patterns where practical.
    - `/actuator/health/liveness`, `/actuator/health/readiness`, and `/actuator/prometheus` are
@@ -511,8 +612,9 @@ integration, closing the gaps that the existing combined-classpath suite cannot 
   source sets/test tasks here must not add production dependencies or published artifacts.
 - The root build currently configures coverage for the existing `test` task. Keep that reporting
   and its minimums intact; new smoke tasks supplement it and must run under `check`.
-- If Boot 4 changes required consumer-visible behavior, record the conflict and stop; do not mark
-  the phase complete merely because the difference has been documented.
+- If Boot 4 changes required consumer-visible behavior beyond this plan's approved corrections,
+  record the conflict and stop; do not mark the phase complete merely because the difference has
+  been documented.
 
 ### Validation
 
@@ -575,14 +677,21 @@ development artifacts for the later consumer integration plan.
    version-agnostic and document how to run the new smoke tests.
 2. Reconcile the migration notes with the final source/build diff. Cover target dependencies;
    starter/test annotation changes; Testcontainers artifact/package changes; Jackson construction,
-   bean injection, serializers, and every changed public signature/supertype/interface; Springdoc;
+   bean injection, removed public logging APIs, every changed public signature/supertype/interface;
+   generic-toString fallback removal, masking/inclusion fixes, multi-root body omission, and
+   explicit error-model serialization policy; Springdoc;
    ShedLock; and Modulith. Distinguish absent Jackson 2 `ObjectMapper` beans from Jackson 3's
    supported `JsonMapper` bean.
 3. Verify consumer guidance against read-only discovery. Currently `currency-service` imports
    `spring-cloud-platform` and uses Cloud Stream; `session-gateway` uses the base `spring-platform`.
    Assign Cloud migration actions to actual Cloud consumers. Include the consumer Boot plugin
-   version update alongside the platform/runtime library coordinate update. Record that this
-   iteration has not tested migrated real consumers and does not authorize a stable release.
+   version update alongside the platform/runtime library coordinate update. Inventory consumer
+   `spring.jackson.*` settings, including the current `date-format` values referencing
+   `com.fasterxml.jackson.databind.util.StdDateFormat` and `write-dates-as-timestamps: false`.
+   Require the later consumer plan to verify Boot 4 property support and date output, remove or
+   replace obsolete configuration, and validate Redis/cache serialization separately from API
+   JSON. Do not blindly rename a class-name property or restore all Jackson 2 defaults. Record that
+   this iteration has not tested migrated real consumers and does not authorize a stable release.
 4. Run the consumer-pin prerequisite from Versioning immediately before publication. Confirm the
    pin in each consumer's checked-in HEAD as well as its working tree, so an uncommitted local edit
    cannot stand in for the prerequisite. Stop if any discovered consumer does not pin `0.0.17`.
