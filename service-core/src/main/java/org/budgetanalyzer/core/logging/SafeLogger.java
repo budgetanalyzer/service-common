@@ -3,37 +3,30 @@ package org.budgetanalyzer.core.logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Utility for safely logging objects with sensitive data masked. */
 public class SafeLogger {
 
   private static final Logger log = LoggerFactory.getLogger(SafeLogger.class);
 
-  private static final ObjectMapper SAFE_MAPPER = createSafeMapper();
-
-  private static ObjectMapper createSafeMapper() {
-    var objectMapper = new ObjectMapper();
-    objectMapper.registerModule(new JavaTimeModule());
-    objectMapper.registerModule(new SensitiveDataModule());
-
-    // Register fallback serializer for unknown types (e.g., Spring HttpMethod)
-    var fallbackModule = new SimpleModule("UnknownTypeFallbackModule");
-    fallbackModule.setSerializerModifier(new UnknownTypeSerializer.ToStringFallbackModifier());
-    objectMapper.registerModule(fallbackModule);
-
-    objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-
-    return objectMapper;
-  }
+  // Declaration order keeps configuration dumps readable; dates use Jackson's ISO-8601 default.
+  private static final JsonMapper SAFE_MAPPER =
+      JsonMapper.builder()
+          .addModule(new SensitiveMaskingModule())
+          .enable(SerializationFeature.INDENT_OUTPUT)
+          .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+          .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+          .build();
 
   /**
    * Converts object to JSON string with sensitive fields masked.
+   *
+   * <p>Types without serializable properties are written as an empty JSON object; their {@code
+   * toString()} is never used. Pass an explicitly known-safe string when a type's string form is
+   * needed in the log.
    *
    * @param object the object to serialize to JSON; may be null
    * @return JSON string representation with sensitive fields masked, or the JSON literal {@code

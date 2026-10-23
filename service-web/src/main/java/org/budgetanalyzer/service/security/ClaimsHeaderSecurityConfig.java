@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
-import org.springframework.boot.autoconfigure.security.SecurityProperties;
+import org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -17,7 +17,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.NullSecurityContextRepository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Security configuration for claims-header-based authentication.
@@ -64,13 +64,13 @@ public class ClaimsHeaderSecurityConfig {
    * </ul>
    *
    * @param http the HttpSecurity to configure
-   * @param objectMapper the ObjectMapper used for JSON security responses
+   * @param jsonMapper the JsonMapper used for JSON security responses
    * @return the configured SecurityFilterChain
    * @throws Exception if configuration fails
    */
   @Bean
-  @Order(SecurityProperties.BASIC_AUTH_ORDER)
-  public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper)
+  @Order(SecurityFilterProperties.BASIC_AUTH_ORDER)
+  public SecurityFilterChain securityFilterChain(HttpSecurity http, JsonMapper jsonMapper)
       throws Exception {
     logger.info("Configuring stateless claims-header security");
 
@@ -102,7 +102,7 @@ public class ClaimsHeaderSecurityConfig {
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(
-            new ClaimsHeaderAuthenticationFilter(objectMapper),
+            new ClaimsHeaderAuthenticationFilter(jsonMapper),
             UsernamePasswordAuthenticationFilter.class)
         .exceptionHandling(
             exceptions ->
@@ -114,7 +114,7 @@ public class ClaimsHeaderSecurityConfig {
                               request.getRequestURI(),
                               authException.getMessage());
                           ClaimsHeaderSecurityErrorResponseWriter.writeUnauthorized(
-                              response, objectMapper);
+                              response, jsonMapper);
                         })
                     .accessDeniedHandler(
                         (request, response, accessDeniedException) -> {
@@ -123,7 +123,7 @@ public class ClaimsHeaderSecurityConfig {
                               request.getRequestURI(),
                               accessDeniedException.getMessage());
                           ClaimsHeaderSecurityErrorResponseWriter.writeForbidden(
-                              response, objectMapper);
+                              response, jsonMapper);
                         }));
 
     return http.build();

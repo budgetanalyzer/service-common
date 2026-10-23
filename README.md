@@ -18,7 +18,7 @@ Service Common is a **multi-module Gradle project** that provides common functio
 **Provides**:
 - Spring Boot dependency BOM import
 - Spring Modulith dependency BOM import
-- Shared version constraints for SpringDoc, Testcontainers, WireMock, Awaitility, and ShedLock
+- Shared version constraints for SpringDoc, WireMock, Awaitility, and ShedLock (Testcontainers is managed by the imported Spring Boot BOM)
 
 **Behavior**: Version management only. It does not add runtime dependencies, application code, or autoconfiguration.
 
@@ -53,7 +53,7 @@ Service Common is a **multi-module Gradle project** that provides common functio
 - Correlation ID support
 - OpenAPI/Swagger base configuration
 
-**Dependencies**: service-core (transitive), Spring Boot Starter Web/WebFlux, SpringDoc OpenAPI
+**Dependencies**: service-core (transitive), Spring Boot Starter WebMVC/WebFlux, SpringDoc OpenAPI
 
 **Note**: Actuator (health checks, metrics) comes from service-core and is available to all services (web and non-web).
 
@@ -70,10 +70,10 @@ Service Common promotes code reuse and consistency across microservices by:
 ## Technology Stack
 
 - **Java 25**
-- **Spring Boot 3.x** (Starter Web, Data JPA)
+- **Spring Boot** (Starter WebMVC/WebFlux, Data JPA; version managed by `spring-platform`)
 - **SpringDoc OpenAPI** for API documentation
 - **OpenCSV** for CSV file processing
-- **JUnit 5** for testing
+- **JUnit Jupiter** for testing
 
 ## Usage
 
@@ -251,6 +251,9 @@ it does not publish service-common artifacts.
 # Run tests
 ./gradlew test
 
+# Run the isolated servlet and reactive consumer-classpath smoke suites (also run by check)
+./gradlew :service-web:servletSmokeTest :service-web:reactiveSmokeTest
+
 # Run tests and generate JaCoCo coverage reports
 ./gradlew test jacocoTestReport
 
@@ -266,6 +269,14 @@ JaCoCo report generation is configured for the Java library modules only:
 `service-web/build/reports/jacoco/test/html/index.html`. XML reports are written
 next to the HTML reports for CI/dashboard ingestion. `check` enforces the
 configured coverage gates.
+
+The coverage reports and gates cover each module's `test` task. `service-web` also
+defines `servletSmokeTest` and `reactiveSmokeTest` suites (`service-web/src/servletSmokeTest/`
+and `service-web/src/reactiveSmokeTest/`). Each suite resolves the published library plus a
+single web stack, Spring Security, and the matching SpringDoc starter, without JPA or the
+combined test classpath. They start minimal fixture applications through normal Boot
+auto-configuration and verify HTTP error contracts, security chains, actuator endpoints, and
+generated OpenAPI documentation over real HTTP. Neither suite adds published dependencies.
 
 ## Code Quality
 
@@ -311,6 +322,8 @@ service-common/
 │   │       ├── http/                # HTTP filters/logging
 │   │       └── config/              # OpenAPI config
 │   ├── src/test/java/
+│   ├── src/servletSmokeTest/        # Isolated servlet consumer-classpath smoke suite
+│   ├── src/reactiveSmokeTest/       # Isolated reactive consumer-classpath smoke suite
 │   └── build.gradle.kts
 ├── build.gradle.kts                 # Root build configuration
 ├── settings.gradle.kts              # Multi-module setup

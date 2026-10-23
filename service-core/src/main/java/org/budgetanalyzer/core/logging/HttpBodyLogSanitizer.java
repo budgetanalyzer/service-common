@@ -3,14 +3,13 @@ package org.budgetanalyzer.core.logging;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Sanitizes HTTP bodies before they are written to logs.
@@ -48,7 +47,8 @@ public final class HttpBodyLogSanitizer {
           "sessionid",
           "token");
 
-  private static final ObjectMapper objectMapper = new ObjectMapper();
+  // Jackson 3 fails on trailing tokens by default, so multi-root bodies are rejected and omitted.
+  private static final JsonMapper jsonMapper = JsonMapper.builder().build();
 
   private HttpBodyLogSanitizer() {
     throw new UnsupportedOperationException("Utility class");
@@ -141,22 +141,21 @@ public final class HttpBodyLogSanitizer {
 
   private static String sanitizeJson(String body) {
     try {
-      var rootNode = objectMapper.readTree(body);
+      var rootNode = jsonMapper.readTree(body);
       sanitizeJsonNode(rootNode);
-      return objectMapper.writeValueAsString(rootNode);
+      return jsonMapper.writeValueAsString(rootNode);
     } catch (Exception exception) {
       return null;
     }
   }
 
-  private static void sanitizeJsonNode(com.fasterxml.jackson.databind.JsonNode jsonNode) {
+  private static void sanitizeJsonNode(JsonNode jsonNode) {
     if (jsonNode instanceof ObjectNode objectNode) {
-      for (Iterator<String> fieldNames = objectNode.fieldNames(); fieldNames.hasNext(); ) {
-        var fieldName = fieldNames.next();
-        if (isSensitiveFieldName(fieldName)) {
-          objectNode.set(fieldName, TextNode.valueOf(MASKED_VALUE));
+      for (var propertyName : objectNode.propertyNames()) {
+        if (isSensitiveFieldName(propertyName)) {
+          objectNode.put(propertyName, MASKED_VALUE);
         } else {
-          sanitizeJsonNode(objectNode.get(fieldName));
+          sanitizeJsonNode(objectNode.get(propertyName));
         }
       }
       return;

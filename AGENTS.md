@@ -112,7 +112,7 @@ Multi-module Gradle project providing shared dependency platforms and runtime li
 **Contains**:
 - Spring Boot dependency BOM import
 - Spring Modulith dependency BOM import
-- Shared constraints for SpringDoc, Testcontainers, WireMock, Awaitility, and ShedLock
+- Shared constraints for SpringDoc, WireMock, Awaitility, and ShedLock (Testcontainers is managed by the imported Spring Boot BOM)
 
 **Behavior**: Version management only. No source code, runtime dependencies, beans, or autoconfiguration metadata.
 
@@ -156,7 +156,7 @@ Multi-module Gradle project providing shared dependency platforms and runtime li
   - `http/` - Reactive filters (ReactiveCorrelationIdFilter, ReactiveHttpLoggingFilter, body caching decorators, ReactiveHttpLoggingConfig)
   - `api/` - Exception handler (ReactiveApiExceptionHandler)
 
-**Dependencies**: service-core (transitive), Spring Boot Starter Web (compileOnly), Spring Boot Starter WebFlux (compileOnly), SpringDoc OpenAPI (compileOnly)
+**Dependencies**: service-core (transitive), Spring Boot Starter WebMVC (compileOnly), Spring Boot Starter WebFlux (compileOnly), SpringDoc OpenAPI (compileOnly)
 
 **Note**: service-web supports BOTH servlet and reactive stacks through conditional autoconfiguration.
 
@@ -187,7 +187,7 @@ cat settings.gradle.kts
 ```kotlin
 dependencies {
     implementation(platform("org.budgetanalyzer:spring-platform:<service-common-version>"))
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
@@ -206,7 +206,7 @@ dependencies {
 ```kotlin
 dependencies {
     implementation(platform("org.budgetanalyzer:spring-cloud-platform:<service-common-version>"))
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
@@ -321,6 +321,10 @@ find service-core/src/test/java -name "*Test.java"
 # View test structure in service-web
 find service-web/src/test/java -name "*Test.java"
 
+# View isolated single-stack consumer-classpath smoke suites (run by check)
+find service-web/src -path "*SmokeTest/java/*" -name "*Test.java"
+./gradlew :service-web:servletSmokeTest :service-web:reactiveSmokeTest
+
 # Run tests with coverage (all modules)
 ./gradlew test jacocoTestReport
 ```
@@ -423,10 +427,10 @@ grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
 
 These are utilities (not Spring beans) - instantiate manually when needed:
 - `SafeLogger` - **Opt-in** static utility for safe logging (does NOT intercept log calls automatically):
-  - `SafeLogger.toJson(obj)` — serialize with `@Sensitive` field masking
+  - `SafeLogger.toJson(obj)` — serialize with `@Sensitive` field masking using its private logging mapper
   - `SafeLogger.mask(value)` / `SafeLogger.mask(value, showLast)` — mask sensitive strings
   - `SafeLogger.truncateId(id)` / `SafeLogger.truncateId(id, showChars)` — truncate identifiers for logs (e.g. `550e8400…`)
-- `SensitiveDataModule` - Jackson module for `@Sensitive` annotation
+- `@Sensitive` - Annotate fields, getters, or record components to mask them in `SafeLogger.toJson()` output. Masking is logging-only: do not expect it from the application's API mapper, and do not register logging serializers as Spring beans, through ServiceLoader, or as global Jackson annotations on `@Sensitive`. Read [docs/common-patterns.md](docs/common-patterns.md#2-safe-logging-with-safelogger) before changing logging serialization.
 - Base entity classes (`AuditableEntity`, `SoftDeletableEntity`) - Extend in your entities
 - `SoftDeleteOperations` - Repository utility interface
 

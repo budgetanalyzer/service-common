@@ -333,7 +333,8 @@ public abstract class BaseOpenApiConfig {
       case HttpStatus.UNAUTHORIZED -> ApiErrorType.UNAUTHORIZED;
       case HttpStatus.FORBIDDEN -> ApiErrorType.FORBIDDEN;
       case HttpStatus.NOT_FOUND -> ApiErrorType.NOT_FOUND;
-      case HttpStatus.UNPROCESSABLE_ENTITY -> ApiErrorType.APPLICATION_ERROR;
+      case HttpStatus.UNPROCESSABLE_ENTITY, HttpStatus.UNPROCESSABLE_CONTENT ->
+          ApiErrorType.APPLICATION_ERROR;
       case HttpStatus.SERVICE_UNAVAILABLE -> ApiErrorType.SERVICE_UNAVAILABLE;
       default -> ApiErrorType.INTERNAL_ERROR;
     };

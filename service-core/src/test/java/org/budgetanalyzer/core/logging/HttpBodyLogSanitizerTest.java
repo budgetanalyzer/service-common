@@ -117,6 +117,70 @@ class HttpBodyLogSanitizerTest {
   }
 
   @Test
+  void shouldOmitMultiRecordNdjsonPayloads() {
+    var body = "{\"username\":\"john\"}\n{\"password\":\"second-record-secret\"}\n";
+
+    var result =
+        HttpBodyLogSanitizer.prepareBodyForLogging(
+            body.getBytes(StandardCharsets.UTF_8),
+            body.getBytes(StandardCharsets.UTF_8).length,
+            "application/x-ndjson",
+            null,
+            StandardCharsets.UTF_8.name());
+
+    assertThat(result)
+        .isEqualTo("[structured body omitted: application/x-ndjson, unable to safely sanitize]");
+    assertThat(result).doesNotContain("second-record-secret").doesNotContain("john");
+  }
+
+  @Test
+  void shouldOmitJsonPayloadsWithTrailingGarbage() {
+    var body = "{\"password\":\"secret-value\"} trailing {\"token\":\"abc123\"}";
+
+    var result =
+        HttpBodyLogSanitizer.prepareBodyForLogging(
+            body.getBytes(StandardCharsets.UTF_8),
+            body.getBytes(StandardCharsets.UTF_8).length,
+            "application/json",
+            null,
+            StandardCharsets.UTF_8.name());
+
+    assertThat(result)
+        .isEqualTo("[structured body omitted: application/json, unable to safely sanitize]");
+    assertThat(result).doesNotContain("secret-value").doesNotContain("abc123");
+  }
+
+  @Test
+  void shouldSanitizeSingleRecordNdjsonEndingWithLineFeed() {
+    var body = "{\"username\":\"john\",\"password\":\"secret-value\"}\n";
+
+    var result =
+        HttpBodyLogSanitizer.prepareBodyForLogging(
+            body.getBytes(StandardCharsets.UTF_8),
+            body.getBytes(StandardCharsets.UTF_8).length,
+            "application/x-ndjson",
+            null,
+            StandardCharsets.UTF_8.name());
+
+    assertThat(result).isEqualTo("{\"username\":\"john\",\"password\":\"***MASKED***\"}");
+  }
+
+  @Test
+  void shouldSanitizeSingleRecordNdjsonEndingWithCarriageReturnLineFeed() {
+    var body = "{\"username\":\"john\",\"password\":\"secret-value\"}\r\n";
+
+    var result =
+        HttpBodyLogSanitizer.prepareBodyForLogging(
+            body.getBytes(StandardCharsets.UTF_8),
+            body.getBytes(StandardCharsets.UTF_8).length,
+            "application/x-ndjson",
+            null,
+            StandardCharsets.UTF_8.name());
+
+    assertThat(result).isEqualTo("{\"username\":\"john\",\"password\":\"***MASKED***\"}");
+  }
+
+  @Test
   void shouldReturnNullWhenNoBodyContentIsAvailable() {
     var result =
         HttpBodyLogSanitizer.prepareBodyForLogging(

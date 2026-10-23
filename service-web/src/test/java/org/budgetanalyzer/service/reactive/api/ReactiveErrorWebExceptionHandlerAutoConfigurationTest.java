@@ -9,11 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
-import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.webflux.error.ErrorWebExceptionHandler;
 
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.budgetanalyzer.service.config.ServiceWebAutoConfiguration;
 
@@ -24,7 +23,7 @@ class ReactiveErrorWebExceptionHandlerAutoConfigurationTest {
   private final ReactiveWebApplicationContextRunner reactiveWebApplicationContextRunner =
       new ReactiveWebApplicationContextRunner()
           .withConfiguration(AutoConfigurations.of(ServiceWebAutoConfiguration.class))
-          .withBean(ObjectMapper.class, ObjectMapper::new);
+          .withBean(JsonMapper.class, JsonMapper::new);
 
   private final ApplicationContextRunner applicationContextRunner =
       new ApplicationContextRunner()

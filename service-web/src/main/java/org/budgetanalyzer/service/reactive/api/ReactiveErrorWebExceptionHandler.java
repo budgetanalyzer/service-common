@@ -1,19 +1,17 @@
 package org.budgetanalyzer.service.reactive.api;
 
-import java.io.IOException;
-
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
+import org.springframework.boot.webflux.error.ErrorWebExceptionHandler;
 import org.springframework.core.Ordered;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import reactor.core.publisher.Mono;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.budgetanalyzer.service.api.ApiErrorType;
 import org.budgetanalyzer.service.api.ApiExceptionHandler;
@@ -33,15 +31,15 @@ public class ReactiveErrorWebExceptionHandler
   private static final Logger log = LoggerFactory.getLogger(ReactiveErrorWebExceptionHandler.class);
   private static final int ERROR_HANDLER_ORDER = -1;
 
-  private final ObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
 
   /**
    * Creates the reactive fallback exception handler.
    *
-   * @param objectMapper object mapper used to serialize {@code ApiErrorResponse}
+   * @param jsonMapper JSON mapper used to serialize {@code ApiErrorResponse}
    */
-  public ReactiveErrorWebExceptionHandler(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
+  public ReactiveErrorWebExceptionHandler(JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
@@ -62,8 +60,8 @@ public class ReactiveErrorWebExceptionHandler
 
     byte[] body;
     try {
-      body = objectMapper.writeValueAsBytes(resolvedError.response());
-    } catch (IOException exception) {
+      body = jsonMapper.writeValueAsBytes(resolvedError.response());
+    } catch (JacksonException exception) {
       return Mono.error(exception);
     }
 

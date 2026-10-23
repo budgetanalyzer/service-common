@@ -5,10 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
+import tools.jackson.databind.json.JsonMapper;
+
 class SafeLoggerTest {
+
+  private static final JsonMapper PARSER = JsonMapper.builder().build();
 
   @Test
   void shouldSerializeSimpleObjectToJson() {
@@ -31,39 +36,88 @@ class SafeLoggerTest {
   }
 
   @Test
-  void shouldUseToStringWhenSerializingUnknownType() {
-    // Simulate an unknown type like HttpMethod that has no serializable properties
+  void shouldSerializeDateTimeAsIsoString() throws Exception {
+    var data = Map.of("timestamp", LocalDateTime.of(2024, 1, 15, 10, 30, 0));
+
+    var node = PARSER.readTree(SafeLogger.toJson(data));
+
+    assertThat(node.get("timestamp").isString()).isTrue();
+    assertThat(node.get("timestamp").asString()).isEqualTo("2024-01-15T10:30:00");
+  }
+
+  @Test
+  void shouldSerializeUnknownTypeAsEmptyObject() throws Exception {
     var unknownType = new EmptyBeanType("GET");
     var data = new HashMap<String, Object>();
     data.put("method", unknownType);
     data.put("uri", "/api/test");
 
     var json = SafeLogger.toJson(data);
+    var node = PARSER.readTree(json);
 
-    // Should not fail and should use toString() for the unknown type
-    assertThat(json).contains("\"method\"");
-    assertThat(json).contains("GET"); // From toString()
-    assertThat(json).contains("\"uri\"");
-    assertThat(json).contains("/api/test");
+    assertThat(node.get("method").isObject()).isTrue();
+    assertThat(node.get("method").isEmpty()).isTrue();
+    assertThat(node.get("uri").asString()).isEqualTo("/api/test");
+    assertThat(json).doesNotContain("GET");
   }
 
   @Test
-  void shouldUseToStringWhenSerializingUnknownRootType() {
+  void shouldSerializeUnknownRootTypeAsEmptyObject() throws Exception {
     var unknownType = new EmptyBeanType("POST");
-    var json = SafeLogger.toJson(unknownType);
 
-    assertThat(json).contains("POST");
+    var json = SafeLogger.toJson(unknownType);
+    var node = PARSER.readTree(json);
+
+    assertThat(node.isObject()).isTrue();
+    assertThat(node.isEmpty()).isTrue();
+    assertThat(json).doesNotContain("POST");
   }
 
   @Test
-  void shouldUseToStringWhenSerializingNestedUnknownType() {
+  void shouldSerializeNestedUnknownTypeAsEmptyObject() throws Exception {
     var unknownType = new EmptyBeanType("DELETE");
     var nested = Map.of("request", Map.of("method", unknownType, "status", 200));
 
     var json = SafeLogger.toJson(nested);
+    var node = PARSER.readTree(json);
 
-    assertThat(json).contains("DELETE");
-    assertThat(json).contains("200");
+    var request = node.get("request");
+    assertThat(request.get("method").isObject()).isTrue();
+    assertThat(request.get("method").isEmpty()).isTrue();
+    assertThat(request.get("status").asInt()).isEqualTo(200);
+    assertThat(json).doesNotContain("DELETE");
+  }
+
+  @Test
+  void shouldNotInvokeToStringForEmptyBeanHoldingPrivateSecret() throws Exception {
+    var bean = new SecretHoldingBean("private-secret-value");
+
+    var json = SafeLogger.toJson(Map.of("holder", bean));
+    var node = PARSER.readTree(json);
+
+    assertThat(node.get("holder").isObject()).isTrue();
+    assertThat(node.get("holder").isEmpty()).isTrue();
+    assertThat(json).doesNotContain("private-secret-value");
+    assertThat(bean.wasToStringInvoked()).isFalse();
+  }
+
+  @Test
+  void shouldWritePropertiesInDeclarationOrder() {
+    var json = SafeLogger.toJson(new OrderedConfiguration("z", "a", "m"));
+
+    var zetaIndex = json.indexOf("\"zeta\"");
+    var alphaIndex = json.indexOf("\"alpha\"");
+    var middleIndex = json.indexOf("\"middle\"");
+    assertThat(zetaIndex).isNotNegative();
+    assertThat(alphaIndex).isGreaterThan(zetaIndex);
+    assertThat(middleIndex).isGreaterThan(alphaIndex);
+  }
+
+  @Test
+  void shouldIndentOutput() {
+    var json = SafeLogger.toJson(new OrderedConfiguration("z", "a", "m"));
+
+    assertThat(json).contains(System.lineSeparator()).contains("  \"zeta\"");
   }
 
   @Test
@@ -173,6 +227,51 @@ class SafeLoggerTest {
     @Override
     public String toString() {
       return value;
+    }
+  }
+
+  /** Empty bean whose {@code toString()} would expose a private sensitive field. */
+  private static class SecretHoldingBean {
+    @Sensitive private final String secret;
+    private final AtomicBoolean toStringInvoked = new AtomicBoolean();
+
+    SecretHoldingBean(String secret) {
+      this.secret = secret;
+    }
+
+    boolean wasToStringInvoked() {
+      return toStringInvoked.get();
+    }
+
+    @Override
+    public String toString() {
+      toStringInvoked.set(true);
+      return secret;
+    }
+  }
+
+  /** Configuration-style bean whose declaration order is not alphabetical. */
+  static class OrderedConfiguration {
+    private final String zeta;
+    private final String alpha;
+    private final String middle;
+
+    OrderedConfiguration(String zeta, String alpha, String middle) {
+      this.zeta = zeta;
+      this.alpha = alpha;
+      this.middle = middle;
+    }
+
+    public String getZeta() {
+      return zeta;
+    }
+
+    public String getAlpha() {
+      return alpha;
+    }
+
+    public String getMiddle() {
+      return middle;
     }
   }
 }

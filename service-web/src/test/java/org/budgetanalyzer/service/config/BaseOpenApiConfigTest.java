@@ -11,6 +11,8 @@ import java.util.LinkedHashMap;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
@@ -573,6 +575,24 @@ class BaseOpenApiConfigTest {
 
     var example = mediaType.getExample();
     assertThat(example).as("Example should not be null").isNotNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = HttpStatus.class,
+      names = {"UNPROCESSABLE_ENTITY", "UNPROCESSABLE_CONTENT"})
+  void shouldBuildApplicationErrorExampleForBothUnprocessableStatusConstants(
+      HttpStatus httpStatus) {
+    // Arrange & Act
+    final var response =
+        testOpenApiConfig.buildExampleApiErrorResponse(
+            httpStatus, "Business rule violated", "BUSINESS_001");
+
+    // Assert
+    var example = (ApiErrorResponse) response.getContent().get("application/json").getExample();
+    assertThat(example.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
+    assertThat(example.getMessage()).isEqualTo("Business rule violated");
+    assertThat(example.getCode()).isEqualTo("BUSINESS_001");
   }
 
   @Test

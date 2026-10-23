@@ -14,7 +14,7 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.budgetanalyzer.service.exception.BusinessException;
 import org.budgetanalyzer.service.exception.ClientException;
@@ -114,7 +114,7 @@ class ApiExceptionHandlerTest {
 
     assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
-    var serializedResponse = new ObjectMapper().writeValueAsString(resolvedError.response());
+    var serializedResponse = new JsonMapper().writeValueAsString(resolvedError.response());
     assertThat(serializedResponse).doesNotContain(internalSecret);
   }
 

@@ -24,9 +24,8 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Reactive security configuration for claims-header-based authentication.
@@ -49,13 +48,13 @@ public class ReactiveClaimsHeaderSecurityConfig {
    * Configures stateless WebFlux security using trusted claims headers.
    *
    * @param http the ServerHttpSecurity to configure
-   * @param objectMapper the ObjectMapper used for JSON security responses
+   * @param jsonMapper the JsonMapper used for JSON security responses
    * @return the configured SecurityWebFilterChain
    */
   @Bean
   @ConditionalOnMissingBean(SecurityWebFilterChain.class)
   public SecurityWebFilterChain securityWebFilterChain(
-      ServerHttpSecurity http, ObjectMapper objectMapper) {
+      ServerHttpSecurity http, JsonMapper jsonMapper) {
     logger.info("Configuring stateless reactive claims-header security");
 
     ReactiveAuthenticationManager reactiveAuthenticationManager =
@@ -64,7 +63,7 @@ public class ReactiveClaimsHeaderSecurityConfig {
     authenticationWebFilter.setAuthenticationFailureHandler(
         (webFilterExchange, exception) ->
             ReactiveClaimsHeaderSecurityErrorResponseWriter.writeUnauthorized(
-                webFilterExchange.getExchange(), objectMapper));
+                webFilterExchange.getExchange(), jsonMapper));
     authenticationWebFilter.setServerAuthenticationConverter(
         exchange -> {
           var headers = exchange.getRequest().getHeaders();
@@ -122,11 +121,11 @@ public class ReactiveClaimsHeaderSecurityConfig {
                     .authenticationEntryPoint(
                         (exchange, authenticationException) ->
                             ReactiveClaimsHeaderSecurityErrorResponseWriter.writeUnauthorized(
-                                exchange, objectMapper))
+                                exchange, jsonMapper))
                     .accessDeniedHandler(
                         (exchange, accessDeniedException) ->
                             ReactiveClaimsHeaderSecurityErrorResponseWriter.writeForbidden(
-                                exchange, objectMapper)))
+                                exchange, jsonMapper)))
         .build();
   }
 
