@@ -39,7 +39,7 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  * <ul>
  *   <li>{@link InvalidRequestException} → 400 Bad Request
  *   <li>{@link ResourceNotFoundException} → 404 Not Found
- *   <li>{@link BusinessException} → 422 Unprocessable Entity (includes error code)
+ *   <li>{@link BusinessException} → 422 Unprocessable Content (includes error code)
  *   <li>{@link ClientException} → 503 Service Unavailable
  *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
  *   <li>{@link WebExchangeBindException} → 400 Bad Request (validation errors)
@@ -88,7 +88,7 @@ public class ReactiveApiExceptionHandler implements ApiExceptionHandler {
   }
 
   /**
-   * Handles {@link BusinessException} and returns HTTP 422 Unprocessable Entity.
+   * Handles {@link BusinessException} and returns HTTP 422 Unprocessable Content.
    *
    * @param exception the exception thrown when a business rule is violated
    * @return Mono with standardized error response

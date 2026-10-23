@@ -328,13 +328,12 @@ public abstract class BaseOpenApiConfig {
    * @return the corresponding ApiErrorType enum value
    */
   private ApiErrorType getTypeFromHttpStatus(HttpStatus httpStatus) {
-    return switch (httpStatus) {
+    return switch (HttpStatus.valueOf(httpStatus.value())) {
       case HttpStatus.BAD_REQUEST -> ApiErrorType.INVALID_REQUEST;
       case HttpStatus.UNAUTHORIZED -> ApiErrorType.UNAUTHORIZED;
       case HttpStatus.FORBIDDEN -> ApiErrorType.FORBIDDEN;
       case HttpStatus.NOT_FOUND -> ApiErrorType.NOT_FOUND;
-      case HttpStatus.UNPROCESSABLE_ENTITY, HttpStatus.UNPROCESSABLE_CONTENT ->
-          ApiErrorType.APPLICATION_ERROR;
+      case HttpStatus.UNPROCESSABLE_CONTENT -> ApiErrorType.APPLICATION_ERROR;
       case HttpStatus.SERVICE_UNAVAILABLE -> ApiErrorType.SERVICE_UNAVAILABLE;
       default -> ApiErrorType.INTERNAL_ERROR;
     };

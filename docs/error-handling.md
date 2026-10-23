@@ -102,7 +102,7 @@ Throwable
     └── ClientException (400 - Bad Request)
         ├── ResourceNotFoundException (404 - Not Found)
         ├── InvalidRequestException (400 - Bad Request)
-        └── BusinessException (422 - Unprocessable Entity)
+        └── BusinessException (422 - Unprocessable Content)
 ```
 
 ### Exception Details
@@ -148,7 +148,7 @@ public Transaction processImport(MultipartFile file) {
 ```
 
 #### BusinessException
-- **HTTP Status**: 422 Unprocessable Entity
+- **HTTP Status**: 422 Unprocessable Content
 - **Error Type**: `APPLICATION_ERROR`
 - **Use Case**: Business rule violations with application-specific error codes
 - **Special**: Includes `code` field for machine-readable error identification

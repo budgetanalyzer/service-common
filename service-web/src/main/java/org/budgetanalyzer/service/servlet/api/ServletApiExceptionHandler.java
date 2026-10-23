@@ -51,7 +51,7 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *   <li>{@link NoHandlerFoundException} → 404 Not Found
  *   <li>{@link NoResourceFoundException} → 404 Not Found
  *   <li>{@link HttpRequestMethodNotSupportedException} → 405 Method Not Allowed
- *   <li>{@link BusinessException} → 422 Unprocessable Entity (includes error code)
+ *   <li>{@link BusinessException} → 422 Unprocessable Content (includes error code)
  *   <li>{@link ClientException} → 503 Service Unavailable
  *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
  *   <li>{@link MethodArgumentTypeMismatchException} → 400 Bad Request
@@ -194,7 +194,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
   }
 
   /**
-   * Handles {@link BusinessException} and returns HTTP 422 Unprocessable Entity.
+   * Handles {@link BusinessException} and returns HTTP 422 Unprocessable Content.
    *
    * <p>This handler includes the application-specific error code in the response.
    *
@@ -203,7 +203,7 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
    * @return standardized error response with APPLICATION_ERROR type and error code
    */
   @ExceptionHandler
-  @ResponseStatus(value = HttpStatus.UNPROCESSABLE_ENTITY)
+  @ResponseStatus(value = HttpStatus.UNPROCESSABLE_CONTENT)
   public ApiErrorResponse handle(BusinessException exception, WebRequest request) {
     logException(ApiErrorType.APPLICATION_ERROR, exception.getCode(), exception);
     return resolveCommonException(exception).response();

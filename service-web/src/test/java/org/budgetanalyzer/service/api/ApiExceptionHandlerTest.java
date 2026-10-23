@@ -79,7 +79,7 @@ class ApiExceptionHandlerTest {
         apiExceptionHandler.resolveCommonException(
             new BusinessException("Budget exceeded", "BUDGET_EXCEEDED"));
 
-    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+    assertThat(resolvedError.statusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
     assertThat(resolvedError.response().getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
     assertThat(resolvedError.response().getCode()).isEqualTo("BUDGET_EXCEEDED");
   }

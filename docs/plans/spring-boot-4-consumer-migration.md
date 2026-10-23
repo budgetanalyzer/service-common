@@ -134,6 +134,10 @@ action" notes below give the reasons.
 - Spring Cloud 2025.1.x applies only to services that import `spring-cloud-platform`. Spring
   Modulith 2.1.x, SpringDoc 3.1.x, and ShedLock 7.x arrive through `spring-platform`. Follow each
   project's migration notes for consumer-owned usage.
+- Business-rule 422 responses (`BusinessException`) now carry `HttpStatus.UNPROCESSABLE_CONTENT`
+  instead of the deprecated `HttpStatus.UNPROCESSABLE_ENTITY`. The two are distinct enum
+  constants, so code or tests that compare against `HttpStatus.UNPROCESSABLE_ENTITY` should use
+  `HttpStatus.UNPROCESSABLE_CONTENT` or compare `value()`. The wire status is still 422.
 
 ## Approved Logging And Error-Response Contract Changes
 

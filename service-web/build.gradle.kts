@@ -34,9 +34,10 @@ dependencies {
     testRuntimeOnly(libs.h2)
 }
 
-// Isolated consumer-classpath smoke suites. Each suite consumes this library the way a service
-// does (published api/runtime dependencies only) plus a single web stack, and does not inherit the
-// combined servlet + reactive + JPA test classpath above.
+// Isolated consumer-classpath smoke suites. Each suite depends on this project's api and runtime
+// variants (the same variants the published module metadata is generated from) plus a single web
+// stack, and does not inherit the combined servlet + reactive + JPA test classpath above. The
+// suites do not exercise the generated POM or module files.
 testing {
     suites {
         register<JvmTestSuite>("servletSmokeTest") {

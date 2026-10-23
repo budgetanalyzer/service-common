@@ -485,7 +485,9 @@ grep -r "@Component" service-core/src/main/java/
   - Public endpoints: `/actuator/health/**`, `/actuator/prometheus/**`, OpenAPI docs
   - Protected: All other endpoints (requires `X-User-Id` header)
   - Stateless by default; `/internal/**` is not globally anonymous
-  - The shared default filter chain backs off when a service defines its own `SecurityFilterChain` or `SecurityWebFilterChain`
+  - Servlet: the shared chain coexists with consumer chains. To own specific paths, add a lower-`@Order` `SecurityFilterChain` with a `securityMatcher`; unmatched requests fall through to the shared chain. Do not add a consumer chain without a `securityMatcher`: the shared chain already matches every request, so Spring Security rejects the unreachable chain at startup
+  - Reactive: the shared `SecurityWebFilterChain` backs off when any `SecurityWebFilterChain` bean exists. The consumer chain then owns all authentication and authorization rules; `@PreAuthorize` is still enforced
+  - Before adding or changing a consumer security chain, read `service-web/src/main/java/org/budgetanalyzer/service/security/ClaimsHeaderSecurityConfig.java`, `service-web/src/main/java/org/budgetanalyzer/service/security/ReactiveClaimsHeaderSecurityConfig.java`, and the executable evidence in `service-web/src/servletSmokeTest/java/org/budgetanalyzer/smoke/servlet/ServletConsumerSecurityChainSmokeTest.java` and `service-web/src/reactiveSmokeTest/java/org/budgetanalyzer/smoke/reactive/ReactiveConsumerSecurityChainSmokeTest.java`
   - No external properties needed (no JWKS URI, no issuer config)
 
 **Enable HTTP logging** (optional, works for both stacks):
@@ -553,7 +555,7 @@ grep -r "@Configuration" service-web/src/main/java/
 **service-web** (mostly automatic):
 - ✅ Exception handling - automatic
 - ✅ Security - automatic by default (no properties needed; trusts claims headers from the ingress external-auth path)
-- ✅ Consumer-defined Spring Security chains override the shared default chain on both servlet and reactive stacks
+- ✅ Servlet consumer chains coexist with the shared chain through a lower `@Order` and a `securityMatcher`; any reactive `SecurityWebFilterChain` replaces the shared reactive chain
 - ✅ Correlation ID filter - automatic
 - ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`; structured text bodies are redacted and unsafe body types are omitted
 - ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`; shared

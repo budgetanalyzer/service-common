@@ -177,8 +177,14 @@ budgetanalyzer:
 **No component scanning needed** - Spring Boot autoconfiguration handles everything via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
 The shared claims-header security configuration provides the default Spring Security filter chain.
-If a consuming service defines its own `SecurityFilterChain` or `SecurityWebFilterChain`, the
-shared default chain backs off so the service's custom rules win deterministically.
+The two stacks handle consumer-defined chains differently. On the servlet stack, the shared chain
+matches every request and coexists with consumer chains: to own specific paths, a service registers
+a `SecurityFilterChain` with a lower `@Order` and a `securityMatcher`, and requests it does not
+match fall through to the shared chain. A servlet consumer chain without a `securityMatcher` makes
+one of the chains unreachable, and Spring Security fails at startup. On the reactive stack, the
+shared `SecurityWebFilterChain` backs off when a service defines any `SecurityWebFilterChain`
+bean. The service's chain then owns all authentication and authorization rules, while
+`@PreAuthorize` method security stays enforced.
 
 #### Discovering What's Autoconfigured
 
@@ -272,11 +278,48 @@ configured coverage gates.
 
 The coverage reports and gates cover each module's `test` task. `service-web` also
 defines `servletSmokeTest` and `reactiveSmokeTest` suites (`service-web/src/servletSmokeTest/`
-and `service-web/src/reactiveSmokeTest/`). Each suite resolves the published library plus a
-single web stack, Spring Security, and the matching SpringDoc starter, without JPA or the
-combined test classpath. They start minimal fixture applications through normal Boot
-auto-configuration and verify HTTP error contracts, security chains, actuator endpoints, and
-generated OpenAPI documentation over real HTTP. Neither suite adds published dependencies.
+and `service-web/src/reactiveSmokeTest/`). Each suite depends on the project's own api and
+runtime variants through `implementation(project())`, plus a single web stack, Spring Security,
+and the matching SpringDoc starter, without JPA or the combined test classpath. They start
+minimal fixture applications through normal Boot auto-configuration and verify, over real HTTP:
+startup and classpath isolation, shared security and method security wiring, `ApiErrorResponse`
+handling, actuator probes and Prometheus, and SpringDoc serving the shared error documentation,
+including preservation of explicit controller responses and the generated schema and example
+contents.
+
+The `src/<suiteName>/java` and `src/<suiteName>/resources` directories are Gradle JVM test
+suite conventions. The isolated suites are permanent guards against optional-dependency and
+auto-configuration regressions; selecting an application type on the combined test classpath is
+not equivalent, because the other stack and JPA remain on the classpath.
+
+The suites do not exercise the generated POM or Gradle module metadata files, or the versions
+written into them by `versionMapping`. Verifying published metadata requires consumer builds
+against `publishToMavenLocal`; the smoke suites do not satisfy that gate. Neither suite adds
+published dependencies.
+
+### CI Artifacts
+
+The `Build` workflow (`.github/workflows/build.yml`) runs `./gradlew build` as the test gate
+and uploads these artifacts to the workflow run, each retained for seven days:
+
+- `test-results`: JUnit XML from every test task (`**/build/test-results/*/*.xml`) and the HTML
+  reports with their supporting files (`**/build/reports/tests/**`). Module and task directories
+  are preserved, so `service-core` and `service-web` `test`, `servletSmokeTest`, and
+  `reactiveSmokeTest` results stay distinguishable. Open `<module>/build/reports/tests/<task>/index.html`
+  for the navigable report.
+- `publication-metadata`: the generated `pom-default.xml` and Gradle `module.json` for each of
+  the four `mavenJava` publications (`**/build/publications/mavenJava/`), produced by
+  `generatePomFileForMavenJavaPublication` and `generateMetadataFileForMavenJavaPublication`
+  without running any publish task.
+- `jars`: the built JARs (uploaded only when the preceding steps succeed).
+
+The report upload, metadata generation, and metadata upload steps run even when an earlier step
+fails, and those failures still fail the run. They collect whatever files exist; a compilation or
+dependency-resolution failure can leave either artifact empty or partial, and the upload then
+warns instead of failing. Archived POM and module files make the generated metadata reviewable,
+but they do not exercise consumer dependency resolution and do not replace the consumer-build
+release gate described in
+[docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
 
 ## Code Quality
 
