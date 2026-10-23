@@ -20,6 +20,13 @@ Tilt (its `spring.jackson.datatype.datetime.write-dates-as-timestamps` and
 `../budget-analyzer-api-tests` covers timestamps, null omission, error shapes, and the generated
 OpenAPI contract against Boot 3 behavior, and record the results.
 
+`transaction-service` is migrated locally, uncommitted on top of HEAD `20f84b3`
+([transaction-service plan](spring-boot-4-transaction-service-migration.md)). Against the Maven
+Local snapshot it builds and passes all 477 existing tests, including the added ISO-`Instant`
+assertion on `createdAt`/`updatedAt`, which passed on Boot 3 before the dependency change.
+Nothing has been deployed. **Local migration verified; deployed API compatibility pending.** Its
+main-configuration Jackson keys are shadowed in tests and remain part of the deployed gate.
+
 ## Snapshot Line
 
 - `0.0.18-SNAPSHOT` is the Spring Boot 4 development line. It is not a stable release.
