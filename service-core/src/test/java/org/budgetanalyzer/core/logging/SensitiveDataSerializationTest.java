@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import tools.jackson.core.JsonGenerator;
@@ -147,6 +148,18 @@ class SensitiveDataSerializationTest {
     assertThat(node.get("principal").asString()).isEqualTo("service-user");
     assertThat(node.get("token").asString()).isEqualTo("**************7654");
     assertThat(json).doesNotContain("abcdef98");
+  }
+
+  @Test
+  void shouldMaskPolymorphicRecordComponentWithoutDiscardingOtherFields() throws Exception {
+    var credentials = new PolymorphicCredentials("service-user", "token-abcdef987654");
+
+    var json = SafeLogger.toJson(credentials);
+    var node = PARSER.readTree(json);
+
+    assertThat(node.get("principal").asString()).isEqualTo("service-user");
+    assertThat(node.get("credential").asString()).isEqualTo("********");
+    assertThat(json).doesNotContain("token-abcdef987654");
   }
 
   @Test
@@ -350,6 +363,9 @@ class SensitiveDataSerializationTest {
   }
 
   record Credentials(String principal, @Sensitive(showLast = 4) String token) {}
+
+  record PolymorphicCredentials(
+      String principal, @Sensitive @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS) Object credential) {}
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   record NonEmptyAccount(String username, @Sensitive String password) {}

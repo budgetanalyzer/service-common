@@ -497,7 +497,8 @@ log.info("State: {}", SafeLogger.truncateId(state, 6));          // "a1b2c3…"
 - `@Sensitive` works on fields, getters, and record components. Only the value is replaced; Jackson
   still owns property names, null handling, `@JsonInclude` rules (an empty sensitive string is
   omitted under `NON_EMPTY`), and bean shapes such as `@JsonFormat(shape = ARRAY)`. Masking takes
-  precedence over another serializer declared on the same member.
+  precedence over another serializer declared on the same member. Polymorphic sensitive properties
+  using `@JsonTypeInfo` are written as masked strings without type metadata.
 - Full masking writes a fixed eight-character mask; `showLast` reveals only trailing characters and
   masks values that are not longer than `showLast` completely. Non-string values are masked from
   their string form; null stays `null` and empty stays empty.

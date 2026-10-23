@@ -5,6 +5,7 @@ import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.cfg.MapperConfig;
 import tools.jackson.databind.introspect.Annotated;
 import tools.jackson.databind.introspect.NopAnnotationIntrospector;
+import tools.jackson.databind.jsontype.TypeSerializer;
 import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.ser.std.StdSerializer;
 
@@ -79,6 +80,15 @@ final class SensitiveMaskingModule extends SimpleModule {
     @Override
     public void serialize(Object value, JsonGenerator generator, SerializationContext context) {
       generator.writeString(mask(value.toString(), maskChar, showLast));
+    }
+
+    @Override
+    public void serializeWithType(
+        Object value,
+        JsonGenerator generator,
+        SerializationContext context,
+        TypeSerializer typeSerializer) {
+      serialize(value, generator, context);
     }
   }
 }
