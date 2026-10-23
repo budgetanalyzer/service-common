@@ -597,10 +597,11 @@ Jackson 3.1.7):
 - `spring.jackson.date-format` still exists, but `StdDateFormat` moved to
   `tools.jackson.databind.util.StdDateFormat`. The Jackson 2 class can still resolve from
   Springdoc's transitive Jackson 2, so a stale value may not fail visibly.
-- Integration plan requirements: confirm that each remaining property binds under Boot 4 (a
-  context-startup test per service). Assert actual API date and time output for the field types
-  each service exposes. Remove or replace obsolete keys deliberately. Do not mechanically rename
-  the `date-format` class name, and do not restore all Jackson 2 defaults.
+- Integration plan requirements: translate keys like-for-like. Move
+  `serialization.write-dates-as-timestamps` to `datatype.datetime.write-dates-as-timestamps`, and
+  change the `date-format` value to `tools.jackson.databind.util.StdDateFormat`. Do not remove
+  settings and do not restore all Jackson 2 defaults. The existing service tests and the later
+  api-tests run are the verification; this change does not call for new tests.
 
 Redis, cache, and persisted serialization (validate separately from API JSON):
 
@@ -612,8 +613,8 @@ Redis, cache, and persisted serialization (validate separately from API JSON):
   changing the key prefix, before rollout.
 - `session-gateway` stores string values through `ReactiveStringRedisTemplate`. Verify that any
   JSON it writes and reads across a rolling deployment keeps the same shape under Jackson 3.
-  `permission-service` declares `spring-boot-starter-data-redis`; inventory its Redis usage
-  during integration.
+  `permission-service` declares `spring-boot-starter-data-redis` in its catalog only; it does not
+  use Redis, so there is nothing to migrate.
 - `currency-service` Spring Modulith event publications: the Flyway `V5` `event_publication`
   table has only the legacy six columns, and the service uses `ddl-auto: validate`. Add the
   nullable Modulith 2 columns (`status`, `completion_attempts`, `last_resubmission_date`) in a
