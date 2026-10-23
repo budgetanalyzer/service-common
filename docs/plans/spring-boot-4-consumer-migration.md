@@ -3,11 +3,22 @@
 ## Status
 
 Library migration complete as a verified development snapshot, `0.0.18-SNAPSHOT`, published to
-Maven Local only (Phase 5). No consumer has been migrated, built, or tested against it, and no
-remote publication or stable release has happened. The execution plan is
-[spring-boot-4-upgrade.md](spring-boot-4-upgrade.md). This document records public API changes,
-dependency changes, validation results, and consumer actions. It is input for authoring the later
-consumer integration plan; it is not itself an executable plan.
+Maven Local only (Phase 5). No remote publication or stable release has happened. The execution
+plan is [spring-boot-4-upgrade.md](spring-boot-4-upgrade.md). This document records public API
+changes, dependency changes, validation results, and consumer actions. It is input for authoring
+the later consumer integration plan; it is not itself an executable plan.
+
+`permission-service` is migrated locally, uncommitted on top of HEAD `84a1516`
+([permission-service plan](spring-boot-4-permission-service-migration.md)). Against the Maven
+Local snapshot it builds and passes 57 tests (the 56 existing plus one new invalid-`status`
+validation case). Focused compatibility assertions cover timestamps, null omission, detail and
+pagination fields, and 400/401/403/404/422/503 error shapes; they passed on Boot 3 before the
+dependency change and unchanged on Boot 4. Nothing has been deployed. **Local migration verified;
+deployed API compatibility pending.** The deployed gate must still run the main configuration in
+Tilt (its `spring.jackson.datatype.datetime.write-dates-as-timestamps` and
+`tools.jackson.databind.util.StdDateFormat` settings are shadowed in tests), confirm
+`../budget-analyzer-api-tests` covers timestamps, null omission, error shapes, and the generated
+OpenAPI contract against Boot 3 behavior, and record the results.
 
 ## Snapshot Line
 

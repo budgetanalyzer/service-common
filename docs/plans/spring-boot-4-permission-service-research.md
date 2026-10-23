@@ -6,10 +6,15 @@ General consumer caveats are in [spring-boot-4-consumer-migration.md](spring-boo
 
 The migration should be the minimal changeset that compiles, starts, and passes the existing test
 suite. The external contract is the same endpoints, parameters, status codes, fields, and values;
-JSON key order and OpenAPI formatting are not part of it. Do not add tests;
-`../budget-analyzer-api-tests` verifies the contract after deployment.
+JSON key order and OpenAPI formatting are not part of it. Existing tests are reused; focused
+assertions or cases are added only where needed to show API compatibility, and must pass on Boot 3
+before the dependency change. `../budget-analyzer-api-tests` verifies the contract after
+deployment.
 
-Items marked *unverified* are inferred and should be confirmed during the migration.
+Status: migrated locally, uncommitted on top of `84a1516`. The build passes 57 tests (56 existing
+plus one new invalid-`status` validation case). Focused assertions for timestamps, null omission,
+detail and pagination fields, and 400/401/403/404/422/503 error shapes passed on Boot 3 and
+unchanged on Boot 4. **Local migration verified; deployed API compatibility pending.**
 
 ## Configuration
 
@@ -17,10 +22,12 @@ Items marked *unverified* are inferred and should be confirmed during the migrat
   apply each config translation to both files.
 - `spring.jackson.serialization.write-dates-as-timestamps: false` (both files) moves to
   `spring.jackson.datatype.datetime.write-dates-as-timestamps: false`. In Jackson 3 it is a
-  `DateTimeFeature`, not a `SerializationFeature`. Whether the stale key fails startup or is
-  ignored is *unverified*.
+  `DateTimeFeature`, not a `SerializationFeature`. With the translated key in the test file,
+  timestamp assertions (including microsecond and millisecond values) pass unchanged on Boot 4.
 - `spring.jackson.date-format: com.fasterxml.jackson.databind.util.StdDateFormat` (main file only)
-  changes to `tools.jackson.databind.util.StdDateFormat`.
+  changes to `tools.jackson.databind.util.StdDateFormat`. Tests do not load the main file, so its
+  Jackson settings remain pending verification at the deployed gate (Tilt plus
+  `../budget-analyzer-api-tests`).
 - `default-property-inclusion` and `serialization.indent-output` are unchanged.
 - Redis is unused: `spring-boot-starter-data-redis` is in the catalog but not in
   `build.gradle.kts`, and the `spring.data.redis` properties are dead. Leave them as they are.
@@ -32,8 +39,9 @@ Items marked *unverified* are inferred and should be confirmed during the migrat
 - `spring-boot-starter-test` becomes `spring-boot-starter-webmvc-test`,
   `spring-boot-starter-data-jpa-test`, and `spring-boot-starter-security-test`.
 - `flyway-core` becomes `spring-boot-starter-flyway`, because Boot 4's Flyway autoconfiguration
-  lives in `spring-boot-flyway`. *Unverified* for this service; the integration tests inject the
-  `Flyway` bean, so a missing autoconfiguration fails loudly. Keep `flyway-database-postgresql`.
+  lives in `spring-boot-flyway`. Observed: the starter is required; with only `flyway-core` the
+  `Flyway` bean is missing and the full-context integration tests fail. Keep
+  `flyway-database-postgresql`.
 - Rename `org.testcontainers:junit-jupiter` and `org.testcontainers:postgresql` to
   `testcontainers-junit-jupiter` and `testcontainers-postgresql`.
 - Remove the `junitPlatform = "1.14.4"` pin.
@@ -69,9 +77,10 @@ All mechanical:
 
 ## Possible Contract Differences To Call Out
 
-- SpringDoc 3 may deduplicate the `status` parameter enum, which is currently
-  `["ACTIVE","DEACTIVATED","ACTIVE","DEACTIVATED"]`. The api-tests drift check would report it.
-  *Unverified*.
+- SpringDoc 3 was expected to possibly deduplicate the `status` parameter enum
+  `["ACTIVE","DEACTIVATED","ACTIVE","DEACTIVATED"]`. In the pre-plan dry run it did not: the
+  enum stayed duplicated and the generated `/v3/api-docs` was byte-identical to Boot 3. The
+  deployed gate still compares the OpenAPI contract against Boot 3.
 - The unified OpenAPI doc takes the shared `ApiErrorResponse`, `FieldError`, and
   `PageMetadataResponse` schemas from permission-service, because it is merged last. Any SpringDoc
   3 change to those schemas surfaces through this service.
