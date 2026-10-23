@@ -347,10 +347,9 @@ consumers does not make them backwards compatible.
   serialization fallback, and the servlet `PrintWriter` records I/O errors instead of throwing.
 - Spring Framework 7 deprecates `HttpStatus.UNPROCESSABLE_ENTITY` in favor of a distinct constant,
   `UNPROCESSABLE_CONTENT` (both 422), and `HttpStatus.valueOf(422)` now returns
-  `UNPROCESSABLE_CONTENT`. The `BusinessException` handlers keep returning `UNPROCESSABLE_ENTITY`,
-  so the status and the existing assertions are unchanged; the deprecation warnings remain.
-  `BaseOpenApiConfig.buildExampleApiErrorResponse` now maps both constants to `APPLICATION_ERROR`.
-  Before this fix, the new constant fell through to `INTERNAL_ERROR`. Framework-originated 422
+  `UNPROCESSABLE_CONTENT`. The `BusinessException` handlers return `UNPROCESSABLE_CONTENT`; the
+  wire status is still 422. `BaseOpenApiConfig.buildExampleApiErrorResponse` maps both constants
+  to `APPLICATION_ERROR`. Framework-originated 422
   statuses (for example `ResponseStatusException(422)`) now default to the reason phrase
   `Unprocessable Content`. **Consumer action:** code that compares `HttpStatus` enum identity with
   `UNPROCESSABLE_ENTITY` should compare `value()` or handle both constants.
@@ -415,9 +414,7 @@ consumers does not make them backwards compatible.
   branch. `service-web`: 573 tests, 0 failures, 0 skipped, 95.3% line, 82.6% branch (minimums 93%
   and 80%, unchanged). Spotless, Checkstyle, and Javadoc passed with no Gradle deprecation
   warnings.
-- Remaining javac deprecations are the `HttpStatus.UNPROCESSABLE_ENTITY` and
-  `StatusResultMatchers.isUnprocessableEntity()` uses described above. Remaining test-log warnings
-  are standard Boot, Springdoc, and JPA defaults plus Netty's JVM native-access notice; none involve
+- Remaining test-log warnings are standard Boot, Springdoc, and JPA defaults plus Netty's JVM native-access notice; none involve
   Jackson or bean wiring.
 
 ## Phase 4: Consumer Classpaths And Runtime Behavior
@@ -504,12 +501,9 @@ consumers does not make them backwards compatible.
   `service-core`: 217 tests, 89.3% line, 78.9% branch (minimums 80% / 70%). `service-web`: 573
   tests, 95.3% line, 82.6% branch (minimums 93% / 80%). Smoke suites: 26 tests. No failures or
   skips; no Gradle deprecation warnings.
-- Javac deprecation notes remain for `service-web` `compileJava` and `compileTestJava`. A focused
-  `-Xlint:deprecation` run attributes all of them to `HttpStatus.UNPROCESSABLE_ENTITY`: three
-  production uses and four test assertions on returned enum identity. Keeping that constant is
-  the accepted Phase 3 decision recorded above. Switching would change the `HttpStatus` identity
-  that callers and existing assertions compare. Netty's JVM native-access notice and the JVM CDS
-  notice are environment warnings, not repository-source deprecations.
+- `service-web` `compileJava` and `compileTestJava` emit no javac deprecation notes. Netty's JVM
+  native-access notice and the JVM CDS notice are environment warnings, not repository-source
+  deprecations.
 
 ## Phase 5: Documentation Review And Local Publication
 
