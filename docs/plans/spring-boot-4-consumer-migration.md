@@ -135,6 +135,83 @@ action" notes below give the reasons.
   constants, so code or tests that compare against `HttpStatus.UNPROCESSABLE_ENTITY` should use
   `HttpStatus.UNPROCESSABLE_CONTENT` or compare `value()`. The wire status is still 422.
 
+## Findings From Consumer Migrations
+
+These were found during the `permission-service` and `transaction-service` migrations and apply
+to every consumer. Use them directly. A consumer plan does not need to re-derive or re-verify
+them.
+
+Dates and times:
+
+- The Boot-managed `JsonMapper` writes `Instant` and `LocalDate` values as ISO-8601 strings
+  (for example `"2026-04-08T12:30:45.123456Z"`) on both Boot 3 and Boot 4. This held in the
+  permission-service and transaction-service suites, which run with Boot's default mapper
+  because each service's test `application.yml` shadows the main file. Response date output
+  needs no per-service investigation. The main-file `spring.jackson.*` translation (below) is
+  verified at the deployed gate.
+- Existing `jsonPath("$.createdAt").isNotEmpty()` assertions also pass for numeric timestamps. A
+  service can cover this by adding the following next to the existing assertion. Run it on Boot 3
+  before the dependency change.
+
+  ```java
+  jsonPath("$.createdAt").value(matchesRegex("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z"))
+  ```
+
+  Doing so is optional.
+- Standalone mappers built in tests or code behave differently. A Jackson 2 mapper built as
+  `JsonMapper.builder().addModule(new JavaTimeModule()).build()` or
+  `new ObjectMapper().findAndRegisterModules()` writes `Instant` values as numbers. A Jackson 3
+  `JsonMapper.builder().build()` writes ISO strings. Where the exact output of such a mapper
+  matters, the like-for-like translation is
+  `JsonMapper.builder().enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS).build()`
+  (`tools.jackson.databind.cfg.DateTimeFeature`). Examples are byte lengths, stored or encrypted
+  payloads, and exact-string fixtures. Example: in transaction-service, the ISO payload grew
+  `PreviewImportTokenServiceTest`'s ciphertext from 249 to 253 bytes. At a length of 1 mod 3, the
+  last base64url character holds only ignored bits, so the test's last-character tamper stopped
+  changing the token.
+
+Build:
+
+- Replace `flyway-core` with `spring-boot-starter-flyway`. With only `flyway-core`, no `Flyway`
+  bean is created and full-context tests fail. Keep `flyway-database-postgresql`.
+- Test package moves, in addition to the Gotchas list in
+  [spring-boot-4-upgrade.md](spring-boot-4-upgrade.md):
+  - `AutoConfigureTestDatabase` → `org.springframework.boot.jdbc.test.autoconfigure`
+  - `DataJpaTest` → `org.springframework.boot.data.jpa.test.autoconfigure`
+  - `TestEntityManager` → `org.springframework.boot.jpa.test.autoconfigure`
+  - `UserDetailsServiceAutoConfiguration` → `org.springframework.boot.security.autoconfigure`
+
+Jackson 3 API translations:
+
+- `JsonProcessingException` is gone. Catch the unchecked `tools.jackson.core.JacksonException`.
+  `readValue` no longer throws `IOException`, so an `IOException` catch around a Jackson call
+  becomes `JacksonException`.
+- `JsonNode.fieldNames()` is removed. Use `propertyNames()`, which returns `Collection<String>`.
+- `JsonNode.textValue()` now throws on non-string and missing nodes. `stringValue(null)` keeps the
+  old null result. `asText()` and `isTextual()` are deprecated but still compile and behave the
+  same on string and missing nodes.
+- `new ObjectMapper().findAndRegisterModules()` → `JsonMapper.builder().findAndAddModules().build()`.
+
+Tests:
+
+- In Spring 7, `jsonPath(path).value(nullValue())` fails when the path is absent. Null
+  `ApiErrorResponse`/`FieldError` fields are now omitted, so those assertions become
+  `jsonPath(path).doesNotExist()`.
+
+Jackson 3 default changes. These were checked against 3.1.7. They are behavior changes to list in
+a consumer plan, not to work around:
+
+- `FAIL_ON_TRAILING_TOKENS` is on. A JSON request body with content after the root value returns
+  400.
+- `FAIL_ON_NULL_FOR_PRIMITIVES` is on. A null or missing value for a primitive request field
+  returns 400. Boxed fields are unaffected.
+- `SORT_PROPERTIES_ALPHABETICALLY` is on for non-record types. Records keep declaration order.
+  Key order is not part of the API contract, but JSON that a service persists may change key
+  order.
+- `WRITE_ENUMS_USING_TO_STRING` and `READ_ENUMS_USING_TO_STRING` are on. An enum that overrides
+  `toString()` changes its wire value.
+- `FAIL_ON_UNKNOWN_PROPERTIES` is off, the same as Boot 3's default.
+
 ## Approved Logging And Error-Response Contract Changes
 
 These are approved for this snapshot line. Phases 2 and 3 implement them and record the final
