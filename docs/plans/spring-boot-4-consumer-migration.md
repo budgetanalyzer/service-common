@@ -9,22 +9,23 @@ remote publication or stable release has happened. The execution plan is
 dependency changes, validation results, and consumer actions. It is input for authoring the later
 consumer integration plan; it is not itself an executable plan.
 
-## Release Gate
+## Snapshot Line
 
-- `0.0.18-SNAPSHOT` is the Spring Boot 4 development line. It is not a stable release and is not
-  authorized for consumer upgrades or deployment.
+- `0.0.18-SNAPSHOT` is the Spring Boot 4 development line. It is not a stable release.
+- Nothing is published or pushed to GitHub until the entire ecosystem runs locally in Tilt and
+  `budget-analyzer-api-tests` pass. Until then, consumers resolve service-common from Maven Local
+  only. Keep each repository's CI definitions current as part of its migration; CI is first
+  exercised at that push. Consumer plans do not sequence around publication order or CI artifact
+  resolution.
 - The user approved an exception to the normal backwards-compatibility, deprecation, and
   major-version rules in [versioning and compatibility](../versioning-and-compatibility.md) for
   this development snapshot only. The Jackson public API removals, logging behavior corrections,
   explicit error-response serialization policy, and framework/BOM changes below are intentional
   and ship without compatibility shims.
-- Local publication (`publishToMavenLocal`) is the only publication covered by the library
-  migration. Any merge or manual workflow dispatch that would refresh `0.0.18-SNAPSHOT` in GitHub
-  Packages requires the consumer-pin check below first.
 - A later consumer integration plan must choose the stable release version, migrate and test every
   consumer, and document rollout and rollback before a stable release.
 
-## Consumer Pins
+## Consumers
 
 Discover consumers from the published coordinates in sibling catalogs (excluding this repository):
 
@@ -33,25 +34,9 @@ grep -nE 'org\.budgetanalyzer:(spring-platform|spring-cloud-platform|service-cor
   ../*/gradle/libs.versions.toml ../*/build.gradle.kts 2>/dev/null | grep -v '^\.\./service-common/'
 ```
 
-Every discovered consumer must pin exactly `0.0.17` before any snapshot publication. Observed
-during Phase 1 (2026-10-23, read-only): `currency-service`, `permission-service`,
-`session-gateway`, and `transaction-service` each declare `serviceCommon = "0.0.17"`. Recheck
-before publishing; do not rely on this observation.
-
-Check the committed pin as well as the working tree, so an uncommitted local edit cannot satisfy
-the gate:
-
-```bash
-for r in <each discovered consumer>; do
-  git -C "../$r" show HEAD:gradle/libs.versions.toml | grep -E '^serviceCommon\s*='
-done
-```
-
-Rechecked in Phase 5, immediately before `publishToMavenLocal`: the same four consumers were
-discovered. Each pins `serviceCommon = "0.0.17"` in both HEAD and the working tree, with no
-uncommitted changes to `gradle/libs.versions.toml`, `build.gradle.kts`, or `settings.gradle.kts`.
-Every service-common coordinate uses `version.ref = "serviceCommon"`, and no build script
-declares a literal `org.budgetanalyzer:` coordinate. Consumer HEADs at that check:
+At the Phase 5 library check, the four consumers pinned the published `0.0.17`. Every
+service-common coordinate used `version.ref = "serviceCommon"`, and no build script declared a
+literal `org.budgetanalyzer:` coordinate. The consumer HEADs at that check were
 `currency-service` 919a2ee, `permission-service` 84a1516, `session-gateway` 09dacbf, and
 `transaction-service` 20f84b3.
 
@@ -643,16 +628,14 @@ Cloud, ShedLock, SpringDoc:
 - The later consumer integration plan must choose the stable release version, migrate and test
   all four consumers (including the Redis, cache, Modulith, and date-output checks above), and
   document rollout and rollback before a stable release.
-- Before any merge or manual workflow dispatch that would refresh `0.0.18-SNAPSHOT` in GitHub
-  Packages, rerun the consumer-pin check (HEAD and working tree).
 - Remote publication, git operations, and the GitHub Actions major updates from the dashboard
   remain out of scope.
 
 ### Local publication
 
 - Maven Local: no `MAVEN_OPTS`, `maven.repo.local`, or `~/.m2/settings.xml` override, so the
-  default `~/.m2/repository` is used. `./gradlew publishToMavenLocal` ran after the build and
-  consumer-pin gates and wrote all four artifacts under
+  default `~/.m2/repository` is used. `./gradlew publishToMavenLocal` ran after the build
+  passed and wrote all four artifacts under
   `org/budgetanalyzer/<artifact>/0.0.18-SNAPSHOT/`.
 - `spring-platform`: POM and `.module` only (no jar). The POM imports
   `spring-boot-dependencies:4.1.2` and `spring-modulith-bom:2.1.2` and manages

@@ -76,7 +76,9 @@ All mechanical:
   `PageMetadataResponse` schemas from permission-service, because it is merged last. Any SpringDoc
   3 change to those schemas surfaces through this service.
 
-## Outside The Code Change
+## CI
 
-- CI resolves service-common from GitHub Packages, where `0.0.18-SNAPSHOT` is not published. It
-  fails once the pin moves, until the release gate allows remote publication.
+- `.github/workflows/*.yml` and the `Dockerfile` need no Boot 4 change: JDK 25, `./gradlew build`,
+  the `build/test-results/test/*.xml` upload path, and the `bootJar` output copy are unchanged.
+  Publication policy is in
+  [spring-boot-4-consumer-migration.md](spring-boot-4-consumer-migration.md#snapshot-line).
