@@ -6,18 +6,27 @@ first iteration changes only this repository. A later integration plan moves the
 
 ## Status
 
-Draft for iteration.
+Reviewed execution plan. Migration has not started.
 
 ## Versioning
 
 - The version literal in `build.gradle.kts` stays `0.0.18-SNAPSHOT`. That snapshot line becomes
   the Spring Boot 4 line. Do not change the version in any phase.
-- Consumer services are being reverted to the published `0.0.17` release from GitHub Packages, so
-  replacing `0.0.18-SNAPSHOT` with Boot 4 content does not affect them. This applies both to Maven
-  Local (`publishToMavenLocal`) and to GitHub Packages (the snapshot workflow on `main` merges).
-- Prerequisite before any publish (Phase 5): every consumer must already pin `0.0.17`. Check it
-  read-only with `grep -n "serviceCommon" ../*/gradle/libs.versions.toml`. If any consumer still
-  pins `0.0.18-SNAPSHOT`, stop and tell the user. Do not edit consumer repositories.
+- This plan records the user-approved exception to the normal backwards-compatibility,
+  deprecation, and major-version rules for this development snapshot only. Jackson public API
+  changes and the framework/BOM changes below are intentional; do not add compatibility shims.
+  This exception does not authorize a stable release, consumer upgrades, or deployment.
+- The four current consumer repositories pin the published `0.0.17` release. Recheck their
+  checked-in coordinates before publishing; do not assume this remains true throughout the work.
+  Discover consumers from the published artifact coordinates in sibling catalogs (Phase 5's
+  validation command excludes this library itself). Every discovered consumer must pin exactly
+  `0.0.17`; a different, dynamic, or missing coordinate fails the check. Do not edit consumers.
+- Phase 5 publishes locally only. The same prerequisite applies before any later merge or manual
+  workflow dispatch that would refresh `0.0.18-SNAPSHOT` in GitHub Packages. Git operations and
+  remote publishing are outside this plan.
+- Completion means a verified library development snapshot. The later consumer integration plan
+  must establish the stable release version, migrate and test all consumers, and document rollout
+  and rollback before the library is considered ready for a stable release.
 
 ## Target Dependency Set
 
@@ -68,8 +77,10 @@ OpenCSV, and Gradle 9.8.2 need no change for Boot 4; Boot 4 requires Gradle 8.14
   `com.fasterxml.jackson.databind.ObjectMapper` fails at startup. Type renames we use:
   `SerializerProvider` -> `SerializationContext`, `JsonSerializer` -> `ValueSerializer`,
   `BeanSerializerModifier` -> `ValueSerializerModifier`, `TextNode` -> `StringNode`, and
-  `JsonGenerator.writeFieldName` -> `writeName`. `JavaTimeModule` is built in, so
-  `jackson-datatype-jsr310` goes away. Mappers are immutable and built with `JsonMapper.builder()`.
+  `JsonGenerator.writeFieldName` -> `writeName`. Serializer-modifier callbacks now accept
+  `BeanDescription.Supplier` rather than `BeanDescription`; adapt property introspection too.
+  `JavaTimeModule` is built in, so `jackson-datatype-jsr310` goes away. Mappers are immutable and
+  built with `JsonMapper.builder()`.
   `JacksonException` is unchecked. Several defaults change, including
   `MapperFeature.SORT_PROPERTIES_ALPHABETICALLY` and the date features that moved to
   `DateTimeFeature`. These can reorder JSON output in `SafeLogger` and `ApiErrorResponse`.
@@ -86,7 +97,7 @@ OpenCSV, and Gradle 9.8.2 need no change for Boot 4; Boot 4 requires Gradle 8.14
   set by `PrometheusEndpointPostProcessor` and `ApplicationMetricTagPostProcessor` are still
   present and undeprecated in the 4.1.2 metadata.
 - **Spring Security 7.** `@EnableReactiveMethodSecurity(useAuthorizationManager = true)` still
-  exists in 7.1.2. Watch for any deprecation warnings it produces.
+  exists and is not deprecated in 7.1.2. Keep the existing method-security configuration.
 - **Spring Cloud.** 2025.1.0 is incompatible with Boot 4.0.1+, and Boot 4.1 needs 2025.1.2+. The
   repository Renovate rule that disables Cloud minor and major updates stays as-is; this plan
   performs the train change manually.
@@ -106,17 +117,25 @@ OpenCSV, and Gradle 9.8.2 need no change for Boot 4; Boot 4 requires Gradle 8.14
 
 - Work only in this repository. Do not edit consumer services, orchestration, or
   budget-analyzer-web.
-- This is an intentionally breaking release line. Public constructor and method signatures that
-  take a Jackson 2 `ObjectMapper` change to Jackson 3 types. Record every public API change in the
-  consumer migration notes (Phase 5) instead of adding compatibility shims.
+- Record public API changes, dependency changes, validation results, and consumer actions as they
+  arise in `docs/plans/spring-boot-4-consumer-migration.md`, created in Phase 1. Include changed
+  public supertypes and implemented interfaces, not just constructors and method parameters.
+  Keep this execution plan unchanged while the session handler is running it.
+- Update the nearest affected documentation in each phase. Canonical docs stay version-agnostic;
+  release-specific details belong in the consumer migration notes. Before any `AGENTS.md` edit,
+  read [AGENTS.md checkstyle](../../../orchestration/docs/agents-md-checkstyle.md).
 - Do not modify, weaken, or delete existing tests to make them pass. Adapt imports and Jackson
   construction where the old API no longer exists. If an assertion fails because behavior changed,
   fix the production code to preserve behavior, or stop and record the decision.
 - Keep the JaCoCo minimums in the root `build.gradle.kts` unchanged.
+- Use real application beans and concrete test fixtures. Do not introduce Mockito bean overrides.
+- Phases 1 and 2 intentionally leave later modules unbuildable; their scoped validation replaces
+  the repository-wide build gate at those checkpoints. From Phase 3 onward, the full build must
+  pass. Unresolved behavior changes are blockers, not successful completion with a note.
 - Pure JPA only. No `org.hibernate.*` imports.
 - No git write operations.
 
-## Phase 1: Dependency Platform And Catalog
+## Phase 1: Baseline And Dependency Wiring
 
 ### Workspace
 
@@ -124,19 +143,21 @@ OpenCSV, and Gradle 9.8.2 need no change for Boot 4; Boot 4 requires Gradle 8.14
 
 ### Goal
 
-Move the version catalog and both platform modules to the target dependency set, with the
-published platform POMs resolving the Boot 4.1.2, Cloud 2025.1.4, and Modulith 2.1.2 BOMs.
+Establish the Boot 3 behavior baseline, then move the catalog, platforms, and module build scripts
+to the target set without breaking Gradle configuration or dependency resolution.
 
 ### Scope
 
 - `gradle/libs.versions.toml` version entries and library coordinates.
 - `spring-platform/build.gradle.kts` and `spring-cloud-platform/build.gradle.kts` constraints.
+- `service-core/build.gradle.kts` and `service-web/build.gradle.kts` dependency declarations.
 - Root `build.gradle.kts` Javadoc external links.
+- New `SensitiveDataSerializationTest` in `service-core` for the pre-migration masking baseline.
+- Dependency documentation and the initial consumer migration notes.
 
 ### Non-goals
 
-- Java source changes. `service-core` and `service-web` are expected not to compile at the end of
-  this phase.
+- Production Java changes. Both modules are expected not to compile after the dependency switch.
 - Workflow or Renovate changes.
 
 ### Required context
@@ -144,15 +165,25 @@ published platform POMs resolving the Boot 4.1.2, Cloud 2025.1.4, and Modulith 2
 - This plan's Target Dependency Set and Gotchas sections.
 - `gradle/libs.versions.toml`, `spring-platform/build.gradle.kts`,
   `spring-cloud-platform/build.gradle.kts`, `build.gradle.kts`.
-- [docs/dependency-automation.md](../dependency-automation.md).
+- Both runtime module build scripts and `service-core` logging sources/tests.
+- [docs/dependency-automation.md](../dependency-automation.md),
+  [docs/testing-patterns.md](../testing-patterns.md),
+  [docs/versioning-and-compatibility.md](../versioning-and-compatibility.md).
 
 ### Execution steps
 
-1. Confirm `build.gradle.kts` still declares `version = "0.0.18-SNAPSHOT"`, and leave it unchanged.
-2. In `gradle/libs.versions.toml`, set `springBoot = "4.1.2"`, `springCloud = "2025.1.4"`,
+1. Confirm `build.gradle.kts` declares `version = "0.0.18-SNAPSHOT"`, and leave it unchanged.
+   Run the existing clean build before changing dependencies. Stop on baseline failures.
+2. Add and run `SensitiveDataSerializationTest` against the current Jackson 2 implementation.
+   Exercise `SafeLogger.toJson()` with real objects containing field/getter `@Sensitive`
+   annotations, full masking, `showLast` and custom mask characters, short/null values, and nested
+   objects. Assert both masked output and preserved ordinary fields so a fallback `{}` cannot
+   pass. Check that secret portions are absent. Do not rewrite existing assertions.
+3. In `gradle/libs.versions.toml`, set `springBoot = "4.1.2"`, `springCloud = "2025.1.4"`,
    `springModulith = "2.1.2"`, `springdoc = "3.1.1"`, and `shedlock = "7.10.1"`. Remove the
    `testcontainers` version entry.
-3. Update library coordinates in the catalog:
+4. Update library coordinates and every affected build-script reference together:
+
    - Add `spring-boot-starter-webmvc` and point existing usages at it, replacing the deprecated
      `spring-boot-starter-web` entry.
    - Add test starters `spring-boot-starter-webmvc-test`, `spring-boot-starter-webflux-test`,
@@ -161,23 +192,47 @@ published platform POMs resolving the Boot 4.1.2, Cloud 2025.1.4, and Modulith 2
    - Change `jackson-databind` to `tools.jackson.core:jackson-databind` and remove
      `jackson-datatype-jsr310`. Add `jackson-annotations` (`com.fasterxml.jackson.core:jackson-annotations`)
      only if a module compiles against annotations without getting them transitively.
-   - Add `springdoc-openapi-webflux` (`org.springdoc:springdoc-openapi-starter-webflux-ui`) only
-     if Phase 3 needs it for reactive compile or test coverage.
-4. In `spring-platform/build.gradle.kts`, delete the four Testcontainers constraints and their
+   - Remove `libs.jackson.datatype.jsr310` from `service-core/build.gradle.kts` in this phase.
+     Replace all `libs.spring.boot.starter.web` usages with the new webmvc alias, including tests.
+   - In `service-core`, replace the generic test starter with the data-jpa and security test
+     starters. In `service-web`, use the webmvc, webflux, security, and data-jpa test starters.
+     Remove redundant test declarations only where a replacement starter supplies them;
+     preserve required Reactor test and JUnit launcher support.
+   - Add `springdoc-openapi-webflux` (`org.springdoc:springdoc-openapi-starter-webflux-ui`) for
+     Phase 4's isolated reactive smoke tests. Do not add both Springdoc web integrations to the
+     same runtime configuration.
+   - Preserve main-source `api`, `implementation`, and stack/JPA `compileOnly` boundaries.
+5. In `spring-platform/build.gradle.kts`, delete the four Testcontainers constraints and their
    Docker 29 `because(...)` text, because Boot's imported `testcontainers-bom` now manages
    Testcontainers 2.0.5. Keep the Springdoc, WireMock, Awaitility, and ShedLock constraints.
-5. Update the Javadoc `links(...)` in root `build.gradle.kts` to Spring Framework 7.0.10
+6. Update the Javadoc `links(...)` in root `build.gradle.kts` to Spring Framework 7.0.10
    (`https://docs.spring.io/spring-framework/docs/7.0.10/javadoc-api/`) and Jakarta EE 11
    (`https://jakarta.ee/specifications/platform/11/apidocs/`). Keep the Java 25 link.
+7. Update starter and Testcontainers coordinate examples in affected docs. Create the consumer
+   migration notes with the target versions, snapshot exception, baseline results, dependency
+   changes, and the later consumer-integration/release gate.
 
 ### Implementation notes
 
 - Removing the Testcontainers constraints is a platform-breaking change for consumers that declare
   the old `org.testcontainers:postgresql` or `junit-jupiter` names. Those names have no 2.x
-  release. Record this for the Phase 5 consumer migration notes.
+  release. Record this in the consumer migration notes now.
 - Do not add version overrides on top of the Boot BOM.
+- Run the masking baseline before switching dependencies; the old Java sources cannot compile
+  against Jackson 3 until Phase 2. Do not temporarily revert dependencies in later phases.
 
 ### Validation
+
+Before the dependency switch:
+
+```bash
+./gradlew clean build --warning-mode all
+# After adding the regression tests:
+./gradlew clean spotlessApply
+./gradlew :service-core:build --warning-mode all
+```
+
+After the dependency switch:
 
 ```bash
 ./gradlew :spring-platform:generatePomFileForMavenJavaPublication \
@@ -188,16 +243,22 @@ cat spring-cloud-platform/build/publications/mavenJava/pom-default.xml
   --dependency spring-boot
 ./gradlew :service-web:dependencyInsight --configuration testRuntimeClasspath \
   --dependency spring-security-core
+./gradlew :service-core:dependencies --configuration testRuntimeClasspath
+./gradlew :service-web:dependencies --configuration testRuntimeClasspath
 ```
 
-The POMs must import `spring-boot-dependencies:4.1.2`, `spring-modulith-bom:2.1.2`, and (cloud only)
-`spring-cloud-dependencies:2025.1.4`, with no Testcontainers constraints. Dependency insight must
-resolve Boot 4.1.2 and Security 7.1.x.
+The base POM must import Boot 4.1.2 and Modulith 2.1.2. The Cloud POM must import this project's
+base platform and Cloud 2025.1.4. Neither may contain the removed Testcontainers constraints.
+Dependency reports must contain no unresolved/`FAILED` dependencies; resolve Boot 4.1.2,
+Security 7.1.2, Jackson 3.1.7, and the new test starters. Reports alone may exit successfully with
+unresolved dependencies, so inspect their contents.
 
 ### Completion criteria
 
-The catalog and platforms declare the target set. Platform POMs generate correctly. The only
-remaining build failures are Java compilation errors in `service-core` and `service-web`.
+The original build and new masking regression tests passed before the switch. Gradle configures
+all projects, platform POMs generate correctly, and dependency resolution succeeds after the
+switch. Main/test source migration remains for Phases 2 and 3. Dependency docs and durable
+migration notes are updated.
 
 ## Phase 2: Service-Core Migration
 
@@ -212,14 +273,14 @@ logging and masking behavior.
 
 ### Scope
 
-- `service-core/build.gradle.kts` dependency declarations.
+- Minimal `service-core/build.gradle.kts` adjustments only if relocated types need explicit modules.
 - Jackson 3 migration of `SafeLogger`, `SensitiveDataModule`, `UnknownTypeSerializer`, and
   `HttpBodyLogSanitizer` in `service-core/src/main/java/org/budgetanalyzer/core/logging/`.
 - `PrometheusEndpointPostProcessor` and `ApplicationMetricTagPostProcessor`: relocate the
   `EnvironmentPostProcessor` import and update `META-INF/spring.factories`.
-- `ServiceCoreJpaAutoConfiguration`: relocated `DataSourceAutoConfiguration` and `EntityScan`
-  imports.
-- `service-core` tests: imports and Jackson construction only.
+- `ServiceCoreJpaAutoConfiguration`: relocated `DataSourceAutoConfiguration` import.
+- `service-core` test imports, Jackson construction, and focused regression coverage.
+- Core API/configuration documentation and consumer migration notes.
 
 ### Non-goals
 
@@ -233,30 +294,34 @@ logging and masking behavior.
 - `service-core/src/main/java/org/budgetanalyzer/core/logging/`,
   `service-core/src/main/java/org/budgetanalyzer/core/config/`,
   `service-core/src/main/resources/META-INF/`.
+- Phase 1's masking tests and `docs/plans/spring-boot-4-consumer-migration.md`.
 
 ### Execution steps
 
-1. Update `service-core/build.gradle.kts`: use the Jackson 3 `jackson-databind` coordinate, drop
-   `jackson-datatype-jsr310`, and replace `spring-boot-starter-test` with
-   `spring-boot-starter-data-jpa-test` plus `spring-boot-starter-security-test` where the tests need
-   them. Keep `compileOnly` boundaries unchanged.
+1. Read the baseline masking tests before rewriting serializers. Keep their behavior assertions
+   unchanged, adding focused cases only where the migration exposes a gap. Dependency and test
+   starter wiring is already complete from Phase 1.
 2. Migrate `SafeLogger` to an immutable `JsonMapper.builder()` configuration that preserves the
    current behavior: indented output, ISO dates rather than timestamps, no failure on empty beans,
    `SensitiveDataModule`, and the toString fallback module. Remove `JavaTimeModule` registration.
 3. Migrate `SensitiveDataModule` and `UnknownTypeSerializer` to `ValueSerializerModifier`,
-   `ValueSerializer`, and `SerializationContext`, and to the renamed `JsonGenerator` methods.
+   `ValueSerializer`, and `SerializationContext`, the `BeanDescription.Supplier` callback
+   signatures/property introspection, and the renamed `JsonGenerator` methods.
    Their public class names and public constructors stay the same.
 4. Migrate `HttpBodyLogSanitizer` to `tools.jackson` tree types (`StringNode` replaces `TextNode`).
    Keep its existing failure fallback behavior on unparsable bodies; `JacksonException` is now
    unchecked.
 5. Change both post-processors to implement `org.springframework.boot.EnvironmentPostProcessor`, and
    change the `spring.factories` key to `org.springframework.boot.EnvironmentPostProcessor`.
-6. Update `ServiceCoreJpaAutoConfiguration` imports to
-   `org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration` and
-   `org.springframework.boot.persistence.autoconfigure.EntityScan`. Add an explicit `compileOnly`
-   module only if the data-jpa starter does not already expose those types.
-7. Fix test compilation: relocated imports, and `JsonMapper` instead of `new ObjectMapper()` where
-   the Jackson 2 type is no longer present.
+6. Update `ServiceCoreJpaAutoConfiguration` to import
+   `org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration`. Relocate
+   `EntityScan` to `org.springframework.boot.persistence.autoconfigure` in the core test
+   application that actually uses it. Add an explicit `compileOnly` module only if the data-jpa
+   starter does not already expose a required main-source type.
+7. Fix remaining test imports and Jackson construction. Run logging tests first, then the full
+   core build, including JPA auditing and soft-delete tests.
+8. Update affected core documentation and record changed public Jackson supertypes, serializer
+   methods, and post-processor interfaces in the consumer migration notes.
 
 ### Implementation notes
 
@@ -270,7 +335,8 @@ logging and masking behavior.
 
 ```bash
 ./gradlew clean spotlessApply
-./gradlew :service-core:clean :service-core:build
+./gradlew :service-core:test --tests 'org.budgetanalyzer.core.logging.*'
+./gradlew :service-core:build --warning-mode all
 ```
 
 `service-core` must pass tests, Checkstyle, Spotless, Javadoc, and its JaCoCo minimums (80% line,
@@ -278,11 +344,11 @@ logging and masking behavior.
 
 ### Completion criteria
 
-`service-core` builds green on Boot 4.1.2. No `com.fasterxml.jackson.databind` or
-`com.fasterxml.jackson.datatype` imports remain in `service-core`. Every public API change is
-listed in a short note at the end of this phase's output for Phase 5.
+`service-core` builds green on Boot 4.1.2, including the unchanged baseline masking assertions.
+No Jackson 2 core/databind/datatype references remain in its sources; Jackson annotations remain
+valid. Affected docs and public API changes are recorded in the consumer migration notes.
 
-## Phase 3: Service-Web Main Sources
+## Phase 3: Service-Web Migration And Existing Tests
 
 ### Workspace
 
@@ -290,12 +356,12 @@ listed in a short note at the end of this phase's output for Phase 5.
 
 ### Goal
 
-Make `service-web` main sources compile against Boot 4.1.2, Spring Security 7, Springdoc 3, and
-Jackson 3 for both the servlet and reactive stacks.
+Make `service-web` main and test sources work against Boot 4.1.2, Spring Security 7, Springdoc 3,
+and Jackson 3, with the existing suite and full repository build passing.
 
 ### Scope
 
-- `service-web/build.gradle.kts` main-source dependency declarations.
+- Minimal `service-web/build.gradle.kts` dependency adjustments if compilation exposes a gap.
 - Relocated Boot imports in `ServiceWebAutoConfiguration`, `ReactiveErrorWebExceptionHandler`, and
   `ClaimsHeaderSecurityConfig`.
 - Jackson 3 migration of `ClaimsHeaderSecurityConfig`, `ReactiveClaimsHeaderSecurityConfig`,
@@ -304,24 +370,25 @@ Jackson 3 for both the servlet and reactive stacks.
   `ServiceWebAutoConfiguration`.
 - `BaseOpenApiConfig` and other Springdoc customizer usage for Springdoc 3.
 - Published test-support classes under `org.budgetanalyzer.service.security.test`.
+- All existing web test sources, fixtures, and configuration.
+- Web API/security/testing documentation and consumer migration notes.
 
 ### Non-goals
 
-- Test sources (Phase 4).
+- New isolated consumer smoke tests and end-to-end OpenAPI coverage (Phase 4).
 - Changing security rules, public paths, filter ordering, or error response shapes.
 
 ### Required context
 
 - This plan's Gotchas section.
-- [docs/error-handling.md](../error-handling.md).
-- `service-web/src/main/java/org/budgetanalyzer/service/`.
+- [docs/error-handling.md](../error-handling.md), [docs/testing-patterns.md](../testing-patterns.md).
+- `service-web/src/main/java/org/budgetanalyzer/service/` and `service-web/src/test/`.
+- `docs/plans/spring-boot-4-consumer-migration.md`.
 
 ### Execution steps
 
-1. Update `service-web/build.gradle.kts` `compileOnly` and `api` dependencies:
-   `spring-boot-starter-webmvc` replaces `spring-boot-starter-web`, and Springdoc 3 is used. Keep
-   the stack-specific `compileOnly` boundaries so reactive consumers do not inherit servlet
-   dependencies.
+1. Confirm Phase 1's main/test starter wiring is in place. Keep stack-specific `compileOnly`
+   boundaries; add explicit modules only for demonstrated missing types.
 2. Relocate imports: `ErrorWebFluxAutoConfiguration`, `ErrorWebExceptionHandler`, and
    `SecurityProperties` (see Gotchas).
 3. Change injected and constructor `ObjectMapper` parameters to
@@ -334,27 +401,45 @@ Jackson 3 for both the servlet and reactive stacks.
    documented standard-response and `@PreAuthorize` 401/403 behavior.
 6. Confirm `ClaimsHeaderTestBuilder` and `TestClaimsSecurityConfig` compile against Spring
    Security Test 7 and Spring Test 7.
+7. Migrate all existing test imports and fixtures in this phase: `AutoConfigureMockMvc`,
+   `AutoConfigureWebTestClient`, `JacksonAutoConfiguration`, `SecurityAutoConfiguration`,
+   `WebMvcAutoConfiguration`, `DispatcherServletAutoConfiguration`, `WebFluxAutoConfiguration`,
+   `ErrorWebExceptionHandler`, `DataSourceAutoConfiguration`, and `EntityScan` where used.
+   Replace Jackson 2 mapper construction and `withBean(ObjectMapper.class, ObjectMapper::new)`
+   with Jackson 3 `JsonMapper` equivalents; adapt removed exception APIs as necessary.
+8. Run focused security, exception-handler, configuration, and JSON-model tests, then the full
+   build. Resolve startup/wiring and serialization failures now. Preserve API response shapes,
+   contractually required JSON order, and application mapper customization, including the
+   existing `spring.jackson.serialization.indent_output` test property.
+9. Update affected web/testing documentation and append all public signature changes and consumer
+   test migration actions to the migration notes.
 
 ### Implementation notes
 
 - `ApiErrorResponse` and `PagedResponse` use `com.fasterxml.jackson.annotation` types, which remain
   valid in Jackson 3.
-- If `@EnableReactiveMethodSecurity(useAuthorizationManager = true)` is deprecated, report it
-  rather than removing the attribute silently.
+- Gradle compiles the whole test source set before running selected tests. Complete the mechanical
+  test migration before relying on test filters for focused debugging.
+- Preserve existing security rules, default-chain backoff, and reactive method-security behavior.
+- Remove `spring.main.allow-bean-definition-overriding` from tests only if it is demonstrably unused.
 
 ### Validation
 
 ```bash
 ./gradlew clean spotlessApply
-./gradlew :service-web:compileJava :service-web:javadoc
+./gradlew :service-web:test --tests '*Security*' --tests '*ExceptionHandler*' \
+  --tests '*ConfigTest' --tests '*ResponseTest'
+./gradlew clean build --warning-mode all
 ```
 
 ### Completion criteria
 
-`service-web` main sources and Javadoc compile. No `com.fasterxml.jackson.databind` imports remain
-in `service-web/src/main`. Public signature changes are listed for Phase 5.
+The existing servlet and reactive tests and the full build pass, including Javadoc, formatting,
+Checkstyle, and unchanged JaCoCo minimums (`service-web`: 93% line, 80% branch). No Jackson 2
+core/databind/datatype references remain in main or test sources. No startup or behavior failures
+are deferred to Phase 4. Affected docs and public API migration notes are current.
 
-## Phase 4: Service-Web Tests And Behavior Verification
+## Phase 4: Consumer Classpaths And Runtime Behavior
 
 ### Workspace
 
@@ -362,70 +447,94 @@ in `service-web/src/main`. Public signature changes are listed for Phase 5.
 
 ### Goal
 
-Get the full `service-web` test suite passing on Boot 4.1.2 with coverage minimums intact. Confirm
-that consumer-visible behavior is unchanged.
+Verify the migrated library on its supported consumer classpaths and through real HTTP/OpenAPI
+integration, closing the gaps that the existing combined-classpath suite cannot cover.
 
 ### Scope
 
-- `service-web/build.gradle.kts` test dependencies.
-- `service-web/src/test/` import relocations and Jackson 3 construction.
-- Behavior checks for JSON error responses, security chains, actuator exposure, and OpenAPI output.
+- Focused core classpath-absence tests and separate servlet/reactive smoke test configurations.
+- Test fixtures and build wiring in this repository only.
+- Minimal production corrections required by those tests.
+- Runtime behavior documentation and consumer migration notes.
 
 ### Non-goals
 
-- Weakening, deleting, or rewriting assertions in existing tests.
-- New features.
+- Consumer repository execution or edits, new application features, and a general test framework.
+- Reworking the existing combined-classpath suite or duplicating all its test cases.
 
 ### Required context
 
 - [docs/testing-patterns.md](../testing-patterns.md).
 - This plan's Gotchas section.
-- `service-web/src/test/java/org/budgetanalyzer/service/`.
+- Both runtime module build scripts, auto-configuration imports, and existing integration tests.
+- `BaseOpenApiConfig`, both security configurations, and both environment post-processors.
+- `docs/plans/spring-boot-4-consumer-migration.md`.
 
 ### Execution steps
 
-1. Replace `spring-boot-starter-test` and `spring-boot-starter-web` test dependencies with the Boot
-   4 test starters (`spring-boot-starter-webmvc-test`, `spring-boot-starter-webflux-test`,
-   `spring-boot-starter-security-test`, `spring-boot-starter-data-jpa-test`) and
-   `spring-boot-starter-webmvc`. Keep `reactor-test`.
-2. Relocate test imports: `AutoConfigureMockMvc`, `AutoConfigureWebTestClient`,
-   `JacksonAutoConfiguration`, `SecurityAutoConfiguration`, `WebMvcAutoConfiguration`,
-   `DispatcherServletAutoConfiguration`, `WebFluxAutoConfiguration`, and `DataSourceAutoConfiguration`.
-3. Replace `withBean(ObjectMapper.class, ObjectMapper::new)` and `new ObjectMapper()` with Jackson 3
-   `JsonMapper` equivalents.
-4. Run the suite and resolve failures in production code. Pay particular attention to:
-   - JSON field order in `ApiErrorResponse` and `PagedResponse` under Jackson 3 defaults. Keep the
-     existing order with `@JsonPropertyOrder` or mapper configuration if tests or API contracts
-     depend on it.
-   - The `spring.jackson.serialization.indent_output` test property, which is still valid in Boot 4.
-   - Default actuator liveness and readiness endpoints, which stay public under
-     `/actuator/health/**` and nothing else.
-   - The OpenAPI document produced through `BaseOpenApiConfig` on Springdoc 3.
-5. Scan the build output for deprecation warnings that originate in this repository's sources and
-   fix them.
+1. Add a core-only context test with web, JPA, and security classes absent. Use an
+   `ApplicationContextRunner` with `FilteredClassLoader` for this focused absence check. Confirm
+   core utilities/autoconfiguration work and JPA auditing configuration is not activated.
+2. Add two small, separate Gradle smoke test suites/tasks in `service-web`: `servletSmokeTest`
+   and `reactiveSmokeTest`. Each consumes the main library and declares only its own stack's
+   starter, test support, security, and Springdoc integration. Do not inherit the existing
+   combined `testRuntimeClasspath`. Use minimal fixtures without JPA and wire both tasks into
+   `check`; leave the existing suite in place.
+3. Confirm each resolved runtime graph and startup mode: servlet has no WebFlux/Netty or reactive
+   Springdoc; reactive has no servlet/Tomcat, MVC Springdoc, or JPA/Hibernate. Merely setting
+   `spring.main.web-application-type` is not classpath isolation. Start both through Boot's
+   normal auto-configuration discovery, without scanning library packages or supplying a mapper
+   bean that would conceal missing Jackson auto-configuration.
+4. In both smoke suites, use real application beans and HTTP requests to verify:
+
+   - Startup and a representative successful response, plus the standard unauthorized (401),
+     forbidden (403), and exception `ApiErrorResponse` contracts.
+   - Default security chains back off for a consumer-defined chain; reactive `@PreAuthorize`
+     still enforces permissions. Reuse existing assertions/fixture patterns where practical.
+   - `/actuator/health/liveness`, `/actuator/health/readiness`, and `/actuator/prometheus` are
+     accessible without claims. A representative protected application endpoint stays protected.
+     Verify a metrics sample has the configured application tag, exercising `spring.factories`
+     discovery of both post-processors rather than calling them directly.
+   - An actual `/v3/api-docs` request succeeds using a fixture configuration extending
+     `BaseOpenApiConfig`. Assert the standard method-specific responses and error schema,
+     `@PreAuthorize` 401/403 responses, and preservation of an explicit response. Run each with
+     its matching Springdoc integration; manually constructing an `OpenAPI` model is insufficient.
+5. Fix migration regressions found by these checks without weakening existing assertions or
+   making optional stack/JPA dependencies transitive. Update the affected docs and migration notes.
+6. Run the full build with warning reporting. Inspect compilation output from that build and fix
+   repository-source deprecations, or record why a warning is acceptable. Investigate generic
+   compiler deprecation notices with a focused `-Xlint:deprecation` diagnostic if necessary.
 
 ### Implementation notes
 
-- Remove the `spring.main.allow-bean-definition-overriding` test property only if it is unused.
-  Otherwise leave it.
-- If a test assertion encodes Boot 3 behavior that Boot 4 intentionally changed and the change is
-  consumer-visible, stop and record the decision instead of editing the assertion.
+- Use focused fixtures for library behavior, not copies of real consumer applications. Adding
+  source sets/test tasks here must not add production dependencies or published artifacts.
+- The root build currently configures coverage for the existing `test` task. Keep that reporting
+  and its minimums intact; new smoke tasks supplement it and must run under `check`.
+- If Boot 4 changes required consumer-visible behavior, record the conflict and stop; do not mark
+  the phase complete merely because the difference has been documented.
 
 ### Validation
 
 ```bash
 ./gradlew clean spotlessApply
-./gradlew clean build
-./gradlew build --warning-mode all 2>&1 | grep -i deprecat || true
+./gradlew :service-core:test --tests '*Classpath*'
+./gradlew :service-web:servletSmokeTest :service-web:reactiveSmokeTest
+./gradlew clean build --warning-mode all
 ```
+
+Name the core absence test with a `ClasspathTest` suffix so the focused command selects it.
+The final build must execute both smoke tasks through `check`. Review warnings from this actual
+clean build; do not rerun an up-to-date build through `grep` or suppress the build's exit status.
 
 ### Completion criteria
 
-`./gradlew clean build` passes for all modules with the existing coverage minimums
-(`service-web` 93% line, 80% branch). There are no unexplained deprecation warnings from this
-repository's sources. Behavior differences found are fixed or recorded as decisions.
+Core starts without optional technologies. Both isolated web suites pass the HTTP, security,
+actuator, and generated OpenAPI checks. The full build passes with unchanged coverage gates and
+no unexplained repository-source deprecation warnings. There are no unresolved behavior changes;
+documentation and migration notes contain the validation results and any accepted limitations.
 
-## Phase 5: Documentation, Consumer Migration Notes, And Final Validation
+## Phase 5: Documentation Review And Local Publication
 
 ### Workspace
 
@@ -433,18 +542,18 @@ repository's sources. Behavior differences found are fixed or recorded as decisi
 
 ### Goal
 
-Bring documentation in line with the Boot 4 baseline, record consumer migration guidance for the
-later integration plan, and run the full validation and local publish.
+Review the documentation accumulated during implementation, then publish and inspect all four
+development artifacts for the later consumer integration plan.
 
 ### Scope
 
-- `AGENTS.md`, `README.md`, and `docs/*.md` content that describes starters, Testcontainers,
-  Jackson, test annotations, or Boot 3-era APIs.
-- A new `docs/plans/spring-boot-4-consumer-migration.md` with release-specific guidance.
+- Final review of `AGENTS.md`, `README.md`, and affected `docs/*.md` examples.
+- Finalization of `docs/plans/spring-boot-4-consumer-migration.md`, maintained since Phase 1.
+- Local publication and inspection of all four artifacts and their metadata.
 
 ### Non-goals
 
-- Editing consumer repositories.
+- Consumer repository execution or edits, remote publication, stable release, or deployment.
 - Version-specific statements in canonical docs. Release-specific details go only in
   `docs/plans/`.
 
@@ -455,45 +564,68 @@ later integration plan, and run the full validation and local publish.
   editing `AGENTS.md`.
 - [docs/testing-patterns.md](../testing-patterns.md), [docs/advanced-patterns.md](../advanced-patterns.md),
   [docs/common-patterns.md](../common-patterns.md), [docs/code-quality-standards.md](../code-quality-standards.md).
-- The public API change notes from Phases 2–4.
+- `docs/plans/spring-boot-4-consumer-migration.md` and the validation results from Phases 1–4.
+- [docs/versioning-and-compatibility.md](../versioning-and-compatibility.md).
 
 ### Execution steps
 
-1. Update the dependency examples in `AGENTS.md` and `docs/common-patterns.md` to use
-   `spring-boot-starter-webmvc`. Update the `AGENTS.md` JSON-related descriptions that imply a
-   Jackson 2 `ObjectMapper` bean.
-2. Update `docs/testing-patterns.md` and `docs/advanced-patterns.md` examples for Testcontainers 2
-   coordinates and packages, Boot 4 test starters, `@MockitoBean`, and Jackson 3 types. Keep the
-   docs version-agnostic.
-3. Write `docs/plans/spring-boot-4-consumer-migration.md`. It covers the target dependency set;
-   consumer actions (starter renames, the Testcontainers artifact renames now that the platform
-   constraints are gone, Jackson 3 migration and the absent `ObjectMapper` bean, test annotation
-   relocations, Springdoc 3, Spring Cloud 2025.1 for session-gateway, ShedLock 7, Modulith 2.1);
-   every public `service-common` API signature change; the move from `0.0.17` to the Boot 4
-   `0.0.18-SNAPSHOT` line; and a consumer discovery command
-   (`grep -l "service-common" ../*/build.gradle.kts`).
-4. Run the read-only prerequisite check from the plan's Versioning section. Every consumer must
-   pin `0.0.17`. If any consumer still pins `0.0.18-SNAPSHOT`, stop before publishing and report it.
-5. Run the final validation and local publish below.
+1. Review the docs updated in earlier phases for missed starter names, Testcontainers coordinates
+   and imports, test annotations, and Jackson types. Preserve the prohibition on mocking or spying
+   application-owned beans; do not introduce `@MockitoBean` examples. Keep canonical guidance
+   version-agnostic and document how to run the new smoke tests.
+2. Reconcile the migration notes with the final source/build diff. Cover target dependencies;
+   starter/test annotation changes; Testcontainers artifact/package changes; Jackson construction,
+   bean injection, serializers, and every changed public signature/supertype/interface; Springdoc;
+   ShedLock; and Modulith. Distinguish absent Jackson 2 `ObjectMapper` beans from Jackson 3's
+   supported `JsonMapper` bean.
+3. Verify consumer guidance against read-only discovery. Currently `currency-service` imports
+   `spring-cloud-platform` and uses Cloud Stream; `session-gateway` uses the base `spring-platform`.
+   Assign Cloud migration actions to actual Cloud consumers. Include the consumer Boot plugin
+   version update alongside the platform/runtime library coordinate update. Record that this
+   iteration has not tested migrated real consumers and does not authorize a stable release.
+4. Run the consumer-pin prerequisite from Versioning immediately before publication. Confirm the
+   pin in each consumer's checked-in HEAD as well as its working tree, so an uncommitted local edit
+   cannot stand in for the prerequisite. Stop if any discovered consumer does not pin `0.0.17`.
+5. Reuse Phase 4's successful full-build evidence if no code/build/test changes followed it.
+   If this review requires such changes, format and rerun the affected checks and full build
+   before publishing. Run `publishToMavenLocal` only after both build and pin gates pass.
+6. Inspect every local publication, not just the `service-web` directory. Both platform POMs must
+   have the intended BOM/platform imports. Runtime POMs and Gradle module metadata must use the
+   correct coordinated version and preserve optional stack/JPA boundaries. Confirm both runtime
+   jars contain the expected auto-configuration imports and `service-core` contains the updated
+   `spring.factories` key. Record the result in the migration notes.
 
 ### Implementation notes
 
 - Do not duplicate the gotchas into multiple canonical docs. Link to the consumer migration plan
   from the one most relevant place if a link is needed.
+- The consumer migration document is guidance for authoring a later executable integration plan;
+  do not imply consumer builds or a stable release have already been validated.
+- Local publication makes artifacts available but does not itself verify consumer builds. Preserve
+  that distinction in the final handoff.
 
 ### Validation
 
 ```bash
-./gradlew clean spotlessApply
-./gradlew clean build
-grep -n "serviceCommon" ../*/gradle/libs.versions.toml
+rg -l 'org\.budgetanalyzer:(spring-platform|spring-cloud-platform|service-core|service-web)' \
+  ../*/gradle/libs.versions.toml
+rg -n '^serviceCommon\s*=' ../*/gradle/libs.versions.toml
+# Verify each discovered consumer's HEAD pin as described above before proceeding.
+# Publish only after the build and pin gates pass:
 ./gradlew publishToMavenLocal
-ls ~/.m2/repository/org/budgetanalyzer/service-web/0.0.18-SNAPSHOT/
-grep -rn "com.fasterxml.jackson.databind\|com.fasterxml.jackson.datatype" service-*/src || true
+rg -n 'com\.fasterxml\.jackson\.(core|databind|datatype)' service-*/src
 ```
+
+The final scan must have no matches (ripgrep exit code 1 means no matches; errors are not success).
+Discover the Maven Local repository from the environment/Maven settings, then inspect all four
+artifact directories at `org/budgetanalyzer/<artifact>/0.0.18-SNAPSHOT/`. Runtime publications must
+include binary, sources, and Javadoc jars plus POM/module metadata; platform publications must
+include POM/module metadata and do not have runtime jars.
 
 ### Completion criteria
 
-The full build passes. Every consumer pins `0.0.17`, and all four artifacts are published to
-Maven Local as `0.0.18-SNAPSHOT`. No Jackson 2 databind imports remain. The docs reflect the
-Boot 4 baseline, and the consumer migration plan exists for the later integration iteration.
+The full build and isolated smoke checks passed for the final code. Every discovered consumer
+pins `0.0.17`; all four artifacts are published locally as `0.0.18-SNAPSHOT` with inspected metadata
+and runtime registration resources. Source scans and documentation review pass. The migration
+notes contain the complete consumer/API changes, validation evidence, and outstanding consumer
+integration/stable-release gates. No remote publish or consumer migration has occurred.
