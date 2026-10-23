@@ -1,30 +1,36 @@
 # Spring Boot 4 Review Remediation
 
-Fix four findings from the review of the `spring-boot-4-upgrade` branch against `main`:
+Address the review of the `spring-boot-4-upgrade` branch against `main` while preserving the
+existing integration coverage:
 
 1. Main code still uses the deprecated Spring Framework 7 constant `HttpStatus.UNPROCESSABLE_ENTITY`.
 2. `AGENTS.md` and `README.md` say the shared security chain backs off on both stacks. That is
    true only for reactive.
-3. The servlet and reactive smoke suites are near-duplicate files of about 290 lines each. Their
-   detailed OpenAPI and JSON-shape assertions overlap with `src/test`.
+3. CI uploads only the ordinary `test` task's XML results, omitting both smoke suites and their
+   HTML reports. Generated publication metadata is also absent from the build artifacts.
 4. The README and the build comment say the smoke suites resolve "the published library". They
    actually resolve the project's own variants, so generated POM and module metadata is never
    exercised.
+
+Keep the OpenAPI integration tests on both isolated classpaths. Unit tests that invoke a customizer
+directly do not replace verification of SpringDoc annotation processing, customizer execution,
+and the final document served over HTTP. The previous proposal to trim the smoke suites is withdrawn.
 
 Plan-wide constraints:
 
 - Keep runtime behavior unchanged. Both 422 constants have the value 422, and every security-chain
   fix is documentation only. Do not change `ClaimsHeaderSecurityConfig` or
   `ReactiveClaimsHeaderSecurityConfig`.
-- The user has explicitly authorized these test edits and no others:
-  - the 422 constant swap in the three `src/test` assertions listed in Phase 1;
-  - the smoke-suite trimming in Phase 3.
-  Do not modify, weaken, or delete any other existing test.
+- The only existing test edits in scope are the 422 constant swaps in the three `src/test`
+  assertions listed in Phase 1. Do not modify, weaken, or delete any other existing test.
+  Leave both smoke source trees, including all assertions, helpers, controllers, and annotations,
+  unchanged. CI must collect their results without changing how the tests run.
 - Keep the smoke suites as permanent `check`-wired suites, and keep one source set per stack. Do
   not add a shared fixture source set: the fixtures are tiny, the controllers legitimately differ
   (blocking vs `Mono`), and a stack-neutral source set would need extra compile wiring.
-- Do not add a test that consumes the generated publication. Correct the wording instead. Consumer
-  builds against `publishToMavenLocal` remain the check for published metadata.
+- Generate and archive publication POM and Gradle module metadata in CI for inspection, but do not
+  add a test that consumes the generated publication. Archiving metadata does not validate consumer
+  resolution; consumer builds against `publishToMavenLocal` remain that separate check.
 - Do not rewrite historical Phase records in `docs/plans/spring-boot-4-upgrade.md` or
   `docs/plans/spring-boot-4-consumer-migration.md`. Only append to the consumer-migration
   "Consumer Actions" list.
@@ -216,7 +222,7 @@ behavior. The code Javadoc is already correct and stays as it is.
   accurately, and the `AGENTS.md` edits follow the checkstyle.
 - No code or test files changed in this phase.
 
-## Phase 3: Trim smoke suites and correct publication wording
+## Phase 3: Preserve smoke coverage and correct publication wording
 
 ### Workspace
 
@@ -224,48 +230,27 @@ behavior. The code Javadoc is already correct and stays as it is.
 
 ### Goal
 
-Reduce each smoke suite to checks that only a single-stack consumer classpath can catch:
-
-- startup and classpath isolation
-- auto-configuration wiring of the shared security chain and method security
-- the stack's error handler producing `ApiErrorResponse`
-- actuator probes and Prometheus
-- the stack's SpringDoc module serving shared error documentation
-
-Remove assertions that `src/test` already covers. Also correct the "published library" wording.
+Describe the permanent isolated smoke suites accurately, preserving every existing test and the
+real-HTTP OpenAPI integration coverage. Correct the "published library" wording.
 
 ### Scope
 
-- `service-web/src/servletSmokeTest/java/org/budgetanalyzer/smoke/servlet/ServletSmokeTest.java`
-- `service-web/src/servletSmokeTest/java/org/budgetanalyzer/smoke/servlet/SmokeItemController.java`
-- `service-web/src/reactiveSmokeTest/java/org/budgetanalyzer/smoke/reactive/ReactiveSmokeTest.java`
-- `service-web/src/reactiveSmokeTest/java/org/budgetanalyzer/smoke/reactive/SmokeItemController.java`
 - `README.md`, the smoke-suite paragraph under the JaCoCo section (about lines 272-278)
 - `service-web/build.gradle.kts`, the comment above `testing { suites { ... } }` (about lines 36-38)
 
 ### Non-goals
 
-- Do not change `ServletConsumerSecurityChainSmokeTest` or `ReactiveConsumerSecurityChainSmokeTest`.
-- Do not change any `src/test` test.
+- Do not change any test source or resource, including either smoke suite or its fixtures.
 - Do not change suite registration, dependencies, or `check` wiring in `service-web/build.gradle.kts`.
 - Do not add a shared fixture source set, and do not add a publication-consuming test.
-- Do not change `CreateSmokeItemRequest`, `SmokeItemResponse`, `SmokeOpenApiConfig`, the smoke
-  applications, or `application.yml`.
 
 ### Required context
 
 - `docs/testing-patterns.md`
-- Coverage in `service-web/src/test` that makes the removed smoke assertions redundant:
-  - `BaseOpenApiConfigTest`:
-    - preservation of explicit `@ApiResponse`
-    - per-method 400/404/500/503 sets
-    - error-type examples, and the absence of `code` in examples
-    - no 401/403 without `@PreAuthorize`
-    - `ApiErrorResponse` / `FieldError` schema properties
-  - `ApiErrorResponseTest` and `FieldErrorTest`: `NON_NULL` omission and property shape with
-    Boot's mapper
-  - `ExceptionHandlingIntegrationTest`, `ApiExceptionHandlerTest`, and
-    `ReactiveApiExceptionHandlerTest`: status, type, message, and code mapping
+- Both `ServletSmokeTest` and `ReactiveSmokeTest`, their `SmokeItemController` fixtures, and both
+  `ConsumerSecurityChainSmokeTest` classes under the corresponding smoke source trees.
+- `service-web/src/test/java/org/budgetanalyzer/service/config/BaseOpenApiConfigTest.java`:
+  direct customizer tests cover logic but do not replace the smoke suites' SpringDoc integration.
 - `service-web/build.gradle.kts` suite registration. Each suite uses `implementation(project())`.
 - The publication config in the root and module build files:
   - `from(components["java"])` publishes Gradle module metadata generated from the same api and
@@ -275,78 +260,163 @@ Remove assertions that `src/test` already covers. Also correct the "published li
 
 ### Execution steps
 
-1. Before removing an assertion, find a `src/test` test that covers the same behavior. If none
-   exists, keep that assertion in the smoke suite and mention it in the phase result.
-2. Apply the same changes to `ServletSmokeTest` and `ReactiveSmokeTest`:
-   - Delete `shouldReturnSuccessfulResponse`. It checks Boot's mapper null handling, not the library.
-   - In `shouldReturnUnauthorizedWithoutClaims` and `shouldReturnForbiddenWhenPermissionIsMissing`,
-     remove the `propertyNames(...).containsExactly(...)` assertions. Keep the status, `type`, and
-     `message` assertions.
-   - Rename `shouldOmitAbsentOptionalFieldsFromNotFoundResponse` to
-     `shouldReturnNotFoundApiErrorResponse` and update its `@DisplayName`. Remove the
-     `propertyNames` assertion. Keep the status, `type`, and `message` assertions.
-   - In `shouldIncludeErrorCodeInBusinessResponse`, remove the `propertyNames` assertion. Keep
-     the `UNPROCESSABLE_CONTENT` status and the `type`, `message`, and `code` assertions. It is
-     the only real-HTTP check of the Phase 1 business 422 path on each stack.
-   - In `shouldReturnValidationFieldErrors`:
-     - remove both `propertyNames` assertions;
-     - keep the status, `type`, and first-field-error `field` and `message` assertions;
-     - update the `@DisplayName` so it no longer mentions absent optional properties.
-   - Reduce `shouldGenerateOpenApiDocumentationWithSharedErrorResponses` to these checks:
-     - anonymous `GET /v3/api-docs` returns 200;
-     - `info.title` matches the suite's `SmokeOpenApiConfig`;
-     - the `POST /api/smoke/items` responses for 401 and 403 reference
-       `#/components/schemas/ApiErrorResponse`;
-     - `/components/schemas` contains `ApiErrorResponse`.
-   - Reduce `assertStandardErrorResponse` to the schema `$ref` check, or inline it.
-   - Delete `propertyNames` and any imports that become unused.
-   - Leave the startup and classpath test, `shouldAllowMethodSecuredRequestWithPermission`, the
-     health-probe test, and the Prometheus test unchanged.
-3. In both `SmokeItemController` classes, remove the two `@ApiResponse` annotations on `getItem`,
-   the `EXPLICIT_NOT_FOUND_DESCRIPTION` constant, and the unused `ApiResponse` import. Keep the
-   `business-error` endpoints. Both suites still use them, and the servlet consumer-chain test
-   uses the servlet one.
-4. Replace the README smoke-suite sentences:
+1. Confirm and preserve the complete OpenAPI integration checks on each stack:
+   - anonymous `GET /v3/api-docs` succeeds with the expected API title;
+   - explicit controller `@ApiResponse` descriptions survive generation;
+   - generated response-code sets and 400/401/403/500/503 schema references and examples match
+     the existing assertions;
+   - unsecured operations do not receive inappropriate generated security responses;
+   - `ApiErrorResponse` and `FieldError` schema properties are present.
+   Keep `assertStandardErrorResponse`, `propertyNames`, both explicit controller annotations,
+   and `EXPLICIT_NOT_FOUND_DESCRIPTION`. Preserve every other smoke test and assertion as well,
+   including the successful-response mapper check and all JSON-shape checks.
+2. Replace the README smoke-suite sentences:
    - State that each suite depends on the project's own api and runtime variants through
      `implementation(project())`, plus a single web stack, Spring Security, and the matching
      SpringDoc starter, without JPA or the combined test classpath.
-   - Describe the trimmed checks: startup and classpath isolation, shared security and method
+   - Describe the retained checks: startup and classpath isolation, shared security and method
      security wiring, `ApiErrorResponse` handling, actuator probes and Prometheus, and SpringDoc
-     serving the shared error documentation.
+     serving the shared error documentation, including explicit response preservation and schema
+     and example contents.
+   - Explain that `src/<suiteName>/java` and `resources` are Gradle JVM test suite conventions.
+     The isolated suites are permanent guards against optional-dependency and auto-configuration
+     regressions; selecting an application type on the combined test classpath is not equivalent.
    - State that the suites do not exercise the generated POM or module files, or the versions
-     written by `versionMapping`. Consumer builds against `publishToMavenLocal` cover published
-     metadata.
+     written by `versionMapping`. Consumer builds against `publishToMavenLocal` are required to
+     verify published metadata; the smoke suites do not satisfy that gate.
    - Keep the sentence that neither suite adds published dependencies.
-5. Change the `service-web/build.gradle.kts` comment the same way. Replace "consumes this library
+3. Change the `service-web/build.gradle.kts` comment the same way. Replace "consumes this library
    the way a service does (published api/runtime dependencies only)" with wording that says the
    suite depends on this project's api and runtime variants, the same variants the published
    module metadata is generated from.
 
 ### Implementation notes
 
-- The two suites stay intentionally parallel. Keep matching test names and structure so a
-  reviewer can diff them.
-- Use AssertJ only.
-- Do not add JSON property-order assertions anywhere.
-- Expect each suite to drop from 11 to 10 tests in `*SmokeTest`. The ConsumerSecurityChain tests
-  are unchanged.
+- The two suites stay intentionally parallel. Duplication alone is not grounds for removing
+  integration assertions or adding a shared fixture source set.
+- Each suite retains 11 tests in `*SmokeTest` plus two ConsumerSecurityChain tests: 13 total.
 
 ### Validation
 
 - `./gradlew :service-web:servletSmokeTest :service-web:reactiveSmokeTest` passes.
-- `rg -n "propertyNames|EXPLICIT_NOT_FOUND_DESCRIPTION|shouldReturnSuccessfulResponse" service-web/src/*SmokeTest`
-  returns no matches.
+- `git diff --exit-code HEAD -- service-web/src/servletSmokeTest service-web/src/reactiveSmokeTest`
+  succeeds: both complete source trees remain unchanged.
 - `rg -n "published library" README.md service-web/build.gradle.kts` returns no matches.
 - `git diff --stat -- service-web/src/test` shows no changes from this phase.
 
 ### Completion criteria
 
-- Both smoke suites pass and keep only single-stack-relevant checks.
-- Every removed assertion has a named covering test in `src/test`, or was kept.
+- Both smoke suites pass with 13 tests each and no removed or weakened assertions.
 - The README and the build comment accurately describe what the suites resolve and what they do
   not verify.
 
-## Phase 4: Full validation
+## Phase 4: Collect smoke reports and publication metadata in CI
+
+### Workspace
+
+.
+
+### Goal
+
+Make the build's downloadable artifacts include ordinary and smoke-suite results, readable HTML
+reports, and generated publication metadata, including available diagnostics when the build fails.
+
+### Scope
+
+- `.github/workflows/build.yml`
+- `README.md`, the testing/coverage and CI artifact documentation adjacent to the smoke-suite
+  paragraph updated in Phase 3.
+
+### Non-goals
+
+- Do not change test sources, Gradle suite wiring, coverage gates, or publication definitions.
+- Do not change release or snapshot publication workflows, action versions, permissions, or triggers.
+- Do not introduce a published-artifact consumer test or a new remote publishing step.
+- Do not dispatch a workflow or publish artifacts as part of local validation.
+
+### Required context
+
+- `.github/workflows/build.yml`, especially `Build with Gradle`, `Upload test results`, and
+  `Upload build artifacts`.
+- `build.gradle.kts`, `service-web/build.gradle.kts`, and both platform build files for suite
+  names, `check` dependencies, and the `mavenJava` publication.
+- `README.md`, the testing/coverage documentation.
+- `docs/versioning-and-compatibility.md`, publishing boundaries.
+
+### Execution steps
+
+1. Keep `./gradlew build` as the test gate. Do not use `continue-on-error` or suppress its failure.
+2. Expand the existing `test-results` artifact, preserving `if: always()` and seven-day retention,
+   to include XML from every test task and HTML reports with their supporting files:
+
+   ```yaml
+   path: |
+     **/build/test-results/*/*.xml
+     **/build/reports/tests/**
+   ```
+
+   Preserve module and task paths so `service-core:test`, `service-web:test`, `servletSmokeTest`,
+   and `reactiveSmokeTest` remain distinguishable. XML carries suite/test names, counts, failures,
+   skips, durations, and captured output; HTML provides the navigable report. Do not upload Gradle's
+   internal binary result files. Use `if-no-files-found: warn`: a compilation failure can legitimately
+   prevent reports from being generated, and the original build failure must remain visible.
+3. Add a metadata-generation step after the build and report upload, using `if: always()`:
+
+   ```bash
+   ./gradlew generatePomFileForMavenJavaPublication generateMetadataFileForMavenJavaPublication
+   ```
+
+   These tasks must generate the POM and `.module` metadata for all four artifacts without invoking
+   any publish task. Do not suppress generation failures. Keep report upload before this step so a
+   metadata-generation failure cannot prevent collection of already produced test diagnostics.
+4. Add a separate `publication-metadata` upload with `if: always()`, seven-day retention, and
+   `if-no-files-found: warn`, using the workflow's existing pinned upload-artifact action:
+
+   ```yaml
+   path: |
+     **/build/publications/mavenJava/pom-default.xml
+     **/build/publications/mavenJava/module.json
+   ```
+
+   Preserve module directories to distinguish all four publications. Collect available files after
+   a failed generation step without presenting partial output as a successful validation.
+5. Keep the existing JAR artifact and Maven Local publication behavior. Update the README to name
+   the report and metadata artifacts, their contents, retention, and failure-time availability.
+   Explain that archiving generated POM/module files makes them reviewable but does not exercise
+   consumer dependency resolution or change the separate consumer-integration release gate.
+
+### Implementation notes
+
+- Use the existing upload action; no third-party test reporting service or extra permissions are
+  needed. GitHub associates uploaded artifacts with the workflow run and commit.
+- The wildcard for XML deliberately covers all task names, including future isolated suites.
+- `if: always()` collects available diagnostics; it does not guarantee files exist when compilation
+  or dependency resolution failed before producing them.
+
+### Validation
+
+- Run `./gradlew build generatePomFileForMavenJavaPublication generateMetadataFileForMavenJavaPublication`.
+- Confirm the report upload patterns match XML and HTML output for all four test tasks, including
+  both ConsumerSecurityChain test classes. Inspect XML suite metadata and HTML entry points.
+- Confirm the metadata upload patterns match eight files: one POM and one `module.json` for each
+  of `spring-platform`, `spring-cloud-platform`, `service-core`, and `service-web`.
+- Validate workflow syntax with `actionlint` if installed; otherwise inspect YAML structure and
+  GitHub expressions and explicitly record that actionlint was unavailable.
+- Inspect failure paths: a failed build still reaches report upload and metadata steps, failed
+  generation still reaches metadata upload, and neither failure is hidden. Review these conditions
+  without changing or deliberately breaking application tests.
+- Confirm workflow changes are limited to artifact collection and metadata generation. Local
+  validation proves generation and path matching; hosted uploads require the next CI run.
+
+### Completion criteria
+
+- CI is configured to archive ordinary and smoke-suite XML/HTML reports and publication metadata,
+  preserving module/task identity and collecting available diagnostics on failure.
+- Local generation and artifact-pattern checks pass; hosted-run validation status is recorded
+  accurately without requiring a workflow dispatch.
+- README documentation matches the workflow, and no test or publication behavior is weakened.
+
+## Phase 5: Full validation
 
 ### Workspace
 
@@ -360,43 +430,44 @@ consistent.
 ### Scope
 
 - The whole repository build, all test suites, and a final consistency review of the documents
-  edited in Phases 1-3.
+  edited in Phases 1-4, including CI artifact collection.
 
 ### Non-goals
 
-- Do not make new functional changes. Fix only defects that this validation finds in Phase 1-3
+- Do not make new functional changes. Fix only defects that this validation finds in Phase 1-4
   work.
 - Do not run git write operations.
 
 ### Required context
 
 - `AGENTS.md` build commands.
-- The validation sections of Phases 1-3.
+- The validation sections of Phases 1-4.
 
 ### Execution steps
 
-1. Run `./gradlew clean spotlessApply`.
-2. Run `./gradlew clean build`. Fix any Checkstyle, Spotless, Javadoc, or coverage failure in
-   remediation work.
-3. Rerun the grep checks from Phases 1-3:
+1. Run `./gradlew clean build`. Fix any Checkstyle, Spotless, Javadoc, or coverage failure only
+   within remediation scope. Do not apply broad formatting changes to protected test sources.
+2. Run the Phase 4 metadata-generation tasks and repeat its artifact-pattern and workflow checks.
+3. Rerun the grep and preservation checks from Phases 1-3:
    - `rg -n "UNPROCESSABLE_ENTITY" service-web/src` matches only the `BaseOpenApiConfigTest`
      `@EnumSource` string.
    - `rg -n "Unprocessable Entity" service-web/src docs/error-handling.md` returns no matches.
-   - `rg -n "propertyNames|EXPLICIT_NOT_FOUND_DESCRIPTION" service-web/src/*SmokeTest` returns no
-     matches.
+   - `git diff --exit-code HEAD -- service-web/src/servletSmokeTest service-web/src/reactiveSmokeTest`
+     succeeds. All smoke tests, fixtures, and OpenAPI assertions remain unchanged.
+   - Confirm the only `src/test` changes are the three authorized Phase 1 assertion constant swaps.
    - `rg -n "published library" README.md service-web/build.gradle.kts` returns no matches.
 4. Confirm the `./gradlew clean build` output has no deprecation note for `service-web` main or
    test compilation.
 5. Record the test counts for `service-core:test`, `service-web:test`,
    `service-web:servletSmokeTest`, and `service-web:reactiveSmokeTest`. The baseline before this
    plan was 218, 573, 13, and 13.
-6. Run `git diff --stat` and confirm that only the files named in Phases 1-3 changed.
+6. Run `git diff --stat` and confirm that only the files named in Phases 1-4 changed.
 
 ### Implementation notes
 
-- `service-web:test` should still report 573 tests, because Phase 1 only swaps assertion
-  constants. Each smoke suite should report 12: one removed test plus the two unchanged
-  ConsumerSecurityChain tests.
+- Counts stay at 218 for `service-core:test`, 573 for `service-web:test`, and 13 for each smoke
+  suite: 817 total, with zero failures, errors, or skips. Phase 1 only swaps assertion constants;
+  no tests are removed or added by this plan.
 - If a count differs, explain why before completing.
 
 ### Validation
@@ -404,9 +475,12 @@ consistent.
 - `./gradlew clean build` succeeds.
 - All grep checks pass.
 - The test counts are recorded and explained.
+- All four test tasks' reports and all four publications' metadata match the CI upload patterns.
 
 ### Completion criteria
 
 - The full build is green with no deprecation warnings from `UNPROCESSABLE_ENTITY`.
 - The documentation matches the code.
-- The changed-file set is limited to the Phase 1-3 scope.
+- Both smoke source trees and their complete OpenAPI integration coverage remain unchanged.
+- CI collects smoke diagnostics and publication metadata with the limitations documented.
+- The changed-file set is limited to the Phase 1-4 scope.
