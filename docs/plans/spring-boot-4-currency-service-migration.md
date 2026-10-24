@@ -21,11 +21,37 @@ Plan-wide constraints:
   adds no such assertion: `createdAt`, `updatedAt`, and `timestamp` already have `isString()`
   assertions. Never modify, weaken, or delete existing assertions to make changes pass.
 - Translate configuration like-for-like (renamed keys and classes only). Do not remove or redesign
-  settings.
+  settings. The only exceptions are the two resolved decisions below.
 - If the migration forces a behavior change, list it here. Do not build anything to detect or
   work around it.
 - Do not read orchestration or api-tests internals.
 - No git write operations. Leave all changes uncommitted.
+
+Resolved decisions (2026-10-24, from the Phase 1 clarification stop):
+
+- Redis cache writes stay synchronous. Spring Data Redis 4 makes the default `RedisCacheWriter`
+  run `put`, `evict`, and `clear` asynchronously on Lettuce, as fire-and-forget calls whose
+  failures are not logged. Spring Data Redis 3.5 was synchronous. currency-service is a blocking
+  servlet service. Its import flow relies on `@CacheEvict(allEntries = true)` having cleared the
+  cache, with no TTL, by the time the import returns. Four existing
+  `ExchangeRateImportServiceIntegrationTest` assertions cover this. Step 6 therefore restores the
+  3.x behavior with `immediateWrites()`, as the Spring Data Redis 4 upgrade notes describe. This is
+  a translation of a changed library default, not a redesign.
+- `V8` makes the new Modulith columns loadable instead of listing the problem as a rollout
+  finding. Modulith 2.1.2 maps `completionAttempts` as a primitive `int`, so NULL values cannot
+  load. Step 5 gives `completion_attempts` `NOT NULL DEFAULT 0`. The default also covers rows that
+  Boot 3 instances insert without the column during a rolling deploy or rollback. Step 5 also
+  backfills completed rows to `status = 'COMPLETED'`. Incomplete rows keep NULL `status`:
+  Modulith 2.1.2 queries treat `status IS NULL AND completion_date IS NULL` as a legacy
+  incomplete publication. Its failed-publication query matches `status = 'FAILED'` without a
+  `completion_date` check. A `FAILED` backfill could therefore resubmit a row that a Boot 3
+  instance completes during the rollout.
+
+Resume state: the first Phase 1 run recorded the Boot 3 baseline at HEAD `919a2ee` as 253 tests,
+0 failures, 0 errors, and 0 skipped. It applied steps 2–12, which remain uncommitted. `V8` already
+contains the step 5 content below. On retry, do not rerun the baseline, because the worktree is no
+longer unmodified. Use the recorded counts. Verify the existing changes against steps 2–12, apply
+the `immediateWrites()` change in step 6, then continue from step 13.
 
 Pre-plan evidence (2026-10-23, read-only): `currency-service` at HEAD `919a2ee`, with a clean
 worktree.
@@ -89,6 +115,8 @@ Behavior changes forced by the migration (listed only; nothing is built to detec
   `@JsonIgnoreProperties(ignoreUnknown = true)`. The FRED WireMock tests cover this path.
 - Modulith 2 writes and reads the `status`, `completion_attempts`, and `last_resubmission_date`
   columns that the new `V8` migration adds.
+  - `V8` sets `completion_attempts` to 0 on existing rows and `status` to `COMPLETED` on existing
+    completed rows. Existing incomplete rows keep NULL `status`.
   - `spring.modulith.events.delete-completion-after: 30d` has no effect, as on Boot 3. It is kept
     unchanged.
 
@@ -116,11 +144,12 @@ after all services are migrated:
     `currency-service:exchangeRates::*` keys at deploy, or change the key prefix (a config
     change, decided separately). Then confirm a round-trip in Tilt.
 - Modulith in-flight events:
-  - Rows written before `V8` have NULL `status` and `completion_attempts`, and their payloads
-    were serialized by Jackson 2.
+  - Incomplete rows written before `V8`, or by Boot 3 instances during the rollout, have NULL
+    `status`, and Jackson 2 serialized their payloads. `V8` gives them
+    `completion_attempts = 0`, so they load.
   - `republish-outstanding-events-on-restart: true` reloads incomplete rows at startup.
   - Before deploy, either drain incomplete publications (`completion_date IS NULL`) or confirm in
-    Tilt that Modulith 2 loads and republishes such a row.
+    Tilt that Modulith 2 deserializes and republishes such a row.
   - Decide `completion-mode` and retention explicitly. `delete-completion-after` is ignored.
 - RabbitMQ: confirm that messages in flight on `exchangeRateImportRequested` during a rolling
   deploy are consumed by both versions.
@@ -128,8 +157,8 @@ after all services are migrated:
   `shedlock` table in Tilt.
 - Schema validation: confirm that the main configuration (`ddl-auto: validate`) starts against
   `V1`–`V8` under Hibernate 7.
-- Rollback: `V8` only adds nullable columns, so a Boot 3 image should still pass
-  `ddl-auto: validate`. Flyway's default `*:future` ignore pattern should let it start with `V8`
+- Rollback: `V8` only adds columns. Boot 3 does not map them, and its inserts get the
+  `completion_attempts` default, so a Boot 3 image should still pass `ddl-auto: validate`. Flyway's default `*:future` ignore pattern should let it start with `V8`
   applied. Verify both before relying on rollback.
 
 Publication: nothing is pushed or published to GitHub until the whole ecosystem runs locally in
@@ -153,8 +182,8 @@ deployed API compatibility pending.**
 Bring `currency-service` onto Spring Boot 4.1.2 and service-common `0.0.18-SNAPSHOT`.
 `./gradlew clean build` must pass with the same test count as the Boot 3 baseline recorded in
 step 1. Production changes stay mechanical: renamed dependencies, configuration keys, imports,
-Jackson types, and one expand-only migration. The only other change is the documentation update
-that marks `enabled` as required.
+Jackson types, and one expand-only migration with its backfill. The only other changes are the
+documentation update that marks `enabled` as required and the synchronous Redis cache writer.
 
 ### Scope
 
@@ -249,11 +278,15 @@ that marks `enabled` as required.
    - Rename any other key only if open item 4 shows it was renamed. Keep its value and comment.
      Change nothing else.
 5. Add `src/main/resources/db/migration/V8__add_modulith_2_event_publication_columns.sql`:
-   - Use one `ALTER TABLE event_publication` that adds the nullable columns
-     `status VARCHAR(20)`, `completion_attempts INT`, and `last_resubmission_date TIMESTAMP`.
-     `TIMESTAMP` matches the existing `V5` timestamp columns.
-   - Add `COMMENT ON COLUMN` lines in the style of `V5`.
-   - Add no defaults, constraints, backfill, or indexes. Do not modify `V5`.
+   - Use one `ALTER TABLE event_publication` that adds `status VARCHAR(20)` (nullable),
+     `completion_attempts INT NOT NULL DEFAULT 0`, and `last_resubmission_date TIMESTAMP`
+     (nullable). `TIMESTAMP` matches the existing `V5` timestamp columns.
+   - Follow it with
+     `UPDATE event_publication SET status = 'COMPLETED' WHERE completion_date IS NOT NULL`.
+     Leave `status` NULL on incomplete rows (see Resolved decisions).
+   - Add `COMMENT ON COLUMN` lines in the style of `V5`, and a header comment explaining the
+     default and the backfill.
+   - Add no other defaults, constraints, backfill, or indexes. Do not modify `V5`.
    - If open item 5 shows that Modulith 2.1.2 maps a different column name or a length shorter
      than needed, use the mapped name or length and report it.
 6. `config/CacheConfig.java`. Use open items 1–2 to pick the exact classes:
@@ -272,6 +305,14 @@ that marks `enabled` as required.
      - Construct it from that mapper, or through its builder with the same typing and validator.
        Keep the bean method names.
    - Move the `RedisCacheManagerBuilderCustomizer` import to its Boot 4 package.
+   - Keep Boot 3's synchronous cache writes (see Resolved decisions):
+     - Add a `RedisConnectionFactory redisConnectionFactory` parameter to
+       `redisCacheManagerBuilderCustomizer`.
+     - Call
+       `builder.cacheWriter(RedisCacheWriter.create(redisConnectionFactory, configurer -> configurer.immediateWrites()))`
+       (`org.springframework.data.redis.cache.RedisCacheWriter`).
+     - Add a Javadoc bullet saying that writes, evictions, and clears complete before the call
+       returns, overriding Spring Data Redis 4's asynchronous Lettuce default.
    - Keep everything else unchanged:
      - `transactionAware()`
      - `Duration.ZERO`
@@ -361,9 +402,11 @@ Open items. Confirm each after Gradle resolves the Boot 4 dependencies (step 13,
 5. Modulith 2.1.2 JPA publication entity:
    - Confirm the column names and types it maps for `status`, `completion_attempts`, and
      `last_resubmission_date`, and whether `completionAttempts` is a primitive.
-   - A primitive cannot load the NULL values of pre-`V8` rows. Report it as a Modulith
-     in-flight-event rollout finding. Do not backfill or add a default in `V8`.
-   - Tests clear `event_publication` before running, so new rows always carry values.
+   - The first run confirmed that `status` is `EnumType.STRING` (longest value 11 characters),
+     `completion_attempts` is a primitive `int`, and `last_resubmission_date` is an `Instant`.
+     Re-confirm that the step 5 `V8` matches these mappings.
+   - Tests clear `event_publication` before running, so the default and backfill are verified
+     only at the deployed gate.
 6. Whether Flyway 12.4 still accepts the existing `U*__rollback_*.sql` files in
    `db/migration`. If it rejects them, stop and report; do not delete or move them.
 7. Whether the JaCoCo gates (LINE 0.90, BRANCH 0.85) still pass. If coverage drops because of the
@@ -398,7 +441,11 @@ Other notes:
 - This command returns no matches:
   `rg -n 'com\.fasterxml\.jackson\.(core|databind|datatype)|GenericJackson2JsonRedisSerializer|org\.springframework\.boot\.autoconfigure\.cache|org\.testcontainers\.containers\.(PostgreSQLContainer|RabbitMQContainer)|org\.springframework\.boot\.test\.autoconfigure\.(orm|jdbc|web)|junitPlatform|starter-web"|flyway-core|"org\.testcontainers:(junit-jupiter|postgresql|rabbitmq)"|value\(nullValue\(\)\)' src gradle build.gradle.kts`
 - `rg -n 'status|completion_attempts|last_resubmission_date' src/main/resources/db/migration/V8__*.sql`
-  shows all three columns.
+  shows all three columns, the `NOT NULL DEFAULT 0`, and the `COMPLETED` backfill.
+- `rg -n 'immediateWrites' src/main/java/org/budgetanalyzer/currency/config/CacheConfig.java`
+  shows the synchronous cache writer.
+- All four cache-eviction tests in `ExchangeRateImportServiceIntegrationTest` pass with their
+  assertions unchanged.
 - `git status --short` lists only files in Scope, plus a test starter only if open item 3
   required it.
 
@@ -454,7 +501,9 @@ outstanding.
    - `currency-service` is migrated locally, uncommitted on top of the recorded HEAD
      ([currency-service plan](spring-boot-4-currency-service-migration.md)).
    - Against the Maven Local snapshot, it builds and passes all its existing tests (state the
-     count), with an expand-only `V8` migration for the Modulith 2 `event_publication` columns.
+     count). It includes an expand-only `V8` migration for the Modulith 2 `event_publication`
+     columns, with a `completion_attempts` default and a `COMPLETED` backfill, and keeps
+     synchronous Redis cache writes through `immediateWrites()`.
    - Nothing has been deployed. State: "Local migration verified; deployed API compatibility
      pending."
    - Still outstanding, at the deployed gate and rollout:
