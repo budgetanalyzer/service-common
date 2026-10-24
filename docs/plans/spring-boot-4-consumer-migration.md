@@ -27,6 +27,18 @@ assertion on `createdAt`/`updatedAt`, which passed on Boot 3 before the dependen
 Nothing has been deployed. **Local migration verified; deployed API compatibility pending.** Its
 main-configuration Jackson keys are shadowed in tests and remain part of the deployed gate.
 
+`currency-service` is migrated locally, uncommitted on top of HEAD `919a2ee`
+([currency-service plan](spring-boot-4-currency-service-migration.md)). Against the Maven Local
+snapshot it builds and passes all 253 existing tests. It adds an expand-only `V8` migration for
+the Modulith 2 `event_publication` columns, with a `completion_attempts` default of 0 and a
+`COMPLETED` backfill for completed rows. It keeps Redis cache writes synchronous through
+`immediateWrites()`. Nothing has been deployed. **Local migration verified; deployed API
+compatibility pending.** Still outstanding at the deployed gate and rollout: the
+main-configuration keys (shadowed in tests), `ddl-auto: validate` against `V8`, old-format Redis
+cache entries, Modulith in-flight publications, ShedLock lock acquisition, and the primitive
+`enabled` request-field behavior change (a missing or null value now returns 400; the field is
+now documented as required).
+
 ## Snapshot Line
 
 - `0.0.18-SNAPSHOT` is the Spring Boot 4 development line. It is not a stable release.
@@ -687,8 +699,11 @@ Redis, cache, and persisted serialization (validate separately from API JSON):
 
 - `currency-service` `CacheConfig` builds a `GenericJackson2JsonRedisSerializer` from an injected
   Jackson 2 `ObjectMapper` with `activateDefaultTyping(NON_FINAL)`. It needs a Jackson 3 based
-  serializer and polymorphic type validator from the managed Spring Data Redis line. Verify
-  class names during migration. The plan must test cache round-trips for every cached type and
+  serializer and polymorphic type validator from the managed Spring Data Redis line. The
+  migration confirmed `org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer`
+  with a `JsonMapper` rebuilt using `tools.jackson.databind.DefaultTyping` and
+  `tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator`, and
+  `RedisCacheManagerBuilderCustomizer` in `org.springframework.boot.cache.autoconfigure`. The plan must test cache round-trips for every cached type and
   decide how to handle entries written in the old format, for example by evicting them or
   changing the key prefix, before rollout.
 - `session-gateway` stores string values through `ReactiveStringRedisTemplate`. Verify that any
@@ -697,8 +712,10 @@ Redis, cache, and persisted serialization (validate separately from API JSON):
   use Redis, so there is nothing to migrate.
 - `currency-service` Spring Modulith event publications: the Flyway `V5` `event_publication`
   table has only the legacy six columns, and the service uses `ddl-auto: validate`. Add the
-  nullable Modulith 2 columns (`status`, `completion_attempts`, `last_resubmission_date`) in a
-  new expand-only migration before the upgrade. Its
+  Modulith 2 columns (`status`, `completion_attempts`, `last_resubmission_date`) in a new
+  expand-only migration before the upgrade. Modulith 2.1.2 maps `completionAttempts` as a
+  primitive `int`, so `completion_attempts` needs `NOT NULL DEFAULT 0`; the other two stay
+  nullable. Its
   `spring.modulith.events.delete-completion-after: 30d` has no effect. Decide `completion-mode`
   and retention explicitly. Outstanding publications were serialized with Jackson 2, so verify
   that Modulith 2 can deserialize incomplete rows, or drain them before deployment.
