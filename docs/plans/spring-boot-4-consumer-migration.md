@@ -39,6 +39,18 @@ cache entries, Modulith in-flight publications, ShedLock lock acquisition, and t
 `enabled` request-field behavior change (a missing or null value now returns 400; the field is
 now documented as required).
 
+`session-gateway` is migrated locally, uncommitted on top of HEAD `09dacbf`
+([session-gateway plan](spring-boot-4-session-gateway-migration.md)). Against the Maven Local
+snapshot it builds and passes all 156 existing tests. The non-routine changes: `SecurityConfig`
+writes its 401/503 bodies with `JsonMapper`, the DataSource/JPA excludes became `excludeName`
+strings for the relocated jdbc and hibernate classes, `spring-boot-starter-oauth2-client` became
+`spring-boot-starter-security-oauth2-client`, and `spring.codec.max-in-memory-size` became
+`spring.http.codecs.max-in-memory-size`. The Spring Security 7.1.2 OAuth2 client APIs and
+configuration keys it uses needed no changes. Its `AGENTS.md` and docs were updated in the same
+phase. Nothing has been deployed. **Local migration verified; deployed API compatibility
+pending.** Still outstanding at the deployed gate: the main and `kubernetes` configuration keys,
+which tests do not exercise, and the OAuth2 login flow against the real IdP.
+
 ## Snapshot Line
 
 - `0.0.18-SNAPSHOT` is the Spring Boot 4 development line. It is not a stable release.
@@ -666,7 +678,7 @@ startup):
 
 - `currency-service` main: `FredClient` and `CacheConfig`. Test: `FredApiStubs`.
 - `session-gateway` main: `SecurityConfig` injects `ObjectMapper` and will not start until it
-  uses `JsonMapper`.
+  uses `JsonMapper`. It now uses `JsonMapper`.
 - `transaction-service` main: `PdfStatementFormatWizardService`, `PreviewImportTokenService`,
   `StatementFormatService`, and `StatementExtractorRegistry`. Tests: seven integration and unit test
   classes.
@@ -706,8 +718,8 @@ Redis, cache, and persisted serialization (validate separately from API JSON):
   `RedisCacheManagerBuilderCustomizer` in `org.springframework.boot.cache.autoconfigure`. The plan must test cache round-trips for every cached type and
   decide how to handle entries written in the old format, for example by evicting them or
   changing the key prefix, before rollout.
-- `session-gateway` stores string values through `ReactiveStringRedisTemplate`. Verify that any
-  JSON it writes and reads across a rolling deployment keeps the same shape under Jackson 3.
+- `session-gateway` stores only flat string hash fields and Lua-script values through
+  `ReactiveStringRedisTemplate`. It persists no JSON, so it has no Redis rollout item.
   `permission-service` declares `spring-boot-starter-data-redis` in its catalog only; it does not
   use Redis, so there is nothing to migrate.
 - `currency-service` Spring Modulith event publications: the Flyway `V5` `event_publication`
