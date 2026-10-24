@@ -242,6 +242,7 @@ For reactive applications, the shared JSON contract is applied in both places:
 | `NoResourceFoundException` (servlet) | 404 | `NOT_FOUND` | None |
 | `InvalidRequestException` | 400 | `INVALID_REQUEST` | None |
 | `HttpRequestMethodNotSupportedException` (servlet) | 405 | `INVALID_REQUEST` | `Allow` and other protocol headers preserved |
+| `HttpMessageNotReadableException` (servlet) | 400 | `INVALID_REQUEST` | None |
 | `BusinessException` | 422 | `APPLICATION_ERROR` | `code` |
 | `ServiceUnavailableException` | 503 | `SERVICE_UNAVAILABLE` | None |
 | `ClientException` | 503 | `SERVICE_UNAVAILABLE` | None |
@@ -314,9 +315,14 @@ exceptions:
   clients can discover the methods supported by the matched route.
 - `NoResourceFoundException` returns 404 Not Found with `NOT_FOUND`. This is the exception Spring's
   static resource mapping raises when no controller or static resource matches a route.
+- `HttpMessageNotReadableException` returns 400 Bad Request with `INVALID_REQUEST`. Spring MVC
+  raises it when a request body is missing or cannot be deserialized, including malformed JSON,
+  values of the wrong JSON type, and `null` for a primitive field. WebFlux reports the same
+  failures as `ServerWebInputException`, which the `ResponseStatusException` mapping already
+  returns as 400 `INVALID_REQUEST`.
 
-Both mappings use generic client-facing messages. Exception class names, static-resource handler
-details, and stack traces are never included in the response.
+These mappings use generic client-facing messages. Exception class names, deserializer details,
+static-resource handler details, and stack traces are never included in the response.
 
 ## Best Practices
 

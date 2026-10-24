@@ -165,6 +165,19 @@ class ServletSmokeTest {
   }
 
   @Test
+  @DisplayName("Should return an invalid-request ApiErrorResponse for an unreadable request body")
+  void shouldReturnInvalidRequestForUnreadableBody() {
+    var claims = ClaimsHeaderTestBuilder.user("usr_smoke_writer").withPermissions("smoke:write");
+
+    for (var requestBody : List.of("{\"name\":", "{\"name\":{}}")) {
+      var body = postJson("/api/smoke/items", requestBody, claims, HttpStatus.BAD_REQUEST);
+
+      assertThat(body.get("type").asString()).isEqualTo("INVALID_REQUEST");
+      assertThat(propertyNames(body)).containsExactly("type", "message");
+    }
+  }
+
+  @Test
   @DisplayName("Should expose liveness and readiness probes without claims")
   void shouldExposeHealthProbesWithoutClaims() {
     for (var probePath : List.of("/actuator/health/liveness", "/actuator/health/readiness")) {

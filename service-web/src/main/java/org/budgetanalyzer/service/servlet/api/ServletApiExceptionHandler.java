@@ -7,6 +7,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -56,6 +57,8 @@ import org.budgetanalyzer.service.exception.ServiceUnavailableException;
  *   <li>{@link ServiceUnavailableException} → 503 Service Unavailable
  *   <li>{@link MethodArgumentTypeMismatchException} → 400 Bad Request
  *   <li>{@link MissingServletRequestPartException} → 400 Bad Request
+ *   <li>{@link MissingServletRequestParameterException} → 400 Bad Request
+ *   <li>{@link HttpMessageNotReadableException} → 400 Bad Request
  *   <li>{@link AccessDeniedException} → 403 Forbidden
  *   <li>{@link AuthorizationDeniedException} → 403 Forbidden
  *   <li>{@link AuthenticationException} → 401 Unauthorized
@@ -294,6 +297,25 @@ public class ServletApiExceptionHandler implements ApiExceptionHandler {
       MissingServletRequestParameterException exception, WebRequest request) {
     logException(ApiErrorType.INVALID_REQUEST, null, exception);
     return buildInvalidRequestError(new InvalidRequestException(exception.getMessage()));
+  }
+
+  /**
+   * Handles {@link HttpMessageNotReadableException} and returns HTTP 400 Bad Request.
+   *
+   * <p>This exception occurs when a request body is missing or cannot be deserialized, such as
+   * malformed JSON or a {@code null} value for a primitive field. The response uses a generic
+   * message so deserializer details and internal type names are not exposed to clients.
+   *
+   * @param exception the exception thrown when the request body cannot be read
+   * @param request the web request context
+   * @return standardized error response with INVALID_REQUEST type
+   */
+  @ExceptionHandler
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  public ApiErrorResponse handle(HttpMessageNotReadableException exception, WebRequest request) {
+    logException(ApiErrorType.INVALID_REQUEST, null, exception);
+    return buildInvalidRequestError(
+        new InvalidRequestException("Request body is missing or could not be parsed"));
   }
 
   /**
