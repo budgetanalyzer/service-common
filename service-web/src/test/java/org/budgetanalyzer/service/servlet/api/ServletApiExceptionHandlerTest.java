@@ -114,7 +114,8 @@ class ServletApiExceptionHandlerTest {
   @Test
   @DisplayName("Should handle NoResourceFoundException with NOT_FOUND type and 404")
   void shouldHandleNoResourceFoundException() {
-    var exception = new NoResourceFoundException(HttpMethod.GET, "api/removed-route");
+    var exception =
+        new NoResourceFoundException(HttpMethod.GET, "/api/removed-route", "api/removed-route");
 
     var response = servletApiExceptionHandler.handle(exception);
 

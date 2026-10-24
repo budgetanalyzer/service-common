@@ -35,7 +35,25 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: test-results
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/*/*.xml
+            **/build/reports/tests/**
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Generate publication metadata
+        if: always()
+        run: ./gradlew generatePomFileForMavenJavaPublication generateMetadataFileForMavenJavaPublication
+
+      - name: Upload publication metadata
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: publication-metadata
+          path: |
+            **/build/publications/mavenJava/pom-default.xml
+            **/build/publications/mavenJava/module.json
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Upload build artifacts

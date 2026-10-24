@@ -3,6 +3,9 @@ package org.budgetanalyzer.service.api;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -19,6 +22,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *       type)
  * </ul>
  *
+ * <p>JSON output always uses this property order. Null optional fields ({@code code}, {@code
+ * fieldErrors}) are omitted regardless of the application mapper's inclusion settings; empty lists
+ * and strings are kept.
+ *
  * <p>Example JSON representation:
  *
  * <pre>
@@ -28,8 +35,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *   "fieldErrors": [
  *     {
  *       "field": "amount",
- *       "rejectedValue": "-100",
- *       "message": "Amount must be positive"
+ *       "message": "Amount must be positive",
+ *       "rejectedValue": "-100"
  *     }
  *   ]
  * }
@@ -50,6 +57,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * @see org.budgetanalyzer.service.servlet.api.ServletApiExceptionHandler
  */
 @Schema(description = "Standard API error response format")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({"type", "message", "code", "fieldErrors"})
 public class ApiErrorResponse {
 
   @Schema(

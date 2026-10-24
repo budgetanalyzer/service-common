@@ -8,7 +8,7 @@ import org.budgetanalyzer.service.api.FieldError;
 /**
  * Exception indicating a business rule violation.
  *
- * <p>This exception represents HTTP 422 Unprocessable Entity errors and should be thrown when the
+ * <p>This exception represents HTTP 422 Unprocessable Content errors and should be thrown when the
  * request is well-formed but cannot be processed due to business logic constraints. Unlike {@link
  * InvalidRequestException}, this indicates the request structure is valid, but the operation
  * violates domain-specific business rules.

@@ -191,7 +191,7 @@ This separation lets you validate the upgrade without rewriting the entire test 
 - `service-web/src/test/java` (for service-web tests)
 - `{service-name}/src/test/java` (for individual service tests)
 
-**Framework**: JUnit 5 (Jupiter) + AssertJ
+**Framework**: JUnit Jupiter + AssertJ
 **Spring Context**: No
 
 **Characteristics**:
@@ -222,7 +222,7 @@ class TransactionTotalCalculatorTest {
 - `service-web/src/test/java` (for service-web integration tests)
 - `{service-name}/src/test/java` (for individual service integration tests)
 
-**Framework**: JUnit 5 + Spring Boot Test + AssertJ
+**Framework**: JUnit Jupiter + Spring Boot Test + AssertJ
 **Spring Context**: Yes
 
 **Characteristics**:
@@ -239,7 +239,7 @@ class TransactionTotalCalculatorTest {
 class TransactionRepositoryIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:15-alpine");
 
     @Autowired
     private TransactionRepository transactionRepository;
@@ -267,7 +267,7 @@ save the entity and query through `SoftDeleteOperations` when asserting active-r
 
 **File Pattern**: `*ControllerIntegrationTest.java`
 **Location**: `src/test/java` (mirror of `src/main/java`)
-**Framework**: JUnit 5 + Spring Boot Test + MockMvc + AssertJ
+**Framework**: JUnit Jupiter + Spring Boot Test + MockMvc + AssertJ
 **Spring Context**: Yes
 
 **Characteristics**:
@@ -275,6 +275,12 @@ save the entity and query through `SoftDeleteOperations` when asserting active-r
 - Loads the real controller, service, repository, validation, security, and exception-handling beans
 - Uses Testcontainers when the endpoint reaches persistence or a broker
 - Validates the request, response, and application behavior without Mockito bean replacement
+- Declares the HTTP test client explicitly: `@SpringBootTest` does not provide one. Use
+  `@AutoConfigureMockMvc` (`org.springframework.boot.webmvc.test.autoconfigure`) for servlet
+  services and `@AutoConfigureWebTestClient` (`org.springframework.boot.webtestclient.autoconfigure`)
+  for reactive services
+- Parses JSON with `tools.jackson.databind.json.JsonMapper`; inject Boot's
+  auto-configured `JsonMapper` bean when the assertion depends on application mapper settings
 
 **Example**:
 ```java
@@ -285,8 +291,8 @@ save the entity and query through `SoftDeleteOperations` when asserting active-r
 class TransactionControllerIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgresqlContainer =
-        new PostgreSQLContainer<>("postgres:15-alpine");
+    static PostgreSQLContainer postgresqlContainer =
+        new PostgreSQLContainer("postgres:15-alpine");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -354,6 +360,18 @@ deletion method.
 
 **Purpose**: Provide real infrastructure (database, Redis, RabbitMQ) for integration tests
 
+### Dependencies
+
+The Spring Boot BOM imported by `spring-platform` manages Testcontainers versions. Declare the
+`testcontainers-`-prefixed module artifacts without versions:
+
+```kotlin
+testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+testImplementation("org.testcontainers:testcontainers-postgresql")
+```
+
+Use the module-specific container types, such as `org.testcontainers.postgresql.PostgreSQLContainer`.
+
 ### PostgreSQL Container
 
 ```java
@@ -361,7 +379,7 @@ deletion method.
 class DatabaseIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:15-alpine")
         .withDatabaseName("test_db")
         .withUsername("test")
         .withPassword("test");
@@ -401,8 +419,8 @@ method calls.
 class TransactionServiceIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgresqlContainer =
-        new PostgreSQLContainer<>("postgres:15-alpine");
+    static PostgreSQLContainer postgresqlContainer =
+        new PostgreSQLContainer("postgres:15-alpine");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -850,8 +868,8 @@ void shouldCalculateTotalWithCorrectExchangeRates() {
 class TransactionEventIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgresqlContainer =
-        new PostgreSQLContainer<>("postgres:15-alpine");
+    static PostgreSQLContainer postgresqlContainer =
+        new PostgreSQLContainer("postgres:15-alpine");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -938,7 +956,7 @@ void shouldReturn422WhenCurrencyCodeAlreadyExists() throws Exception {
     mockMvc.perform(post("/v1/admin/currencies")
             .contentType(MediaType.APPLICATION_JSON)
             .content(requestJson))
-        .andExpect(status().isUnprocessableEntity())
+        .andExpect(status().isUnprocessableContent())
         .andExpect(jsonPath("$.type").value(containsString("APPLICATION_ERROR")))
         .andExpect(jsonPath("$.code").value(containsString("DUPLICATE_CURRENCY_CODE")));
     // ✅ No assertion on $.message - it's subject to change
@@ -1153,6 +1171,6 @@ hard-deleting soft-deletable entities. Clear non-transactional state such as MDC
 ## Resources
 
 - [AssertJ Documentation](https://assertj.github.io/doc/) (assertion library)
-- [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/) (test runner)
+- [JUnit User Guide](https://docs.junit.org/current/user-guide/) (test runner)
 - [Spring Boot Testing Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing)
 - [Testcontainers Documentation](https://testcontainers.com/)

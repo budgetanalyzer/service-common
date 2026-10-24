@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *   <li>{@link #UNAUTHORIZED} - 401 Unauthorized (authentication required)
  *   <li>{@link #FORBIDDEN} - 403 Forbidden (insufficient permissions)
  *   <li>{@link #NOT_FOUND} - 404 Not Found (resource doesn't exist)
- *   <li>{@link #APPLICATION_ERROR} - 422 Unprocessable Entity (business rule violation, includes
+ *   <li>{@link #APPLICATION_ERROR} - 422 Unprocessable Content (business rule violation, includes
  *       code field)
  *   <li>{@link #SERVICE_UNAVAILABLE} - 503 Service Unavailable (downstream service failure)
  *   <li>{@link #INTERNAL_ERROR} - 500 Internal Server Error (unexpected server error)

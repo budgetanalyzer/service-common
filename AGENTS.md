@@ -112,7 +112,7 @@ Multi-module Gradle project providing shared dependency platforms and runtime li
 **Contains**:
 - Spring Boot dependency BOM import
 - Spring Modulith dependency BOM import
-- Shared constraints for SpringDoc, Testcontainers, WireMock, Awaitility, and ShedLock
+- Shared constraints for SpringDoc, WireMock, Awaitility, and ShedLock (Testcontainers is managed by the imported Spring Boot BOM)
 
 **Behavior**: Version management only. No source code, runtime dependencies, beans, or autoconfiguration metadata.
 
@@ -156,7 +156,7 @@ Multi-module Gradle project providing shared dependency platforms and runtime li
   - `http/` - Reactive filters (ReactiveCorrelationIdFilter, ReactiveHttpLoggingFilter, body caching decorators, ReactiveHttpLoggingConfig)
   - `api/` - Exception handler (ReactiveApiExceptionHandler)
 
-**Dependencies**: service-core (transitive), Spring Boot Starter Web (compileOnly), Spring Boot Starter WebFlux (compileOnly), SpringDoc OpenAPI (compileOnly)
+**Dependencies**: service-core (transitive), Spring Boot Starter WebMVC (compileOnly), Spring Boot Starter WebFlux (compileOnly), SpringDoc OpenAPI (compileOnly)
 
 **Note**: service-web supports BOTH servlet and reactive stacks through conditional autoconfiguration.
 
@@ -187,7 +187,7 @@ cat settings.gradle.kts
 ```kotlin
 dependencies {
     implementation(platform("org.budgetanalyzer:spring-platform:<service-common-version>"))
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
@@ -206,7 +206,7 @@ dependencies {
 ```kotlin
 dependencies {
     implementation(platform("org.budgetanalyzer:spring-cloud-platform:<service-common-version>"))
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.budgetanalyzer:service-web:<service-common-version>")
 }
 ```
@@ -321,6 +321,10 @@ find service-core/src/test/java -name "*Test.java"
 # View test structure in service-web
 find service-web/src/test/java -name "*Test.java"
 
+# View isolated single-stack consumer-classpath smoke suites (run by check)
+find service-web/src -path "*SmokeTest/java/*" -name "*Test.java"
+./gradlew :service-web:servletSmokeTest :service-web:reactiveSmokeTest
+
 # Run tests with coverage (all modules)
 ./gradlew test jacocoTestReport
 ```
@@ -423,10 +427,10 @@ grep -r "@Configuration\|@AutoConfiguration" service-*/src/main/java/
 
 These are utilities (not Spring beans) - instantiate manually when needed:
 - `SafeLogger` - **Opt-in** static utility for safe logging (does NOT intercept log calls automatically):
-  - `SafeLogger.toJson(obj)` — serialize with `@Sensitive` field masking
+  - `SafeLogger.toJson(obj)` — serialize with `@Sensitive` field masking using its private logging mapper
   - `SafeLogger.mask(value)` / `SafeLogger.mask(value, showLast)` — mask sensitive strings
   - `SafeLogger.truncateId(id)` / `SafeLogger.truncateId(id, showChars)` — truncate identifiers for logs (e.g. `550e8400…`)
-- `SensitiveDataModule` - Jackson module for `@Sensitive` annotation
+- `@Sensitive` - Annotate fields, getters, or record components to mask them in `SafeLogger.toJson()` output. Masking is logging-only: do not expect it from the application's API mapper, and do not register logging serializers as Spring beans, through ServiceLoader, or as global Jackson annotations on `@Sensitive`. Read [docs/common-patterns.md](docs/common-patterns.md#2-safe-logging-with-safelogger) before changing logging serialization.
 - Base entity classes (`AuditableEntity`, `SoftDeletableEntity`) - Extend in your entities
 - `SoftDeleteOperations` - Repository utility interface
 
@@ -481,7 +485,9 @@ grep -r "@Component" service-core/src/main/java/
   - Public endpoints: `/actuator/health/**`, `/actuator/prometheus/**`, OpenAPI docs
   - Protected: All other endpoints (requires `X-User-Id` header)
   - Stateless by default; `/internal/**` is not globally anonymous
-  - The shared default filter chain backs off when a service defines its own `SecurityFilterChain` or `SecurityWebFilterChain`
+  - Servlet: the shared chain coexists with consumer chains. To own specific paths, add a lower-`@Order` `SecurityFilterChain` with a `securityMatcher`; unmatched requests fall through to the shared chain. Do not add a consumer chain without a `securityMatcher`: the shared chain already matches every request, so Spring Security rejects the unreachable chain at startup
+  - Reactive: the shared `SecurityWebFilterChain` backs off when any `SecurityWebFilterChain` bean exists. The consumer chain then owns all authentication and authorization rules; `@PreAuthorize` is still enforced
+  - Before adding or changing a consumer security chain, read `service-web/src/main/java/org/budgetanalyzer/service/security/ClaimsHeaderSecurityConfig.java`, `service-web/src/main/java/org/budgetanalyzer/service/security/ReactiveClaimsHeaderSecurityConfig.java`, and the executable evidence in `service-web/src/servletSmokeTest/java/org/budgetanalyzer/smoke/servlet/ServletConsumerSecurityChainSmokeTest.java` and `service-web/src/reactiveSmokeTest/java/org/budgetanalyzer/smoke/reactive/ReactiveConsumerSecurityChainSmokeTest.java`
   - No external properties needed (no JWKS URI, no issuer config)
 
 **Enable HTTP logging** (optional, works for both stacks):
@@ -549,7 +555,7 @@ grep -r "@Configuration" service-web/src/main/java/
 **service-web** (mostly automatic):
 - ✅ Exception handling - automatic
 - ✅ Security - automatic by default (no properties needed; trusts claims headers from the ingress external-auth path)
-- ✅ Consumer-defined Spring Security chains override the shared default chain on both servlet and reactive stacks
+- ✅ Servlet consumer chains coexist with the shared chain through a lower `@Order` and a `securityMatcher`; any reactive `SecurityWebFilterChain` replaces the shared reactive chain
 - ✅ Correlation ID filter - automatic
 - ⚙️ HTTP logging - opt-in via `budgetanalyzer.service.http-logging.enabled=true`; structured text bodies are redacted and unsafe body types are omitted
 - ⚙️ OpenAPI - extend `BaseOpenApiConfig` with `@Configuration` + `@OpenApiDefinition`; shared

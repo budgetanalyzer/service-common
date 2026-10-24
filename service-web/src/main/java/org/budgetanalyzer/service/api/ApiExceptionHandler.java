@@ -217,7 +217,7 @@ public interface ApiExceptionHandler {
       return new ResolvedError(HttpStatus.BAD_REQUEST, buildInvalidRequestError(exception));
     }
     if (throwable instanceof BusinessException exception) {
-      return new ResolvedError(HttpStatus.UNPROCESSABLE_ENTITY, buildBusinessError(exception));
+      return new ResolvedError(HttpStatus.UNPROCESSABLE_CONTENT, buildBusinessError(exception));
     }
     if (throwable instanceof ClientException exception) {
       return new ResolvedError(

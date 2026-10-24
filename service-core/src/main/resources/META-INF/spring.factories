@@ -1,3 +1,3 @@
-org.springframework.boot.env.EnvironmentPostProcessor=\
+org.springframework.boot.EnvironmentPostProcessor=\
 org.budgetanalyzer.core.config.PrometheusEndpointPostProcessor,\
 org.budgetanalyzer.core.config.ApplicationMetricTagPostProcessor

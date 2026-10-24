@@ -2,6 +2,9 @@ package org.budgetanalyzer.service.api;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -31,6 +34,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * );
  * </pre>
  *
+ * <p>JSON output uses the property order {@code index}, {@code field}, {@code message}, {@code
+ * rejectedValue}. Null {@code index} and {@code rejectedValue} values are omitted regardless of the
+ * application mapper's inclusion settings.
+ *
  * <p>In JSON responses, field errors appear in the {@code fieldErrors} array:
  *
  * <pre>
@@ -56,6 +63,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * @see ApiErrorType#VALIDATION_ERROR
  */
 @Schema(description = "Field-level validation error details")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({"index", "field", "message", "rejectedValue"})
 public class FieldError {
 
   @Schema(

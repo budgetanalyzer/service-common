@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonParseException;
+import tools.jackson.core.exc.StreamReadException;
 
 /** Unit tests for {@link InvalidRequestException}. */
 @DisplayName("InvalidRequestException Tests")
@@ -15,7 +15,7 @@ class InvalidRequestExceptionTest {
   @DisplayName("Should create exception with cause")
   void shouldCreateExceptionWithCause() {
     var message = "Failed to parse request body";
-    var cause = new JsonParseException(null, "Unexpected token");
+    var cause = new StreamReadException(null, "Unexpected token");
 
     var exception = new InvalidRequestException(message, cause);
 

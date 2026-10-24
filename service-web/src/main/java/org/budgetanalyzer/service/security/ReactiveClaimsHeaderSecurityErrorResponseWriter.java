@@ -1,6 +1,5 @@
 package org.budgetanalyzer.service.security;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.http.HttpHeaders;
@@ -8,9 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.server.ServerWebExchange;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import reactor.core.publisher.Mono;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.budgetanalyzer.service.api.ApiErrorResponse;
 import org.budgetanalyzer.service.api.ApiErrorType;
@@ -19,18 +18,18 @@ final class ReactiveClaimsHeaderSecurityErrorResponseWriter {
 
   private ReactiveClaimsHeaderSecurityErrorResponseWriter() {}
 
-  static Mono<Void> writeUnauthorized(ServerWebExchange exchange, ObjectMapper objectMapper) {
-    return writeReactiveResponse(exchange, HttpStatus.UNAUTHORIZED, objectMapper, unauthorized());
+  static Mono<Void> writeUnauthorized(ServerWebExchange exchange, JsonMapper jsonMapper) {
+    return writeReactiveResponse(exchange, HttpStatus.UNAUTHORIZED, jsonMapper, unauthorized());
   }
 
-  static Mono<Void> writeForbidden(ServerWebExchange exchange, ObjectMapper objectMapper) {
-    return writeReactiveResponse(exchange, HttpStatus.FORBIDDEN, objectMapper, forbidden());
+  static Mono<Void> writeForbidden(ServerWebExchange exchange, JsonMapper jsonMapper) {
+    return writeReactiveResponse(exchange, HttpStatus.FORBIDDEN, jsonMapper, forbidden());
   }
 
   private static Mono<Void> writeReactiveResponse(
       ServerWebExchange exchange,
       HttpStatus httpStatus,
-      ObjectMapper objectMapper,
+      JsonMapper jsonMapper,
       ApiErrorResponse apiErrorResponse) {
     var response = exchange.getResponse();
     response.setStatusCode(httpStatus);
@@ -38,8 +37,8 @@ final class ReactiveClaimsHeaderSecurityErrorResponseWriter {
 
     byte[] body;
     try {
-      body = objectMapper.writeValueAsBytes(apiErrorResponse);
-    } catch (IOException exception) {
+      body = jsonMapper.writeValueAsBytes(apiErrorResponse);
+    } catch (JacksonException exception) {
       body =
           "{\"type\":\"INTERNAL_ERROR\",\"message\":\"An unexpected error occurred\"}"
               .getBytes(StandardCharsets.UTF_8);

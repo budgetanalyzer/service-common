@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.http.MediaType;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.budgetanalyzer.service.api.ApiErrorResponse;
 import org.budgetanalyzer.service.api.ApiErrorType;
@@ -16,27 +16,26 @@ final class ClaimsHeaderSecurityErrorResponseWriter {
 
   private ClaimsHeaderSecurityErrorResponseWriter() {}
 
-  static void writeUnauthorized(HttpServletResponse response, ObjectMapper objectMapper)
+  static void writeUnauthorized(HttpServletResponse response, JsonMapper jsonMapper)
       throws IOException {
-    writeServletResponse(
-        response, HttpServletResponse.SC_UNAUTHORIZED, objectMapper, unauthorized());
+    writeServletResponse(response, HttpServletResponse.SC_UNAUTHORIZED, jsonMapper, unauthorized());
   }
 
-  static void writeForbidden(HttpServletResponse response, ObjectMapper objectMapper)
+  static void writeForbidden(HttpServletResponse response, JsonMapper jsonMapper)
       throws IOException {
-    writeServletResponse(response, HttpServletResponse.SC_FORBIDDEN, objectMapper, forbidden());
+    writeServletResponse(response, HttpServletResponse.SC_FORBIDDEN, jsonMapper, forbidden());
   }
 
   private static void writeServletResponse(
       HttpServletResponse response,
       int statusCode,
-      ObjectMapper objectMapper,
+      JsonMapper jsonMapper,
       ApiErrorResponse apiErrorResponse)
       throws IOException {
     response.setStatus(statusCode);
     response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    objectMapper.writeValue(response.getWriter(), apiErrorResponse);
+    jsonMapper.writeValue(response.getWriter(), apiErrorResponse);
   }
 
   private static ApiErrorResponse unauthorized() {

@@ -314,7 +314,10 @@ CREATE TABLE event_publication (
     event_type VARCHAR(512) NOT NULL,
     serialized_event TEXT NOT NULL,
     publication_date TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    completion_date TIMESTAMP(6) WITH TIME ZONE     -- NULL = pending
+    completion_date TIMESTAMP(6) WITH TIME ZONE,    -- NULL = pending
+    status VARCHAR(20),
+    completion_attempts INT,
+    last_resubmission_date TIMESTAMP(6) WITH TIME ZONE
 );
 
 CREATE INDEX idx_event_publication_unpublished
@@ -322,13 +325,18 @@ CREATE INDEX idx_event_publication_unpublished
     WHERE completion_date IS NULL;
 ```
 
+The table must match the columns the managed Spring Modulith version maps; compare it with the
+current schema in the [Spring Modulith reference appendix](https://docs.spring.io/spring-modulith/reference/appendix.html).
+With `ddl-auto: validate`, add new columns through a Flyway migration before upgrading Spring
+Modulith.
+
 **Application Configuration:**
 ```yaml
 spring:
   modulith:
     events:
       republish-outstanding-events-on-restart: true
-      delete-completion-after: 30d
+      completion-mode: update  # Default: keep completed publications (alternatives: delete, archive)
 
   cloud:
     function:
@@ -571,9 +579,9 @@ CREATE TABLE shedlock (
 
 **Dependencies:**
 ```kotlin
-// build.gradle.kts
-implementation("net.javacrumbs.shedlock:shedlock-spring:5.2.0")
-implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.2.0")
+// build.gradle.kts (versions managed by spring-platform)
+implementation("net.javacrumbs.shedlock:shedlock-spring")
+implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template")
 ```
 
 ### Lock Duration Guidelines

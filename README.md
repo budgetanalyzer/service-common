@@ -18,7 +18,7 @@ Service Common is a **multi-module Gradle project** that provides common functio
 **Provides**:
 - Spring Boot dependency BOM import
 - Spring Modulith dependency BOM import
-- Shared version constraints for SpringDoc, Testcontainers, WireMock, Awaitility, and ShedLock
+- Shared version constraints for SpringDoc, WireMock, Awaitility, and ShedLock (Testcontainers is managed by the imported Spring Boot BOM)
 
 **Behavior**: Version management only. It does not add runtime dependencies, application code, or autoconfiguration.
 
@@ -53,7 +53,7 @@ Service Common is a **multi-module Gradle project** that provides common functio
 - Correlation ID support
 - OpenAPI/Swagger base configuration
 
-**Dependencies**: service-core (transitive), Spring Boot Starter Web/WebFlux, SpringDoc OpenAPI
+**Dependencies**: service-core (transitive), Spring Boot Starter WebMVC/WebFlux, SpringDoc OpenAPI
 
 **Note**: Actuator (health checks, metrics) comes from service-core and is available to all services (web and non-web).
 
@@ -70,10 +70,10 @@ Service Common promotes code reuse and consistency across microservices by:
 ## Technology Stack
 
 - **Java 25**
-- **Spring Boot 3.x** (Starter Web, Data JPA)
+- **Spring Boot** (Starter WebMVC/WebFlux, Data JPA; version managed by `spring-platform`)
 - **SpringDoc OpenAPI** for API documentation
 - **OpenCSV** for CSV file processing
-- **JUnit 5** for testing
+- **JUnit Jupiter** for testing
 
 ## Usage
 
@@ -177,8 +177,14 @@ budgetanalyzer:
 **No component scanning needed** - Spring Boot autoconfiguration handles everything via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
 The shared claims-header security configuration provides the default Spring Security filter chain.
-If a consuming service defines its own `SecurityFilterChain` or `SecurityWebFilterChain`, the
-shared default chain backs off so the service's custom rules win deterministically.
+The two stacks handle consumer-defined chains differently. On the servlet stack, the shared chain
+matches every request and coexists with consumer chains: to own specific paths, a service registers
+a `SecurityFilterChain` with a lower `@Order` and a `securityMatcher`, and requests it does not
+match fall through to the shared chain. A servlet consumer chain without a `securityMatcher` makes
+one of the chains unreachable, and Spring Security fails at startup. On the reactive stack, the
+shared `SecurityWebFilterChain` backs off when a service defines any `SecurityWebFilterChain`
+bean. The service's chain then owns all authentication and authorization rules, while
+`@PreAuthorize` method security stays enforced.
 
 #### Discovering What's Autoconfigured
 
@@ -251,6 +257,9 @@ it does not publish service-common artifacts.
 # Run tests
 ./gradlew test
 
+# Run the isolated servlet and reactive consumer-classpath smoke suites (also run by check)
+./gradlew :service-web:servletSmokeTest :service-web:reactiveSmokeTest
+
 # Run tests and generate JaCoCo coverage reports
 ./gradlew test jacocoTestReport
 
@@ -266,6 +275,51 @@ JaCoCo report generation is configured for the Java library modules only:
 `service-web/build/reports/jacoco/test/html/index.html`. XML reports are written
 next to the HTML reports for CI/dashboard ingestion. `check` enforces the
 configured coverage gates.
+
+The coverage reports and gates cover each module's `test` task. `service-web` also
+defines `servletSmokeTest` and `reactiveSmokeTest` suites (`service-web/src/servletSmokeTest/`
+and `service-web/src/reactiveSmokeTest/`). Each suite depends on the project's own api and
+runtime variants through `implementation(project())`, plus a single web stack, Spring Security,
+and the matching SpringDoc starter, without JPA or the combined test classpath. They start
+minimal fixture applications through normal Boot auto-configuration and verify, over real HTTP:
+startup and classpath isolation, shared security and method security wiring, `ApiErrorResponse`
+handling, actuator probes and Prometheus, and SpringDoc serving the shared error documentation,
+including preservation of explicit controller responses and the generated schema and example
+contents.
+
+The `src/<suiteName>/java` and `src/<suiteName>/resources` directories are Gradle JVM test
+suite conventions. The isolated suites are permanent guards against optional-dependency and
+auto-configuration regressions; selecting an application type on the combined test classpath is
+not equivalent, because the other stack and JPA remain on the classpath.
+
+The suites do not exercise the generated POM or Gradle module metadata files, or the versions
+written into them by `versionMapping`. Verifying published metadata requires consumer builds
+against `publishToMavenLocal`; the smoke suites do not satisfy that gate. Neither suite adds
+published dependencies.
+
+### CI Artifacts
+
+The `Build` workflow (`.github/workflows/build.yml`) runs `./gradlew build` as the test gate
+and uploads these artifacts to the workflow run, each retained for seven days:
+
+- `test-results`: JUnit XML from every test task (`**/build/test-results/*/*.xml`) and the HTML
+  reports with their supporting files (`**/build/reports/tests/**`). Module and task directories
+  are preserved, so `service-core` and `service-web` `test`, `servletSmokeTest`, and
+  `reactiveSmokeTest` results stay distinguishable. Open `<module>/build/reports/tests/<task>/index.html`
+  for the navigable report.
+- `publication-metadata`: the generated `pom-default.xml` and Gradle `module.json` for each of
+  the four `mavenJava` publications (`**/build/publications/mavenJava/`), produced by
+  `generatePomFileForMavenJavaPublication` and `generateMetadataFileForMavenJavaPublication`
+  without running any publish task.
+- `jars`: the built JARs (uploaded only when the preceding steps succeed).
+
+The report upload, metadata generation, and metadata upload steps run even when an earlier step
+fails, and those failures still fail the run. They collect whatever files exist; a compilation or
+dependency-resolution failure can leave either artifact empty or partial, and the upload then
+warns instead of failing. Archived POM and module files make the generated metadata reviewable,
+but they do not exercise consumer dependency resolution and do not replace the consumer-build
+release gate described in
+[docs/versioning-and-compatibility.md](docs/versioning-and-compatibility.md).
 
 ## Code Quality
 
@@ -311,6 +365,8 @@ service-common/
 │   │       ├── http/                # HTTP filters/logging
 │   │       └── config/              # OpenAPI config
 │   ├── src/test/java/
+│   ├── src/servletSmokeTest/        # Isolated servlet consumer-classpath smoke suite
+│   ├── src/reactiveSmokeTest/       # Isolated reactive consumer-classpath smoke suite
 │   └── build.gradle.kts
 ├── build.gradle.kts                 # Root build configuration
 ├── settings.gradle.kts              # Multi-module setup

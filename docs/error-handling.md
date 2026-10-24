@@ -31,6 +31,23 @@ All Budget Analyzer microservices use a standardized error response format provi
 | `code` | String | No | Machine-readable error code (for `APPLICATION_ERROR`) |
 | `fieldErrors` | Array | No | Field-level validation errors (for `VALIDATION_ERROR`) |
 
+### Serialization Policy
+
+`ApiErrorResponse` and `FieldError` declare their JSON inclusion and property order on the models,
+so every serializer that honors Jackson annotations produces the same shape regardless of the
+application mapper's settings:
+
+- `ApiErrorResponse` properties are written in the order `type`, `message`, `code`, `fieldErrors`.
+- `FieldError` properties are written in the order `index`, `field`, `message`, `rejectedValue`.
+- Null optional properties (`code`, `fieldErrors`, `index`, `rejectedValue`) are omitted, even when
+  the application mapper is configured to include nulls. Empty lists and empty strings are kept.
+- A null `rejectedValue` is therefore indistinguishable from an absent one on the wire.
+
+Treat property order as a readability policy; clients and tests should compare parsed structure and
+values instead of raw JSON text. Direct writers (security entry points and the reactive fallback
+handler) serialize through the application's Boot-managed `JsonMapper` bean, so mapper
+customizations such as indentation still apply.
+
 ## Constructing Error Responses
 
 Use the required-field construction APIs when creating error responses or field-level validation
@@ -47,8 +64,9 @@ var response = ApiErrorResponse.builder(
 ```
 
 For batch validation, use `FieldError.forIndexedField(index, field, message, rejectedValue)`.
-`rejectedValue` may be null because null is often the rejected input. Optional response fields such
-as `code` and `fieldErrors` remain optional.
+`rejectedValue` may be null because null is often the rejected input; a null value is omitted from
+JSON. Optional response fields such as `code` and `fieldErrors` remain optional and are omitted
+when null.
 
 `ApiErrorResponse` rejects missing `type` and `message` at build time. All `FieldError` factories
 require `field` and `message`.
@@ -84,7 +102,7 @@ Throwable
     └── ClientException (400 - Bad Request)
         ├── ResourceNotFoundException (404 - Not Found)
         ├── InvalidRequestException (400 - Bad Request)
-        └── BusinessException (422 - Unprocessable Entity)
+        └── BusinessException (422 - Unprocessable Content)
 ```
 
 ### Exception Details
@@ -130,7 +148,7 @@ public Transaction processImport(MultipartFile file) {
 ```
 
 #### BusinessException
-- **HTTP Status**: 422 Unprocessable Entity
+- **HTTP Status**: 422 Unprocessable Content
 - **Error Type**: `APPLICATION_ERROR`
 - **Use Case**: Business rule violations with application-specific error codes
 - **Special**: Includes `code` field for machine-readable error identification
@@ -198,6 +216,11 @@ reactive filter-level failures:
 
 Services may override the default reactive `ErrorWebExceptionHandler` by defining their own
 `ErrorWebExceptionHandler` bean.
+
+If the `JsonMapper` cannot serialize the error response, `ReactiveErrorWebExceptionHandler` leaves
+the response untouched and propagates the `JacksonException` through the returned publisher, so any
+remaining WebFlux exception handlers or the server's default 500 handling apply. The reactive
+claims-header security responses instead write a minimal 500 `INTERNAL_ERROR` JSON body.
 
 ### How It Works
 

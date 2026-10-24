@@ -7,14 +7,16 @@ import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Unit tests for {@link ApiErrorResponse}. */
 @DisplayName("ApiErrorResponse Tests")
 class ApiErrorResponseTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final JsonMapper jsonMapper = new JsonMapper();
 
   @Test
   @DisplayName("Should build error response with required fields only")
@@ -216,11 +218,11 @@ class ApiErrorResponseTest {
             .fieldErrors(List.of(FieldError.forField("email", "invalid format", "bad-email")))
             .build();
 
-    var json = objectMapper.readTree(objectMapper.writeValueAsString(response));
+    var json = jsonMapper.readTree(jsonMapper.writeValueAsString(response));
 
-    assertThat(json.path("type").asText()).isEqualTo("VALIDATION_ERROR");
+    assertThat(json.path("type").asString()).isEqualTo("VALIDATION_ERROR");
     assertThat(json.has("message")).isTrue();
-    assertThat(json.path("fieldErrors").get(0).path("field").asText()).isEqualTo("email");
+    assertThat(json.path("fieldErrors").get(0).path("field").asString()).isEqualTo("email");
     assertThat(json.path("fieldErrors").get(0).has("message")).isTrue();
   }
 
@@ -244,5 +246,59 @@ class ApiErrorResponseTest {
 
     assertThat(response1.getType()).isEqualTo(ApiErrorType.NOT_FOUND);
     assertThat(response2.getType()).isEqualTo(ApiErrorType.INTERNAL_ERROR);
+  }
+
+  @ParameterizedTest
+  @MethodSource("org.budgetanalyzer.service.api.ErrorModelJsonMappers#mappers")
+  @DisplayName("Should serialize populated optional fields in explicit property order")
+  void shouldSerializePopulatedOptionalFieldsInExplicitPropertyOrder(JsonMapper mapper) {
+    var response =
+        ApiErrorResponse.builder(ApiErrorType.VALIDATION_ERROR, "Validation failed")
+            .code("VALIDATION_001")
+            .fieldErrors(List.of(FieldError.forIndexedField(3, "email", "invalid", "bad-email")))
+            .build();
+
+    var json = mapper.readTree(mapper.writeValueAsString(response));
+
+    assertThat(ErrorModelJsonMappers.propertyNames(json))
+        .containsExactly("type", "message", "code", "fieldErrors");
+    assertThat(json.path("type").asString()).isEqualTo("VALIDATION_ERROR");
+    assertThat(json.path("message").asString()).isEqualTo("Validation failed");
+    assertThat(json.path("code").asString()).isEqualTo("VALIDATION_001");
+    assertThat(ErrorModelJsonMappers.propertyNames(json.path("fieldErrors").get(0)))
+        .containsExactly("index", "field", "message", "rejectedValue");
+  }
+
+  @ParameterizedTest
+  @MethodSource("org.budgetanalyzer.service.api.ErrorModelJsonMappers#mappers")
+  @DisplayName("Should omit null optional fields")
+  void shouldOmitNullOptionalFields(JsonMapper mapper) {
+    var response = ApiErrorResponse.builder(ApiErrorType.NOT_FOUND, "Missing resource").build();
+
+    var json = mapper.readTree(mapper.writeValueAsString(response));
+
+    assertThat(ErrorModelJsonMappers.propertyNames(json)).containsExactly("type", "message");
+    assertThat(json.path("type").asString()).isEqualTo("NOT_FOUND");
+    assertThat(json.path("message").asString()).isEqualTo("Missing resource");
+  }
+
+  @ParameterizedTest
+  @MethodSource("org.budgetanalyzer.service.api.ErrorModelJsonMappers#mappers")
+  @DisplayName("Should keep empty field errors list and empty code")
+  void shouldKeepEmptyFieldErrorsListAndEmptyCode(JsonMapper mapper) {
+    var response =
+        ApiErrorResponse.builder(ApiErrorType.VALIDATION_ERROR, "Validation failed")
+            .code("")
+            .fieldErrors(List.of())
+            .build();
+
+    var json = mapper.readTree(mapper.writeValueAsString(response));
+
+    assertThat(ErrorModelJsonMappers.propertyNames(json))
+        .containsExactly("type", "message", "code", "fieldErrors");
+    assertThat(json.path("code").isString()).isTrue();
+    assertThat(json.path("code").asString()).isEmpty();
+    assertThat(json.path("fieldErrors").isArray()).isTrue();
+    assertThat(json.path("fieldErrors").isEmpty()).isTrue();
   }
 }

@@ -21,6 +21,11 @@ version inherited from the Spring Boot, Spring Cloud, or Spring Modulith BOMs
 into an independently updateable declaration. The resolved dependency graph
 described below is the security inventory for those inherited versions.
 
+`spring-platform` declares direct constraints only for libraries that its
+imported BOMs do not manage. Do not add a constraint that duplicates or
+overrides an imported BOM version, such as Testcontainers from the Spring Boot
+BOM; Renovate then follows those versions through the BOM update.
+
 The repository-local rule for
 `org.springframework.cloud:spring-cloud-dependencies` disables minor and major
 updates. Those updates change the Spring Cloud release train and are suppressed

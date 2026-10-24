@@ -84,9 +84,12 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
         withJavadocJar()
     }
 
+    tasks.named<Test>("test") {
+        finalizedBy(tasks.named("jacocoTestReport"))
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
-        finalizedBy(tasks.named("jacocoTestReport"))
         testLogging {
             events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED)
             exceptionFormat = TestExceptionFormat.FULL
@@ -137,8 +140,8 @@ configure(subprojects.filter { it.name !in platformProjectNames }) {
                 // Update these URLs when upgrading Spring Boot or Jakarta EE versions
                 links(
                     "https://docs.oracle.com/en/java/javase/25/docs/api/",
-                    "https://docs.spring.io/spring-framework/docs/6.2.2/javadoc-api/",
-                    "https://jakarta.ee/specifications/platform/10/apidocs/"
+                    "https://docs.spring.io/spring-framework/docs/7.0.10/javadoc-api/",
+                    "https://jakarta.ee/specifications/platform/11/apidocs/"
                 )
             }
         }
