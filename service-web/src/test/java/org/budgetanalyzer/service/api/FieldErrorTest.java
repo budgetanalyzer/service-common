@@ -9,6 +9,10 @@ import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import tools.jackson.databind.json.JsonMapper;
 
 /** Unit tests for {@link FieldError}. */
 @DisplayName("FieldError Tests")
@@ -261,5 +265,51 @@ class FieldErrorTest {
     var fieldError = FieldError.forField("email", "invalid format", "bad-email");
 
     assertThat(fieldError.getIndex()).isNull();
+  }
+
+  @ParameterizedTest
+  @MethodSource("org.budgetanalyzer.service.api.ErrorModelJsonMappers#mappers")
+  @DisplayName("Should serialize indexed field error in explicit property order")
+  void shouldSerializeIndexedFieldErrorInExplicitPropertyOrder(JsonMapper mapper) {
+    var fieldError = FieldError.forIndexedField(44, "amount", "must be positive", "-100");
+
+    var json = mapper.readTree(mapper.writeValueAsString(fieldError));
+
+    assertThat(ErrorModelJsonMappers.propertyNames(json))
+        .containsExactly("index", "field", "message", "rejectedValue");
+    assertThat(json.path("index").asInt()).isEqualTo(44);
+    assertThat(json.path("field").asString()).isEqualTo("amount");
+    assertThat(json.path("message").asString()).isEqualTo("must be positive");
+    assertThat(json.path("rejectedValue").asString()).isEqualTo("-100");
+  }
+
+  @ParameterizedTest
+  @MethodSource("org.budgetanalyzer.service.api.ErrorModelJsonMappers#mappers")
+  @DisplayName("Should omit null index and rejected value")
+  void shouldOmitNullIndexAndRejectedValue(JsonMapper mapper) {
+    var fieldError = FieldError.forField("description", "must not be null", null);
+
+    var json = mapper.readTree(mapper.writeValueAsString(fieldError));
+
+    assertThat(ErrorModelJsonMappers.propertyNames(json)).containsExactly("field", "message");
+    assertThat(json.path("field").asString()).isEqualTo("description");
+    assertThat(json.path("message").asString()).isEqualTo("must not be null");
+  }
+
+  @ParameterizedTest
+  @MethodSource("org.budgetanalyzer.service.api.ErrorModelJsonMappers#mappers")
+  @DisplayName("Should keep empty rejected values")
+  void shouldKeepEmptyRejectedValues(JsonMapper mapper) {
+    var emptyString =
+        mapper.readTree(mapper.writeValueAsString(FieldError.forField("name", "blank", "")));
+    var emptyList =
+        mapper.readTree(mapper.writeValueAsString(FieldError.forField("tags", "empty", List.of())));
+
+    assertThat(ErrorModelJsonMappers.propertyNames(emptyString))
+        .containsExactly("field", "message", "rejectedValue");
+    assertThat(emptyString.path("rejectedValue").isString()).isTrue();
+    assertThat(emptyString.path("rejectedValue").asString()).isEmpty();
+    assertThat(emptyList.path("rejectedValue").isArray()).isTrue();
+    assertThat(emptyList.path("rejectedValue").isEmpty()).isTrue();
   }
 }

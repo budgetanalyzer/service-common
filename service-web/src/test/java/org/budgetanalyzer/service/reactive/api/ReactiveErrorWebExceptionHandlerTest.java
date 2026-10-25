@@ -23,23 +23,24 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import reactor.test.StepVerifier;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.budgetanalyzer.service.api.ApiErrorType;
+import org.budgetanalyzer.service.api.FailingApiErrorResponseSerializer;
 
 /** Unit tests for {@link ReactiveErrorWebExceptionHandler}. */
 @DisplayName("ReactiveErrorWebExceptionHandler Tests")
 class ReactiveErrorWebExceptionHandlerTest {
 
-  private ObjectMapper objectMapper;
+  private JsonMapper jsonMapper;
   private ReactiveErrorWebExceptionHandler reactiveErrorWebExceptionHandler;
 
   @BeforeEach
   void setUp() {
-    objectMapper = new ObjectMapper();
-    reactiveErrorWebExceptionHandler = new ReactiveErrorWebExceptionHandler(objectMapper);
+    jsonMapper = new JsonMapper();
+    reactiveErrorWebExceptionHandler = new ReactiveErrorWebExceptionHandler(jsonMapper);
   }
 
   @Test
@@ -54,10 +55,10 @@ class ReactiveErrorWebExceptionHandlerTest {
         .verifyComplete();
 
     var serializedResponse = exchange.getResponse().getBodyAsString().block();
-    var responseBody = objectMapper.readTree(serializedResponse);
+    var responseBody = jsonMapper.readTree(serializedResponse);
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.INTERNAL_ERROR.name());
+    assertThat(responseBody.path("type").asString()).isEqualTo(ApiErrorType.INTERNAL_ERROR.name());
     assertThat(serializedResponse).doesNotContain(internalSecret);
   }
 
@@ -71,10 +72,10 @@ class ReactiveErrorWebExceptionHandlerTest {
                 exchange, new ResponseStatusException(HttpStatus.NOT_FOUND, "Missing resource")))
         .verifyComplete();
 
-    var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
+    var responseBody = jsonMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.NOT_FOUND.name());
+    assertThat(responseBody.path("type").asString()).isEqualTo(ApiErrorType.NOT_FOUND.name());
   }
 
   @Test
@@ -87,12 +88,12 @@ class ReactiveErrorWebExceptionHandlerTest {
     StepVerifier.create(reactiveErrorWebExceptionHandler.handle(exchange, exception))
         .verifyComplete();
 
-    var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
+    var responseBody = jsonMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
     assertThat(exchange.getResponse().getHeaders().getAllow())
         .isEqualTo(Set.of(HttpMethod.GET, HttpMethod.PUT));
-    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.INVALID_REQUEST.name());
+    assertThat(responseBody.path("type").asString()).isEqualTo(ApiErrorType.INVALID_REQUEST.name());
   }
 
   @Test
@@ -105,10 +106,10 @@ class ReactiveErrorWebExceptionHandlerTest {
                 exchange, new BadCredentialsException("Token expired")))
         .verifyComplete();
 
-    var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
+    var responseBody = jsonMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.UNAUTHORIZED.name());
+    assertThat(responseBody.path("type").asString()).isEqualTo(ApiErrorType.UNAUTHORIZED.name());
   }
 
   @Test
@@ -121,10 +122,10 @@ class ReactiveErrorWebExceptionHandlerTest {
                 exchange, new AccessDeniedException("Missing permission")))
         .verifyComplete();
 
-    var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
+    var responseBody = jsonMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.FORBIDDEN.name());
+    assertThat(responseBody.path("type").asString()).isEqualTo(ApiErrorType.FORBIDDEN.name());
   }
 
   @Test
@@ -144,13 +145,14 @@ class ReactiveErrorWebExceptionHandlerTest {
     StepVerifier.create(reactiveErrorWebExceptionHandler.handle(exchange, exception))
         .verifyComplete();
 
-    var responseBody = objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
+    var responseBody = jsonMapper.readTree(exchange.getResponse().getBodyAsString().block());
 
     assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(responseBody.path("type").asText()).isEqualTo(ApiErrorType.VALIDATION_ERROR.name());
+    assertThat(responseBody.path("type").asString())
+        .isEqualTo(ApiErrorType.VALIDATION_ERROR.name());
     assertThat(responseBody.path("fieldErrors").size()).isEqualTo(2);
-    assertThat(responseBody.path("fieldErrors").get(0).path("field").asText()).isEqualTo("name");
-    assertThat(responseBody.path("fieldErrors").get(1).path("field").asText()).isEqualTo("age");
+    assertThat(responseBody.path("fieldErrors").get(0).path("field").asString()).isEqualTo("name");
+    assertThat(responseBody.path("fieldErrors").get(1).path("field").asString()).isEqualTo("age");
   }
 
   @Test
@@ -199,6 +201,26 @@ class ReactiveErrorWebExceptionHandlerTest {
 
     assertThat(exchange.getResponse().getHeaders().getContentType())
         .isEqualTo(MediaType.APPLICATION_JSON);
+  }
+
+  @Test
+  @DisplayName("Should propagate serialization failure without writing a response")
+  void shouldPropagateSerializationFailureWithoutWritingResponse() {
+    var failingHandler =
+        new ReactiveErrorWebExceptionHandler(FailingApiErrorResponseSerializer.jsonMapper());
+    var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/test"));
+
+    StepVerifier.create(failingHandler.handle(exchange, new IllegalStateException("Boom")))
+        .expectErrorSatisfies(
+            throwable ->
+                assertThat(throwable)
+                    .isInstanceOf(JacksonException.class)
+                    .hasMessageContaining(FailingApiErrorResponseSerializer.FAILURE_MESSAGE))
+        .verify();
+
+    assertThat(exchange.getResponse().getStatusCode()).isNull();
+    assertThat(exchange.getResponse().getHeaders().getContentType()).isNull();
+    assertThat(exchange.getResponse().isCommitted()).isFalse();
   }
 
   private record TestRequest(String name, int age) {}

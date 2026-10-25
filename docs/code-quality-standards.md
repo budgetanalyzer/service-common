@@ -246,13 +246,13 @@ Class-level fields (instance variables and static fields) **MUST** use the full 
 // ✅ CORRECT - Full class name used
 private CurrencySeriesRepository currencySeriesRepository;
 private TransactionService transactionService;
-private ObjectMapper objectMapper;
+private JsonMapper jsonMapper;
 private static final Logger logger = LoggerFactory.getLogger(MyClass.class);
 
 // ❌ WRONG - Shortened/generic names
 private CurrencySeriesRepository repository;  // Too generic
 private TransactionService service;           // Too generic
-private ObjectMapper mapper;                  // Too short
+private JsonMapper mapper;                    // Too short
 ```
 
 ### Method-Level Variables (RECOMMENDED)

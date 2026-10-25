@@ -94,7 +94,7 @@ class ReactiveApiExceptionHandlerTest {
         .assertNext(
             response -> {
               assertThat(response).isNotNull();
-              assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+              assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);
@@ -115,7 +115,7 @@ class ReactiveApiExceptionHandlerTest {
         .assertNext(
             response -> {
               assertThat(response).isNotNull();
-              assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+              assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
               var body = response.getBody();
               assertThat(body).isNotNull();
               assertThat(body.getType()).isEqualTo(ApiErrorType.APPLICATION_ERROR);

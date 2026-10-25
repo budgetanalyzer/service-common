@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -114,7 +116,8 @@ class ServletApiExceptionHandlerTest {
   @Test
   @DisplayName("Should handle NoResourceFoundException with NOT_FOUND type and 404")
   void shouldHandleNoResourceFoundException() {
-    var exception = new NoResourceFoundException(HttpMethod.GET, "api/removed-route");
+    var exception =
+        new NoResourceFoundException(HttpMethod.GET, "/api/removed-route", "api/removed-route");
 
     var response = servletApiExceptionHandler.handle(exception);
 
@@ -268,6 +271,22 @@ class ServletApiExceptionHandlerTest {
 
     assertThat(response).isNotNull();
     assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
+  }
+
+  @Test
+  @DisplayName("Should handle HttpMessageNotReadableException with INVALID_REQUEST type")
+  void shouldHandleHttpMessageNotReadableException() {
+    var deserializerDetail = "JSON parse error: Cannot map `null` into type `boolean`";
+    var exception =
+        new HttpMessageNotReadableException(
+            deserializerDetail, new MockHttpInputMessage(new byte[0]));
+
+    var response = servletApiExceptionHandler.handle(exception, webRequest);
+
+    assertThat(response.getType()).isEqualTo(ApiErrorType.INVALID_REQUEST);
+    assertThat(response.getMessage()).doesNotContain(deserializerDetail);
+    assertThat(response.getCode()).isNull();
+    assertThat(response.getFieldErrors()).isNull();
   }
 
   @Test

@@ -310,11 +310,13 @@ public class TransactionController {
 ### 5. Leverage Spring Boot Starters
 
 **Use starters for consistent configuration**:
-- `spring-boot-starter-web` - Web applications
+- `spring-boot-starter-webmvc` - Servlet web applications (`spring-boot-starter-webflux` for reactive)
 - `spring-boot-starter-data-jpa` - JPA repositories
 - `spring-boot-starter-validation` - Bean Validation
 - `spring-boot-starter-actuator` - Metrics and health checks
-- `spring-boot-starter-test` - Testing dependencies
+- Technology test starters (`spring-boot-starter-webmvc-test`, `spring-boot-starter-webflux-test`,
+  `spring-boot-starter-data-jpa-test`, `spring-boot-starter-security-test`) - Testing dependencies;
+  each includes `spring-boot-starter-test`
 
 ### 6. Use @ConfigurationProperties for Type-Safe Configuration
 
@@ -489,11 +491,33 @@ log.info("State: {}", SafeLogger.truncateId(state, 6));          // "a1b2c3…"
 // null → "[null]", empty or too short → "***"
 ```
 
+**`SafeLogger.toJson()` serialization rules:**
+- Uses a private, immutable logging mapper. `@Sensitive` masking applies only there; the
+  application's API mapper and any other mapper serialize annotated values unchanged.
+- `@Sensitive` works on fields, getters, and record components. Only the value is replaced; Jackson
+  still owns property names, null handling, `@JsonInclude` rules (an empty sensitive string is
+  omitted under `NON_EMPTY`), and bean shapes such as `@JsonFormat(shape = ARRAY)`. Masking takes
+  precedence over another serializer declared on the same member. Polymorphic sensitive properties
+  using `@JsonTypeInfo` are written as masked strings without type metadata.
+- Full masking writes a fixed eight-character mask; `showLast` reveals only trailing characters and
+  masks values that are not longer than `showLast` completely. Non-string values are masked from
+  their string form; null stays `null` and empty stays empty.
+- Properties are written in declaration order with indented output, and Java time values use
+  ISO-8601 strings.
+- Types without serializable properties serialize as `{}`. `toString()` is never used as a
+  fallback, because it can expose private secrets that bypass `@Sensitive`. When a log line needs
+  a type's string form, pass an explicitly known-safe string value (for example
+  `request.getMethod().name()`) instead of the object.
+- Standard Jackson serializers, including `@JsonValue`, are preserved.
+
 **What IS automatic** (when HTTP logging is enabled via `budgetanalyzer.service.http-logging`):
 - **Header masking** — `Authorization`, `Cookie`, `Set-Cookie`, and other sensitive headers are
   redacted automatically by the HTTP logging filters
 - **Body field sanitization** — JSON and form body fields matching sensitive names (`password`,
-  `secret`, `token`, `apikey`, etc.) are redacted automatically
+  `secret`, `token`, `apikey`, etc.) are redacted automatically. Structured bodies that cannot be
+  parsed as a single complete JSON document are omitted with a placeholder instead of logged:
+  truncated or invalid JSON, trailing content, and multi-record NDJSON. A single NDJSON record
+  with a trailing line break is still sanitized and logged.
 - **Query parameter sanitization** — OAuth2 and credential-related query params (`code`, `state`,
   `token`, `password`, `secret`, etc.) are redacted automatically
 

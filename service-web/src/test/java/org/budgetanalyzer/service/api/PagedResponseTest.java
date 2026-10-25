@@ -10,13 +10,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Unit tests for {@link PagedResponse}. */
 @DisplayName("PagedResponse Tests")
 class PagedResponseTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final JsonMapper jsonMapper = new JsonMapper();
 
   @Test
   @DisplayName("Should create paged response for empty page")
@@ -88,7 +88,7 @@ class PagedResponseTest {
 
     var response = PagedResponse.from(page);
 
-    var json = objectMapper.writeValueAsString(response);
+    var json = jsonMapper.writeValueAsString(response);
 
     assertThat(json)
         .isEqualTo(

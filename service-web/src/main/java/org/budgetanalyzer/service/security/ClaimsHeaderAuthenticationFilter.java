@@ -17,7 +17,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Servlet filter that reads pre-validated claims headers and populates the SecurityContext.
@@ -47,15 +47,15 @@ public class ClaimsHeaderAuthenticationFilter extends OncePerRequestFilter {
   private static final Logger logger =
       LoggerFactory.getLogger(ClaimsHeaderAuthenticationFilter.class);
 
-  private final ObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
 
   /**
    * Creates a new claims-header authentication filter.
    *
-   * @param objectMapper the ObjectMapper used for JSON error responses
+   * @param jsonMapper the JsonMapper used for JSON error responses
    */
-  public ClaimsHeaderAuthenticationFilter(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
+  public ClaimsHeaderAuthenticationFilter(JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
@@ -83,7 +83,7 @@ public class ClaimsHeaderAuthenticationFilter extends OncePerRequestFilter {
           "Rejecting malformed claims headers for {}: {}",
           request.getRequestURI(),
           exception.getMessage());
-      ClaimsHeaderSecurityErrorResponseWriter.writeUnauthorized(response, objectMapper);
+      ClaimsHeaderSecurityErrorResponseWriter.writeUnauthorized(response, jsonMapper);
       return;
     }
 

@@ -13,7 +13,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Unit tests for {@link ClaimsHeaderAuthenticationFilter}.
@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 class ClaimsHeaderAuthenticationFilterTest {
 
   private final ClaimsHeaderAuthenticationFilter filter =
-      new ClaimsHeaderAuthenticationFilter(new ObjectMapper());
+      new ClaimsHeaderAuthenticationFilter(new JsonMapper());
 
   @AfterEach
   void cleanup() {
