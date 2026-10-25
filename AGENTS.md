@@ -644,7 +644,7 @@ All four artifacts are versioned and released together as a coordinated set.
 
 **When to use advanced patterns**: External integrations, messaging, caching, distributed systems, scheduled tasks.
 
-**Pattern**: Provider abstraction (external APIs), Transactional Outbox (guaranteed messaging), Redis caching (performance), ShedLock (distributed locking), Flyway (database migrations).
+**Pattern**: Provider abstraction (external APIs), Transactional Outbox (durable, confirmed messaging), Redis caching (performance), ShedLock (distributed locking), Flyway (database migrations).
 
 **When to consult details**:
 - Integrating external APIs → Read [Provider Abstraction Pattern](docs/advanced-patterns.md#provider-abstraction-pattern)
@@ -655,7 +655,7 @@ All four artifacts are versioned and released together as a coordinated set.
 
 **Quick reference**:
 - Provider Pattern: Service → Interface → Implementation → External Client (decouples from external dependencies)
-- Transactional Outbox: Publications stored atomically with business data in the same transaction, sent to RabbitMQ after commit (delivery is not guaranteed, and nothing retries a failed send)
+- Transactional Outbox: Publications stored atomically with business data in the same transaction, sent to RabbitMQ after commit. RabbitMQ outbox publishers must use broker publisher confirms and fail the listener on a nack, a returned message, or a confirm timeout (wait on each message only in low-volume publishers); a failed send leaves the publication `FAILED`, and nothing retries it.
 - Redis Caching: `@Cacheable` on queries, `@CacheEvict` on updates (50-200x faster responses)
 - ShedLock: `@SchedulerLock` on `@Scheduled` methods (runs once across all pods)
 - Flyway: `V{version}__{description}.sql` migrations (never modify committed migrations)
