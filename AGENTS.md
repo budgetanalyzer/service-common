@@ -655,7 +655,7 @@ All four artifacts are versioned and released together as a coordinated set.
 
 **Quick reference**:
 - Provider Pattern: Service → Interface → Implementation → External Client (decouples from external dependencies)
-- Transactional Outbox: Events persisted in DB with business data, 100% guaranteed delivery to RabbitMQ
+- Transactional Outbox: Publications stored atomically with business data in the same transaction, sent to RabbitMQ after commit (delivery is not guaranteed, and nothing retries a failed send)
 - Redis Caching: `@Cacheable` on queries, `@CacheEvict` on updates (50-200x faster responses)
 - ShedLock: `@SchedulerLock` on `@Scheduled` methods (runs once across all pods)
 - Flyway: `V{version}__{description}.sql` migrations (never modify committed migrations)
