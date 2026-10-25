@@ -168,8 +168,10 @@ HTTP Request (Thread 1)
 After commit (task executor thread)
   └─> Spring Modulith invokes @ApplicationModuleListener asynchronously
       ├─> Listener publishes to RabbitMQ (StreamBridge.send)
+      ├─> Listener waits, with a timeout, for the broker's publisher confirm
       └─> Spring Modulith marks the publication COMPLETED when the listener returns
-          (a listener that throws leaves it FAILED)
+          (a nack, a returned message, a confirm timeout, or any other exception
+          makes the listener throw and leaves the publication FAILED)
 ```
 
 ### Pattern Components
@@ -218,8 +220,10 @@ public class MessagingEventListener {
      * @ApplicationModuleListener enables transactional outbox:
      * - Event already persisted before this runs
      * - Runs asynchronously after transaction commits
-     * - Marked COMPLETED when this method returns
-     * - If this method throws, the publication stays FAILED and incomplete;
+     * - Marked COMPLETED when this method returns, which happens only after
+     *   the broker confirms and routes the message
+     * - If this method throws (including on a nack, a returned message, or a
+     *   confirm timeout), the publication stays FAILED and incomplete;
      *   nothing retries it automatically
      */
     @ApplicationModuleListener
@@ -241,16 +245,59 @@ public class MessagingEventListener {
 ```
 
 **4. Message Publishers** (messaging/publisher/):
+
+RabbitMQ outbox publishers must use publisher confirms. The publisher returns only after the
+broker acks and routes the message, and throws on a nack, a returned message, or a confirm timeout,
+so the listener fails and the publication stays `FAILED`. Abridged example (the full reference is
+currency-service's
+[`ExchangeRateImportMessagePublisher`](../../currency-service/src/main/java/org/budgetanalyzer/currency/messaging/publisher/ExchangeRateImportMessagePublisher.java)):
 ```java
 @Component
 public class CurrencyMessagePublisher {
+    private static final String BINDING = "currencyCreated-out-0";
+
     private final StreamBridge streamBridge;
+    private final Duration publishConfirmTimeout;  // From a validated service property
 
     public void publishCurrencyCreated(CurrencyCreatedMessage message) {
-        streamBridge.send("currencyCreated-out-0", message);
+        var correlationData = new CorrelationData(UUID.randomUUID().toString());
+        var outboundMessage = MessageBuilder.withPayload(message)
+            .setHeader(AmqpHeaders.PUBLISH_CONFIRM_CORRELATION, correlationData)
+            .build();
+
+        if (!streamBridge.send(BINDING, outboundMessage)) {
+            throw new MessagePublishException("Binding rejected message: " + correlationData.getId());
+        }
+
+        CorrelationData.Confirm confirm;
+        try {
+            confirm = correlationData.getFuture()
+                .get(publishConfirmTimeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new MessagePublishException("Interrupted waiting for confirm", e);
+        } catch (TimeoutException e) {
+            throw new MessagePublishException("No broker confirm within " + publishConfirmTimeout, e);
+        } catch (ExecutionException e) {
+            throw new MessagePublishException("Broker confirm failed", e.getCause());
+        }
+
+        // The broker returns an unroutable mandatory message and then acks it,
+        // so check for a return after the confirm completes
+        var returned = correlationData.getReturned();
+        if (returned != null) {
+            throw new MessagePublishException("Broker returned message: " + returned.getReplyText());
+        }
+        if (!confirm.ack()) {
+            throw new MessagePublishException("Broker nacked message: " + confirm.reason());
+        }
     }
 }
 ```
+
+`MessagePublishException` is a service-owned unchecked exception. The binding and connection
+settings the confirm needs are under [Configuration](#configuration), and the threading and
+throughput rules are under [Confirm Handling and Throughput](#confirm-handling-and-throughput).
 
 **5. Message Consumers** (messaging/consumer/):
 ```java
@@ -285,7 +332,7 @@ and [appendix](https://docs.spring.io/spring-modulith/reference/appendix.html).
 |--------|---------|
 | `PUBLISHED` | Stored with the business transaction; waiting for the listener |
 | `PROCESSING` | A listener claimed the publication and is running |
-| `COMPLETED` | The listener returned without throwing |
+| `COMPLETED` | The listener returned without throwing; for a confirmed RabbitMQ publisher, the broker confirmed and routed the message |
 | `FAILED` | The listener threw, or the staleness monitor marked the publication failed |
 | `RESUBMITTED` | Application code resubmitted a failed publication; it is pending again |
 
@@ -330,12 +377,15 @@ states without a timeout
 
 This guide does not recommend calling these APIs. See [Outbox Recovery](#outbox-recovery).
 
-**What `COMPLETED` means**: the listener returned. For a RabbitMQ publisher, that proves the broker
-accepted and routed the message only when the publisher waits for a publisher confirm and checks
-for a returned message. The platform's outbox publishers do not configure publisher confirms or
-returns yet. Today, a send fails the listener (leaving the publication `FAILED`) only when
-`StreamBridge.send` throws, for example when the connection is unavailable. An unroutable message,
-or a broker-side failure after `StreamBridge.send` returns, is recorded as `COMPLETED`.
+**What `COMPLETED` means**: Spring Modulith records only that the listener returned. With the
+required confirmed publisher ([Pattern Components](#pattern-components-1) item 4), the listener
+returns only after the broker acked and routed the message, so `COMPLETED` means the broker
+confirmed and routed it. A connection failure, a nack, a returned (unroutable) message, or a
+confirm timeout fails the listener and leaves the publication `FAILED`. A publisher that skips the
+confirm pattern breaks this meaning: its `COMPLETED` proves only that `StreamBridge.send` returned,
+and an unroutable message or a broker-side failure is recorded as `COMPLETED`.
+
+A pod that crashes while waiting for the confirm leaves the publication `PROCESSING`, not `FAILED`.
 
 ### Consumer Error Handling
 
@@ -429,11 +479,32 @@ spring:
           #   max-attempts: 5
       rabbit:
         bindings:
+          currencyCreated-out-0:
+            producer:
+              use-confirm-header: true  # Correlate confirms and returns via the CorrelationData header
           importExchangeRates-in-0:
             consumer:
               auto-bind-dlq: true      # Bind a dead-letter queue
               republish-to-dlq: true   # Republish with exception details in headers
+
+  rabbitmq:
+    publisher-confirm-type: correlated  # Broker confirms each publish
+    publisher-returns: true             # Broker returns unroutable mandatory messages
 ```
+
+**Publisher confirms:** these three keys are all the confirm pattern needs; no producer
+`error-channel-enabled` is required.
+- `use-confirm-header: true` makes the binder publish with `mandatory`, so the broker returns an
+  unroutable message instead of dropping it, and the return is attached to the message's
+  `CorrelationData`.
+- `use-confirm-header` and the producer's `confirm-ack-channel` are mutually exclusive. Set only
+  `use-confirm-header`.
+- `publisher-confirm-type: correlated` applies to the whole connection factory, so the consumer's
+  `republish-to-dlq` also waits for the broker to confirm each dead-lettered message. If that
+  republish is nacked, returned, or not confirmed in time, the binder rejects the original message
+  without requeueing it instead of acknowledging it.
+
+See the [Spring Cloud Stream Rabbit publisher confirms reference](https://docs.spring.io/spring-cloud-stream/reference/rabbit/rabbit_overview/publisher-confirms.html).
 
 **Consumer retries:** Spring Cloud Stream's core consumer defaults apply: `maxAttempts` 3,
 `backOffInitialInterval` 1000 ms, `backOffMultiplier` 2.0, and `backOffMaxInterval` 10000 ms (see
@@ -443,6 +514,28 @@ under `spring.cloud.stream.rabbit.bindings.<binding>.consumer`: the Rabbit consu
 no retry fields, so the binder ignores them there. Keep `auto-bind-dlq` and `republish-to-dlq`
 under the Rabbit binding. Retries and the DLQ apply only to messages that reached RabbitMQ and
 never retry a failed outbox send.
+
+### Confirm Handling and Throughput
+
+- **Where the wait runs:** on the task-executor thread that runs the `@ApplicationModuleListener`
+  after the business transaction commits. HTTP request threads never wait for RabbitMQ.
+- **Low-volume publishers wait on each message:** waiting on each confirm with a bounded timeout
+  is the recommended default when a publisher sends a few messages per second at most. A healthy
+  broker confirms within milliseconds, so the timeout matters only when the broker is unhealthy.
+  Each waiting message holds one executor thread, so size the timeout and the executor pool
+  together.
+- **High-volume publishers still confirm, but do not wait on each message:** RabbitMQ recommends
+  batching confirms or handling them asynchronously for throughput (see the
+  [RabbitMQ publisher confirms tutorial](https://www.rabbitmq.com/tutorials/tutorial-seven-java)).
+  Before such a publisher adopts the outbox, it must design how a nack, a return, or a timeout
+  still marks the publication `FAILED`, and document that design in its own repository.
+- **Returning a `CompletableFuture` does not free the thread:** Spring Modulith completes or fails
+  the publication from a future that an `@ApplicationModuleListener` returns, but Spring's `@Async`
+  support calls `get()` on that future on the executor thread. Do not treat it as a non-blocking
+  alternative to the bounded wait.
+- **Spring Modulith takes the same approach:** its RabbitMQ `outbox` externalization mode requires
+  `spring.rabbitmq.publisher-confirm-type=correlated` and waits for the confirm on a background
+  worker. Its default externalization mode sends without waiting for confirms.
 
 ### Outbox Recovery
 
@@ -462,6 +555,9 @@ currency-service imports exchange rates for every enabled series at startup and 
 Each import starts after the latest stored rate, or loads the full history when none is stored, so
 it covers every import request a failed or lost send would have triggered.
 
+Publisher confirms make a failed send visible as `FAILED`, but they do not recover it: nothing
+resubmits `FAILED` publications, so reconciliation remains the recovery path.
+
 A service that cannot reconcile has no automatic recovery for a failed outbox send. Before adopting
 the outbox, such a service must add a reconciliation path or document the gap as an accepted risk
 in its own repository. This guide offers no resubmission job.
@@ -474,7 +570,8 @@ in its own repository. This guide offers no resubmission job.
    `event_publication` instead of losing it
 3. **Async HTTP Responses** - Request completes after DB commit, not RabbitMQ publish
 4. **Audit Trail** (with `completion-mode: update`) - Completed publications stay with timestamps.
-   `COMPLETED` means the listener returned, not that the broker confirmed the message (see
+   With the required confirmed publisher, `COMPLETED` means the broker confirmed and routed the
+   message, and a failed send stays `FAILED` (see
    [Publication Lifecycle](#publication-lifecycle-spring-modulith-2x))
 
 Incomplete publications stay queryable in `event_publication` for diagnosis. This guide does not
