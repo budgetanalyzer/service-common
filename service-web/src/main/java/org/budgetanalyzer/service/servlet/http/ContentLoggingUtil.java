@@ -174,35 +174,17 @@ public class ContentLoggingUtil {
   }
 
   /**
-   * Gets the client IP address from the request, checking proxy headers.
+   * Gets the client IP address from the trusted ingress header or the direct peer address.
    *
    * @param request The HTTP request
    * @return Client IP address
    */
   private static String getClientIpAddress(HttpServletRequest request) {
-    String[] headerNames = {
-      "X-Forwarded-For",
-      "Proxy-Client-IP",
-      "WL-Proxy-Client-IP",
-      "HTTP_X_FORWARDED_FOR",
-      "HTTP_X_FORWARDED",
-      "HTTP_X_CLUSTER_CLIENT_IP",
-      "HTTP_CLIENT_IP",
-      "HTTP_FORWARDED_FOR",
-      "HTTP_FORWARDED",
-      "HTTP_VIA",
-      "REMOTE_ADDR"
-    };
-
-    for (String header : headerNames) {
-      var ip = request.getHeader(header);
-      if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
-        // X-Forwarded-For can contain multiple IPs, take the first one
-        if (ip.contains(",")) {
-          ip = ip.split(",")[0].trim();
-        }
-        return ip;
-      }
+    var clientIpAddress = request.getHeader("X-Real-IP");
+    if (clientIpAddress != null
+        && !clientIpAddress.isBlank()
+        && !"unknown".equalsIgnoreCase(clientIpAddress)) {
+      return clientIpAddress;
     }
 
     return request.getRemoteAddr();

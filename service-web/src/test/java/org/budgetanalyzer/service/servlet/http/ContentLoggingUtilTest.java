@@ -88,18 +88,29 @@ class ContentLoggingUtilTest {
   }
 
   @Test
-  void shouldExtractClientIpFromXforwardedForHeader() {
+  void shouldUseTrustedRealIpHeaderForClientIp() {
     var request = new MockHttpServletRequest("GET", "/api/test");
-    request.addHeader("X-Forwarded-For", "203.0.113.1, 198.51.100.1");
+    request.addHeader("X-Real-IP", "203.0.113.1");
     request.setRemoteAddr("192.168.1.1");
 
-    // Act
     var details =
         ContentLoggingUtil.extractRequestDetails(
             request, httpLoggingProperties, queryParamSanitizer);
 
-    // Assert - Should use first IP from X-Forwarded-For
     assertThat(details.get("clientIp")).isEqualTo("203.0.113.1");
+  }
+
+  @Test
+  void shouldIgnoreForgedForwardedForHeader() {
+    var request = new MockHttpServletRequest("GET", "/api/test");
+    request.addHeader("X-Forwarded-For", "203.0.113.1, 198.51.100.1");
+    request.setRemoteAddr("192.168.1.1");
+
+    var details =
+        ContentLoggingUtil.extractRequestDetails(
+            request, httpLoggingProperties, queryParamSanitizer);
+
+    assertThat(details.get("clientIp")).isEqualTo("192.168.1.1");
   }
 
   @Test

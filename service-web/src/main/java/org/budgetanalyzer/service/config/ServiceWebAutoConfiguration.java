@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 
 import tools.jackson.databind.json.JsonMapper;
 
+import org.budgetanalyzer.service.audit.AuditLogger;
 import org.budgetanalyzer.service.reactive.api.ReactiveErrorWebExceptionHandler;
 
 /**
@@ -31,6 +32,17 @@ import org.budgetanalyzer.service.reactive.api.ReactiveErrorWebExceptionHandler;
     beforeName =
         "org.springframework.boot.webflux.autoconfigure.error.ErrorWebFluxAutoConfiguration")
 public class ServiceWebAutoConfiguration {
+
+  /**
+   * Provides the shared structured audit logger to servlet and reactive applications.
+   *
+   * @return audit logger writing to {@code budgetanalyzer.audit}
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public AuditLogger auditLogger() {
+    return new AuditLogger();
+  }
 
   /**
    * Configuration for servlet-based (Spring MVC) web applications.
@@ -56,6 +68,7 @@ public class ServiceWebAutoConfiguration {
   @ConditionalOnClass(name = "jakarta.servlet.Filter")
   @ComponentScan(
       basePackages = {
+        "org.budgetanalyzer.service.servlet.audit",
         "org.budgetanalyzer.service.servlet.http",
         "org.budgetanalyzer.service.servlet.api"
       })

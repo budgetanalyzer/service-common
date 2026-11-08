@@ -51,6 +51,7 @@ Service Common is a **multi-module Gradle project** that provides common functio
 - API error response models (ApiErrorResponse)
 - HTTP request/response logging filters
 - Correlation ID support
+- Structured audit events for state-changing requests
 - OpenAPI/Swagger base configuration
 
 **Dependencies**: service-core (transitive), Spring Boot Starter WebMVC/WebFlux, SpringDoc OpenAPI
@@ -154,9 +155,20 @@ When service-web is on your classpath, you automatically get:
   - Reads `X-User-Id`, `X-Permissions`, `X-Roles` headers for both servlet and reactive services
   - Public endpoints: health, prometheus, and OpenAPI routes; all other endpoints, including `/internal/**`, require service-owned rules or authenticated claims headers
 - **Correlation ID Filter** - Automatically adds correlation IDs to all requests and regenerates malformed inbound values before they reach logs or response headers
+- **Structured Audit Events** - Every mapped servlet `POST`, `PUT`, `PATCH`, and `DELETE`
+  emits exactly one compact JSON event at INFO on the dedicated `budgetanalyzer.audit` logger
+  - Includes only timestamp, internal actor ID, method plus route pattern, path-variable resource
+    identifier, response status, and correlation ID
+  - Excludes request and response bodies, query strings, profile email, and display name
+  - Reactive services can inject `AuditLogger` and emit the same `AuditEvent` shape explicitly
 - **HTTP Logging Filter** - Optional (enable with `budgetanalyzer.service.http-logging.enabled=true`)
   - Text bodies only: common secret fields in JSON and form payloads are redacted
   - Multipart, binary, and compressed bodies are omitted with placeholders instead of raw content
+  - Servlet client-address logging uses the NGINX-overwritten `X-Real-IP` header and otherwise the
+    direct peer address; caller-controlled forwarding headers such as `X-Forwarded-For` are ignored
+  - Reactive client-address logging emits only a resolved numeric remote address. With framework
+    forwarded-header handling, Session Gateway receives an unresolved forwarded address and omits
+    `clientIp` rather than logging its caller-controlled hostname.
   - Required list settings and `log-level` must not be explicit null values; startup fails during
     configuration validation if they are bound as null. Empty lists are valid.
 - **OpenAPI Base Config** - Additive standard error responses, including 401/403 for
@@ -196,6 +208,10 @@ cat service-web/src/main/resources/META-INF/spring/org.springframework.boot.auto
 # View autoconfiguration classes
 cat service-core/src/main/java/org/budgetanalyzer/core/config/ServiceCoreAutoConfiguration.java
 cat service-web/src/main/java/org/budgetanalyzer/service/config/ServiceWebAutoConfiguration.java
+
+# View shared audit event and servlet registration
+cat service-web/src/main/java/org/budgetanalyzer/service/audit/AuditEvent.java
+cat service-web/src/main/java/org/budgetanalyzer/service/servlet/audit/ServletAuditConfig.java
 
 # View global exception handler
 cat service-web/src/main/java/org/budgetanalyzer/service/servlet/api/ServletApiExceptionHandler.java
@@ -360,9 +376,11 @@ service-common/
 ├── service-web/                     # Spring Boot web module
 │   ├── src/main/java/
 │   │   └── org/budgetanalyzer/service/
+│   │       ├── audit/               # Shared structured audit events
 │   │       ├── exception/           # Exception hierarchy
 │   │       ├── api/                 # Error response models
-│   │       ├── http/                # HTTP filters/logging
+│   │       ├── servlet/             # Servlet audit, filters, and handlers
+│   │       ├── reactive/            # Reactive filters and handlers
 │   │       └── config/              # OpenAPI config
 │   ├── src/test/java/
 │   ├── src/servletSmokeTest/        # Isolated servlet consumer-classpath smoke suite
