@@ -538,7 +538,39 @@ log.info("Processing payment for card ending in: {}", SafeLogger.mask(creditCard
 log.info("Session started: {}", SafeLogger.truncateId(sessionId));
 ```
 
-### 4. Use HTTPS in Production
+### 4. Use Structured Audit Events for State Changes
+
+Servlet services receive automatic audit coverage for every mapped `POST`, `PUT`, `PATCH`, and
+`DELETE`. Each completed request writes exactly one compact JSON event at INFO to the dedicated
+`budgetanalyzer.audit` logger. The operation is the HTTP method plus the Spring route pattern, the
+resource identifier contains path-variable values, and the outcome is the response status.
+
+Audit events intentionally exclude bodies, query strings, headers other than the resolved
+correlation ID, and profile attributes such as email and display name. Do not place payload data,
+session tokens, credentials, or human-readable personal data in `resourceIdentifier` when emitting
+an event explicitly.
+
+Reactive code can inject the same logger and emit the shared shape:
+
+```java
+public class SessionAuditService {
+    private final AuditLogger auditLogger;
+
+    public SessionAuditService(AuditLogger auditLogger) {
+        this.auditLogger = auditLogger;
+    }
+
+    public void recordLogout(String actor, String correlationId) {
+        auditLogger.log(actor, "POST /auth/logout", "session", 204, correlationId);
+    }
+}
+```
+
+`AuditLogger` also accepts an `AuditEvent` when the caller must supply the timestamp. Retention,
+access controls, and routing for `budgetanalyzer.audit` belong to the deployment's log store; this
+library only defines and emits the safe event.
+
+### 5. Use HTTPS in Production
 
 Configure in `application.yml` for production:
 ```yaml
