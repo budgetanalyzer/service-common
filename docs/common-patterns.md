@@ -601,17 +601,11 @@ contract. Avoid exposing raw `Page` or `PageImpl` JSON directly.
 
 ### 2. Implement Caching Where Appropriate
 
-```java
-@Cacheable("exchangeRates")
-public List<ExchangeRate> getExchangeRates(String currency, LocalDate startDate, LocalDate endDate) {
-    return repository.findByCurrencyAndDateBetween(currency, startDate, endDate);
-}
-
-@CacheEvict(value = "exchangeRates", allEntries = true)
-public void importLatestRates() {
-    // Import logic - cache cleared after
-}
-```
+Before adding a cache, read
+[Redis Distributed Caching](advanced-patterns.md#redis-distributed-caching). Key caches by a
+bounded domain identifier and slice per request in Java; never key them by request parameters such
+as date ranges. Spring's default key includes every method argument, so a `@Cacheable` without an
+explicit `key` builds that unbounded key.
 
 ### 3. Use Async Processing for Long-Running Operations
 
