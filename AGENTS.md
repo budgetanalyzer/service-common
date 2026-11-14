@@ -656,7 +656,7 @@ All four artifacts are versioned and released together as a coordinated set.
 **Quick reference**:
 - Provider Pattern: Service → Interface → Implementation → External Client (decouples from external dependencies)
 - Transactional Outbox: Publications stored atomically with business data in the same transaction, sent to RabbitMQ after commit. RabbitMQ outbox publishers must use broker publisher confirms and fail the listener on a nack, a returned message, or a confirm timeout (wait on each message only in low-volume publishers); a failed send leaves the publication `FAILED`, and nothing retries it.
-- Redis Caching: `@Cacheable` with an explicit `key` that is a bounded domain identifier (never request parameters such as date ranges); cache the derived data set and slice per request in Java; `@CacheEvict` on updates. Use a dedicated Redis instance with an eviction policy, never the `noeviction` session instance. Make caches fail open with a `Cache` decorator beneath the transaction-aware decorator (not a `CacheErrorHandler`), short Redis timeouts, and Redis kept out of readiness
+- Redis Caching: Set an explicit `@Cacheable` `key` that is a bounded domain identifier, never request parameters. Use a dedicated Redis instance with an eviction policy, never the `noeviction` session instance. Make caches fail open with a `Cache` decorator beneath the transaction-aware decorator
 - ShedLock: `@SchedulerLock` on `@Scheduled` methods (runs once across all pods)
 - Flyway: `V{version}__{description}.sql` migrations (never modify committed migrations)
 
