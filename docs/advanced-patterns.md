@@ -597,191 +597,108 @@ All logs include same correlation ID for end-to-end tracing.
 
 ## Redis Distributed Caching
 
-**Purpose**: Improve query performance with shared cache across application instances.
+**Purpose**: Share expensive derived data across pods without request parameters growing the cache.
 
 ### When to Use
 
-- **Read-heavy workloads**: 10:1 or higher read-to-write ratio
-- **Expensive queries**: Database queries taking >50ms
-- **Multi-instance deployment**: Cache must be shared across pods
-- **Consistency after updates**: Evictions take effect for all pods when the write commits, but
-  only with `immediateWrites()` and `transactionAware()`, and a racing read can still cache a stale
-  result for up to the TTL (see [Configuration](#configuration-1))
-
-### Architecture
-
-```
-Request → Service
-  ↓ (cache miss)
-  └─> Repository → Database (50-200ms)
-      └─> Cache result in Redis
-
-Next Request → Service
-  ↓ (cache hit)
-  └─> Redis (1-3ms) ← 50-200x faster!
-```
-
-### Configuration
-
-**Cache Config Class** (Spring Boot 4, Spring Data Redis 4, Jackson 3):
-```java
-import java.time.Duration;
-
-import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheWriter;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import tools.jackson.databind.DefaultTyping;
-import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
-
-@Configuration
-@EnableCaching
-public class CacheConfig {
-
-    @Bean
-    public RedisCacheConfiguration cacheConfiguration(JsonMapper jsonMapper) {
-        // Accept type ids only from these packages when reading cached values
-        var typeValidator = BasicPolymorphicTypeValidator.builder()
-            .allowIfSubType("org.budgetanalyzer")
-            .allowIfSubType("java.util")
-            .allowIfSubType("java.time")
-            .allowIfSubType("java.math")
-            .build();
-
-        // Rebuild a copy so the application-wide JsonMapper is not modified
-        var cacheJsonMapper = jsonMapper.rebuild()
-            .activateDefaultTyping(typeValidator, DefaultTyping.NON_FINAL)
-            .build();
-
-        return RedisCacheConfiguration.defaultCacheConfig()
-            .entryTtl(Duration.ofHours(1))
-            .disableCachingNullValues()
-            .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
-            .serializeValuesWith(SerializationPair.fromSerializer(
-                new GenericJacksonJsonRedisSerializer(cacheJsonMapper)))
-            .prefixCacheNameWith("currency-service:");  // "<service-name>:"
-    }
-
-    @Bean
-    public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer(
-            RedisConnectionFactory redisConnectionFactory) {
-        return builder -> builder
-            .cacheWriter(RedisCacheWriter.create(
-                redisConnectionFactory, configurer -> configurer.immediateWrites()))
-            .transactionAware();
-    }
-}
-```
-
-Why each setting matters (see the
-[Spring Data Redis migration guide](https://docs.spring.io/spring-data/redis/reference/upgrading.html)
-and [cache reference](https://docs.spring.io/spring-data/redis/reference/redis/redis-cache.html)):
-- **`immediateWrites()`**: When the connection factory implements `ReactiveRedisConnectionFactory`,
-  as Lettuce's does, Spring Data Redis 4 performs `put`, `evict`, and `clear` asynchronously by
-  default, so they may complete after the calling method returns. `immediateWrites()` makes them
-  complete before the call returns.
-- **No `UNLINK`**: The asynchronous `clear()` path issues `UNLINK`, which the platform's per-service
-  Redis ACLs do not grant. The synchronous path uses `DEL`.
-- **`transactionAware()`**: Defers `put`, `evict`, and `clear` until after the surrounding
-  transaction commits, so a rolled-back write leaves the cache unchanged. `putIfAbsent`,
-  `evictIfPresent`, and `invalidate` are not deferred.
-- **Final types**: With `DefaultTyping.NON_FINAL`, final `java.*` types are written without a type
-  id. JDK immutable collections are final and cannot be read back, so cacheable methods must not
-  return `List.of()` or `Stream.toList()` results. Return `ArrayList` or `Collections.emptyList()`.
-- **Properties ignored**: When the service defines its own `RedisCacheConfiguration`, Spring Boot
-  ignores the `spring.cache.redis.*` entry settings (such as `time-to-live` and `key-prefix`); only
-  `cache-names` and `enable-statistics` still apply.
-
-**Always set a TTL**, even when every write path evicts. A cache-aside read whose query started
-before a write committed can repopulate the cache with a stale result after the write's after-commit
-eviction. Without a TTL, that entry lasts until the next eviction; the TTL bounds it. The TTL also
-bounds memory for keys built from arbitrary parameters, such as date ranges. Do not enable
-time-to-idle (`enableTimeToIdle()`): it reads with `GETEX`, which the service ACLs do not grant.
-
-**Application Properties:**
-```yaml
-spring:
-  cache:
-    type: redis
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}  # Empty for no auth
-```
-
-### Service Layer Annotations
-
-**Cacheable (Query):**
-```java
-@Service
-public class ExchangeRateService {
-
-    @Cacheable(
-        value = "exchangeRates",
-        key = "#targetCurrency + ':' + #startDate + ':' + #endDate"
-    )
-    public List<ExchangeRateData> getExchangeRates(
-            Currency targetCurrency, LocalDate startDate, LocalDate endDate) {
-        // Expensive database query - cached after first call
-        return repository.findByTargetCurrency(targetCurrency, startDate, endDate);
-    }
-}
-```
-
-**Cache Evict (Update/Import):**
-```java
-@Service
-public class ExchangeRateImportService {
-
-    @CacheEvict(value = "exchangeRates", allEntries = true)
-    public void importLatestExchangeRates() {
-        // Import new rates
-        // Clear ALL cache entries to ensure consistency
-    }
-}
-```
+Use a Redis cache only when reads dominate (10:1 or more), derivation is expensive (over 50ms),
+pods must share the result, and a bounded domain identifier can key the data.
 
 ### Cache Key Design
 
-**Pattern**: Include all query parameters that affect results:
+- **Key by domain entities, never by request-parameter combinations** such as date ranges or
+  filters: each combination adds an entry, and the whole cache must fit within `maxmemory`.
+- **Always set `key` explicitly**, because the default key uses every method argument.
+- **Cache the whole data set for the identifier** in a compact form, never per-request slices.
+- **Validate, slice, and run current-state checks** such as "is enabled" outside the cached method,
+  so they run on every call.
+- **Put the cached method on a separate bean**, because self-calls bypass the caching proxy.
+- **Put `@CacheEvict(allEntries = true)` on write paths** and refill lazily on the next miss; add
+  no `@CachePut` warm-up.
+
+```java
+@Transactional(readOnly = true)
+@Cacheable(cacheNames = "exchangeRateSeries", key = "#currencyCode")
+public ExchangeRateSeries getExchangeRateSeries(String currencyCode) { ... }
 ```
-{targetCurrency}:{startDate}:{endDate}
-Example: "USD:2025-01-01:2025-01-31"
+
+### Dedicated Cache Instance
+
+- Use a dedicated instance with `maxmemory`, an eviction policy such as `allkeys-lru`, and no
+  persistence (no AOF, no RDB), because cache data is disposable.
+- Never use the `noeviction` session instance, because a growing cache fills it until session
+  writes fail and users cannot log in.
+- Give each service its own ACL user restricted to its `<service-name>:` key prefix. One cache
+  instance may serve several services, but under `allkeys-lru` one service's churn can evict
+  another's entries; give a service its own instance when that matters.
+
+### Configuration
+
+- **Define the `RedisCacheManager` in code** under
+  `@ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis", matchIfMissing = true)`
+  so Boot never builds its own plain manager when the property is unset; `spring.cache.type=none`
+  still disables caching, and Boot's `spring.cache.redis.*` properties have no effect.
+- **Build the cache writer with `immediateWrites()`**, because Lettuce writes asynchronously by
+  default and the asynchronous clear uses `UNLINK`, which the service ACLs do not grant.
+- **Clear with `BatchStrategies.scan(n)`**, because the ACLs do not grant `KEYS` and `KEYS` blocks
+  Redis. A clear is not a point-in-time delete: a key written during the scan can survive.
+- **Bind a `JacksonJsonRedisSerializer` to the value type**, with no default typing, on a copy of
+  the application mapper with `INDENT_OUTPUT` disabled, so values carry no class names or
+  whitespace. Give a cache of another type its own `RedisCacheConfiguration` through the
+  `RedisCacheManager` constructor that takes a map of per-cache configurations.
+- **Disable caching null values and prefix keys with `<service-name>:`**, so every key matches the
+  service's ACL pattern.
+- **Decorate each cache as `TransactionAwareCacheDecorator(FailOpenCache(RedisCache))`** by
+  overriding `decorateCache`, so writes follow the commit. That decorator defers `put`, `evict`,
+  and `clear`, but not `putIfAbsent`, `evictIfPresent`, or `invalidate`. It runs the deferred
+  operations in `afterCommit`, where failures reach the caller after the database has committed, so
+  `FailOpenCache` must wrap the Redis cache directly, beneath the decorator, to absorb them.
+
+```java
+@Override
+protected Cache decorateCache(Cache cache) {
+    return new TransactionAwareCacheDecorator(new FailOpenCache(cache));
+}
 ```
 
-With `prefixCacheNameWith("currency-service:")`, the full Redis key is
-`currency-service:exchangeRates::USD:2025-01-01:2025-01-31`.
+### Fail-Open Caching
 
-**Why JSON Serialization?**
-- Human-readable in Redis CLI for debugging
-- No version conflicts (unlike Java serialization)
-- Supports different language clients
+- **On a cache failure, a read becomes a miss and a write is skipped**, so an outage slows requests
+  but never fails them. Log a `WARN` with the operation, cache, and key, and let value-loader
+  exceptions propagate.
+- **Do not use a `CacheErrorHandler`**, because deferred after-commit operations run outside it and
+  their failures reach the caller after the database has committed.
+- **Set `spring.data.redis.timeout` and `spring.data.redis.connect-timeout` to about 1s**, because
+  the timeout bounds the added latency of each cache call during an outage.
+- **Keep Redis out of the readiness group** and never put dependencies in liveness, so an outage
+  keeps pods in endpoints. The `redis` contributor still reports in `/actuator/health`.
 
-### Performance Characteristics
+### TTL
 
-| Metric | Value |
-|--------|-------|
-| Cache hit response time | 1-3ms |
-| Cache miss response time | 50-200ms |
-| Expected hit rate | 80-95% |
-| Memory per 10K queries | ~500MB |
+- **Always set a TTL**, because a racing stale write or a failed eviction otherwise lasts until the
+  next eviction. A read that queried the database before a write committed can repopulate the cache
+  with its stale result after the write's after-commit eviction.
+- **Do not enable time-to-idle**, because it reads with `GETEX`, which the ACLs do not grant.
+
+### Reference Implementation
+
+currency-service implements this pattern. Read its code and tests before adding a cache to another
+service:
+- Cache manager, serializer, and decorator order:
+  [`CacheConfig`](../../currency-service/src/main/java/org/budgetanalyzer/currency/config/CacheConfig.java)
+- Fail-open decorator:
+  [`FailOpenCache`](../../currency-service/src/main/java/org/budgetanalyzer/currency/config/FailOpenCache.java)
+- Bounded-key cached method:
+  [`ExchangeRateSeriesService`](../../currency-service/src/main/java/org/budgetanalyzer/currency/service/ExchangeRateSeriesService.java)
+- Configuration rationale:
+  [currency-service configuration](../../currency-service/docs/configuration.md#caching)
+- Tests: `FailOpenCacheTest` and the `ExchangeRateCache*IntegrationTest` classes in
+  [currency-service tests](../../currency-service/src/test/java/org/budgetanalyzer/currency/)
 
 ### Why Redis (not Caffeine)?
 
-- **Shared state**: All pods see same cache data
-- **Shared invalidation**: One eviction affects all instances (immediately after commit only with
-  `immediateWrites()` and `transactionAware()`, and within the TTL bound for racing reads)
-- **Production standard**: Industry-proven distributed cache
-- **No pub/sub needed**: Simple eviction pattern with `allEntries = true`
+- **Shared state**: every pod reads the same cached data.
+- **Shared invalidation**: one eviction clears the entry for every pod.
 
 ---
 
@@ -1056,7 +973,7 @@ DROP TABLE IF EXISTS currency_conversion_cache;
 |---------|----------|----------------|
 | **Provider Abstraction** | Integrating external APIs, may switch providers | Single provider, internal services only |
 | **Transactional Outbox** | Async communication between services; durable, atomic recording of the intent to send required | Simple request-response, no messaging needed |
-| **Redis Caching** | Read-heavy (10:1), expensive queries (>50ms), multi-pod deployment | Write-heavy, single instance, fast queries |
+| **Redis Caching** | Read-heavy (10:1), expensive queries (>50ms), multi-pod deployment, data keyed by a bounded domain identifier | Write-heavy, single instance, fast queries, results keyed only by request parameters |
 | **ShedLock** | Scheduled tasks in multi-pod deployment | Single instance deployment, no scheduled tasks |
 | **Flyway Migrations** | ANY service with database | Stateless services, no persistence |
 
@@ -1067,13 +984,13 @@ DROP TABLE IF EXISTS currency_conversion_cache;
 **Currency Service** (uses ALL patterns):
 - Provider abstraction: FRED API integration
 - Transactional outbox: Publishes currency created events
-- Redis caching: Exchange rate query caching
+- Redis caching: Per-currency exchange-rate series, sliced per request
 - ShedLock: Daily exchange rate import scheduler
 - Flyway: Schema versioning
 
 **Transaction Service** (uses subset):
 - Flyway: Schema versioning (when implemented)
-- Redis caching: Transaction search results (future)
+- Redis caching: N/A (no cached data sets)
 - Provider abstraction: N/A (no external providers)
 - Transactional outbox: N/A (no async messaging yet)
 - ShedLock: N/A (no scheduled tasks)
