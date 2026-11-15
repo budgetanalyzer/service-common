@@ -642,15 +642,17 @@ public ExchangeRateSeries getExchangeRateSeries(String currencyCode) { ... }
   default and the asynchronous clear uses `UNLINK`, which the service ACLs do not grant.
 - **Clear with `BatchStrategies.scan(n)`**, because the ACLs do not grant `KEYS` and `KEYS` blocks
   Redis. A clear is not a point-in-time delete: a key written during the scan can survive.
-- **Bind the value serializer to the value type**, with no default typing, on a copy of the
-  application mapper with `INDENT_OUTPUT` disabled, so values carry no class names or whitespace.
-  Give a cache of another type its own `RedisCacheConfiguration` through the `RedisCacheManager`
-  constructor that takes a map of per-cache configurations.
+- **Bind a `JacksonJsonRedisSerializer` to the value type**, with no default typing, on a copy of
+  the application mapper with `INDENT_OUTPUT` disabled, so values carry no class names or
+  whitespace. Give a cache of another type its own `RedisCacheConfiguration` through the
+  `RedisCacheManager` constructor that takes a map of per-cache configurations.
 - **Disable caching null values and prefix keys with `<service-name>:`**, so every key matches the
   service's ACL pattern.
 - **Decorate each cache as `TransactionAwareCacheDecorator(FailOpenCache(RedisCache))`** by
   overriding `decorateCache`, so writes follow the commit. That decorator defers `put`, `evict`,
-  and `clear`, but not `putIfAbsent`, `evictIfPresent`, or `invalidate`.
+  and `clear`, but not `putIfAbsent`, `evictIfPresent`, or `invalidate`. It runs the deferred
+  operations in `afterCommit`, where failures reach the caller after the database has committed, so
+  `FailOpenCache` must wrap the Redis cache directly, beneath the decorator, to absorb them.
 
 ```java
 @Override
@@ -674,7 +676,8 @@ protected Cache decorateCache(Cache cache) {
 ### TTL
 
 - **Always set a TTL**, because a racing stale write or a failed eviction otherwise lasts until the
-  next eviction.
+  next eviction. A read that queried the database before a write committed can repopulate the cache
+  with its stale result after the write's after-commit eviction.
 - **Do not enable time-to-idle**, because it reads with `GETEX`, which the ACLs do not grant.
 
 ### Reference Implementation
